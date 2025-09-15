@@ -94,7 +94,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
                       ),
                       Text(
                         _formatDate(widget.post.createdAt),
-                        style: TextStyle(
+                        style: const TextStyle(
                           color: NatureColors.mediumGray,
                           fontSize: 12,
                         ),
@@ -313,7 +313,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
                       ),
                       Text(
                         _formatDate(comment.createdAt),
-                        style: TextStyle(
+                        style: const TextStyle(
                           color: NatureColors.mediumGray,
                           fontSize: 11,
                         ),

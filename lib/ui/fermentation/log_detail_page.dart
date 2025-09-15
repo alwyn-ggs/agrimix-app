@@ -238,9 +238,9 @@ class _DetailState extends State<_Detail> {
                   ),
                   const SizedBox(height: 12),
                   if (_log.photos.isEmpty)
-                    Center(
+                    const Center(
                       child: Padding(
-                        padding: const EdgeInsets.all(32),
+                        padding: EdgeInsets.all(32),
                         child: Column(
                           children: [
                             Icon(Icons.photo_library_outlined, size: 48, color: Colors.grey),

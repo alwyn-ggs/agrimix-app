@@ -69,7 +69,7 @@ class FermentationRepo {
         limit: limit,
         startAfter: startAfter,
         where: where,
-        orderBy: [QueryOrder(field: 'createdAt', descending: true)],
+        orderBy: [const QueryOrder(field: 'createdAt', descending: true)],
       );
 
       return docs.map((doc) => FermentationLog.fromMap(doc.id, doc.data()!)).toList();
@@ -98,7 +98,7 @@ class FermentationRepo {
         FermentationLog.collectionPath,
         limit: limit,
         where: where,
-        orderBy: [QueryOrder(field: 'createdAt', descending: true)],
+        orderBy: [const QueryOrder(field: 'createdAt', descending: true)],
       ).map((docs) => docs.map((doc) => FermentationLog.fromMap(doc.id, doc.data()!)).toList());
     } catch (e) {
       throw Exception('Failed to watch user fermentation logs: $e');
@@ -276,7 +276,7 @@ class FermentationRepo {
         FermentationLog.collectionPath,
         limit: limit,
         where: [QueryFilter(field: 'recipeId', value: recipeId)],
-        orderBy: [QueryOrder(field: 'createdAt', descending: true)],
+        orderBy: [const QueryOrder(field: 'createdAt', descending: true)],
       );
 
       return docs.map((doc) => FermentationLog.fromMap(doc.id, doc.data()!)).toList();
@@ -334,7 +334,7 @@ class FermentationRepo {
         where: [
           QueryFilter(field: 'ownerUid', value: userId),
         ],
-        orderBy: [QueryOrder(field: 'startAt', descending: false)],
+        orderBy: [const QueryOrder(field: 'startAt', descending: false)],
       );
 
       final logs = docs.map((doc) => FermentationLog.fromMap(doc.id, doc.data()!)).toList();

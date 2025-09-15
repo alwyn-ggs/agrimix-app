@@ -775,10 +775,10 @@ class _RecipeComments extends StatelessWidget {
                     children: [
                       const Icon(Icons.person, color: NatureColors.primaryGreen, size: 20),
                       const SizedBox(width: 8),
-                      Expanded(
+                      const Expanded(
                         child: Text(
                           'User',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontWeight: FontWeight.w600,
                             color: NatureColors.darkGreen,
                           ),
@@ -789,7 +789,7 @@ class _RecipeComments extends StatelessWidget {
                           const Icon(Icons.star, color: Colors.orange, size: 16),
                           const SizedBox(width: 4),
                           Text(
-                            '${(comment['rating'] as num?)?.toStringAsFixed(1) ?? '0.0'}',
+                            (comment['rating'] as num?)?.toStringAsFixed(1) ?? '0.0',
                             style: const TextStyle(
                               fontWeight: FontWeight.w600,
                               color: NatureColors.darkGray,

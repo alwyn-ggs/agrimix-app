@@ -51,8 +51,8 @@ class AnnouncementsRepo {
         Announcement.collectionPath,
         limit: limit,
         orderBy: [
-          QueryOrder(field: 'pinned', descending: true), // Pinned first
-          QueryOrder(field: 'createdAt', descending: true),
+          const QueryOrder(field: 'pinned', descending: true), // Pinned first
+          const QueryOrder(field: 'createdAt', descending: true),
         ],
       );
 
@@ -69,8 +69,8 @@ class AnnouncementsRepo {
         Announcement.collectionPath,
         limit: limit,
         orderBy: [
-          QueryOrder(field: 'pinned', descending: true), // Pinned first
-          QueryOrder(field: 'createdAt', descending: true),
+          const QueryOrder(field: 'pinned', descending: true), // Pinned first
+          const QueryOrder(field: 'createdAt', descending: true),
         ],
       ).map((docs) => docs.map((doc) => Announcement.fromMap(doc.id, doc.data()!)).toList());
     } catch (e) {
@@ -84,8 +84,8 @@ class AnnouncementsRepo {
       final docs = await _fs.getDocuments(
         Announcement.collectionPath,
         limit: limit,
-        where: [QueryFilter(field: 'pinned', value: true)],
-        orderBy: [QueryOrder(field: 'createdAt', descending: true)],
+        where: [const QueryFilter(field: 'pinned', value: true)],
+        orderBy: [const QueryOrder(field: 'createdAt', descending: true)],
       );
 
       return docs.map((doc) => Announcement.fromMap(doc.id, doc.data()!)).toList();
@@ -100,7 +100,7 @@ class AnnouncementsRepo {
       final docs = await _fs.getDocuments(
         Announcement.collectionPath,
         limit: limit,
-        orderBy: [QueryOrder(field: 'createdAt', descending: true)],
+        orderBy: [const QueryOrder(field: 'createdAt', descending: true)],
       );
 
       return docs.map((doc) => Announcement.fromMap(doc.id, doc.data()!)).toList();
@@ -138,7 +138,7 @@ class AnnouncementsRepo {
       final docs = await _fs.getDocuments(
         Announcement.collectionPath,
         limit: limit * 2, // Get more to filter
-        orderBy: [QueryOrder(field: 'createdAt', descending: true)],
+        orderBy: [const QueryOrder(field: 'createdAt', descending: true)],
       );
 
       final announcements = docs.map((doc) => Announcement.fromMap(doc.id, doc.data()!)).toList();
@@ -162,7 +162,7 @@ class AnnouncementsRepo {
         Announcement.collectionPath,
         limit: limit,
         where: [QueryFilter(field: 'createdBy', value: createdBy)],
-        orderBy: [QueryOrder(field: 'createdAt', descending: true)],
+        orderBy: [const QueryOrder(field: 'createdAt', descending: true)],
       );
 
       return docs.map((doc) => Announcement.fromMap(doc.id, doc.data()!)).toList();
@@ -210,7 +210,7 @@ class AnnouncementsRepo {
       final docs = await _fs.getDocuments(
         Announcement.collectionPath,
         limit: limit,
-        orderBy: [QueryOrder(field: 'createdAt', descending: true)],
+        orderBy: [const QueryOrder(field: 'createdAt', descending: true)],
       );
 
       final announcements = docs.map((doc) => Announcement.fromMap(doc.id, doc.data()!)).toList();

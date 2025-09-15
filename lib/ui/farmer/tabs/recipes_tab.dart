@@ -72,7 +72,7 @@ class RecipesTab extends StatelessWidget {
                   ),
                   child: Row(
                     children: [
-                      Icon(
+                      const Icon(
                         Icons.star,
                         color: NatureColors.primaryGreen,
                         size: 20,

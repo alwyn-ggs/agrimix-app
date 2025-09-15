@@ -88,8 +88,8 @@ class SystemTest {
     
     // Calculate weights (2:1 ratio for materials:sugar)
     const totalWeight = 3.0; // kg
-    final materialWeight = totalWeight * (2.0 / 3.0); // 2 kg
-    final sugarWeight = totalWeight * (1.0 / 3.0); // 1 kg
+    const materialWeight = totalWeight * (2.0 / 3.0); // 2 kg
+    const sugarWeight = totalWeight * (1.0 / 3.0); // 1 kg
     
     // Distribute material weight among ingredients
     final weightPerIngredient = ingredients.isNotEmpty ? materialWeight / ingredients.length : 0.0;

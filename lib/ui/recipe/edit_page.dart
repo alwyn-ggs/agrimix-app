@@ -46,7 +46,7 @@ class _RecipeFormState extends State<_RecipeForm> {
   final TextEditingController _crop = TextEditingController();
   RecipeMethod _method = RecipeMethod.FFJ;
   RecipeVisibility _visibility = RecipeVisibility.private;
-  List<File> _images = [];
+  final List<File> _images = [];
   List<String> _imageUrls = [];
   List<RecipeIngredient> _ingredients = [];
   List<RecipeStep> _steps = [];

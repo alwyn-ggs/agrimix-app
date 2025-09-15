@@ -110,7 +110,7 @@ class UsersRepo {
   Stream<List<AppUser>> watchAllUsers() {
     print('UsersRepo: Starting watchAllUsers stream');
     print('UsersRepo: Firestore service: ${_fs != null ? 'OK' : 'NULL'}');
-    print('UsersRepo: Firestore DB: ${_fs?.db != null ? 'OK' : 'NULL'}');
+    print('UsersRepo: Firestore DB: ${_fs.db != null ? 'OK' : 'NULL'}');
     
     return _fs.db.collection('users').snapshots().map((snapshot) {
       print('UsersRepo: Received snapshot with ${snapshot.docs.length} documents');

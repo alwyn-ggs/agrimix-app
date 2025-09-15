@@ -51,7 +51,7 @@ class CommentsRepo {
         Comment.collectionPath,
         limit: limit,
         where: [QueryFilter(field: 'postId', value: postId)],
-        orderBy: [QueryOrder(field: 'createdAt', descending: false)],
+        orderBy: [const QueryOrder(field: 'createdAt', descending: false)],
       );
 
       return docs.map((doc) => Comment.fromMap(doc.id, doc.data()!)).toList();
@@ -67,7 +67,7 @@ class CommentsRepo {
         Comment.collectionPath,
         limit: limit,
         where: [QueryFilter(field: 'postId', value: postId)],
-        orderBy: [QueryOrder(field: 'createdAt', descending: false)],
+        orderBy: [const QueryOrder(field: 'createdAt', descending: false)],
       ).map((docs) => docs.map((doc) => Comment.fromMap(doc.id, doc.data()!)).toList());
     } catch (e) {
       throw Exception('Failed to watch comments for post: $e');
@@ -81,7 +81,7 @@ class CommentsRepo {
         Comment.collectionPath,
         limit: limit,
         where: [QueryFilter(field: 'authorId', value: userId)],
-        orderBy: [QueryOrder(field: 'createdAt', descending: true)],
+        orderBy: [const QueryOrder(field: 'createdAt', descending: true)],
       );
 
       return docs.map((doc) => Comment.fromMap(doc.id, doc.data()!)).toList();

@@ -88,7 +88,7 @@ class IngredientsRepo {
       final docs = await _fs.getDocuments(
         Ingredient.collectionPath,
         limit: limit,
-        orderBy: [QueryOrder(field: 'name', descending: false)],
+        orderBy: [const QueryOrder(field: 'name', descending: false)],
       );
 
       return docs.map((doc) => Ingredient.fromMap(doc.id, doc.data()!)).toList();
@@ -103,7 +103,7 @@ class IngredientsRepo {
       return _fs.watchDocuments(
         Ingredient.collectionPath,
         limit: limit,
-        orderBy: [QueryOrder(field: 'name', descending: false)],
+        orderBy: [const QueryOrder(field: 'name', descending: false)],
       ).map((docs) => docs.map((doc) => Ingredient.fromMap(doc.id, doc.data()!)).toList());
     } catch (e) {
       throw Exception('Failed to watch ingredients: $e');
@@ -121,7 +121,7 @@ class IngredientsRepo {
         'name',
         searchTerm,
         limit: limit,
-        orderBy: [QueryOrder(field: 'name', descending: false)],
+        orderBy: [const QueryOrder(field: 'name', descending: false)],
       );
 
       return docs.map((doc) => Ingredient.fromMap(doc.id, doc.data()!)).toList();
@@ -137,7 +137,7 @@ class IngredientsRepo {
         Ingredient.collectionPath,
         limit: limit,
         where: [QueryFilter(field: 'category', value: category)],
-        orderBy: [QueryOrder(field: 'name', descending: false)],
+        orderBy: [const QueryOrder(field: 'name', descending: false)],
       );
 
       return docs.map((doc) => Ingredient.fromMap(doc.id, doc.data()!)).toList();
@@ -152,7 +152,7 @@ class IngredientsRepo {
       final docs = await _fs.getDocuments(
         Ingredient.collectionPath,
         limit: limit,
-        orderBy: [QueryOrder(field: 'name', descending: false)],
+        orderBy: [const QueryOrder(field: 'name', descending: false)],
       );
 
       final ingredients = docs.map((doc) => Ingredient.fromMap(doc.id, doc.data()!)).toList();
@@ -208,7 +208,7 @@ class IngredientsRepo {
         final endIndex = (i + batchSize < ingredients.length) ? i + batchSize : ingredients.length;
         final batchIngredients = ingredients.sublist(i, endIndex);
         
-        print('Processing batch ${(i ~/ batchSize) + 1}: ingredients ${i + 1}-${endIndex}');
+        print('Processing batch ${(i ~/ batchSize) + 1}: ingredients ${i + 1}-$endIndex');
         
         for (final ingredient in batchIngredients) {
           final docRef = _fs.db.collection(Ingredient.collectionPath).doc(ingredient.id);

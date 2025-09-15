@@ -55,7 +55,7 @@ class _SavedPostsPageState extends State<SavedPostsPage> {
   }
 
   Widget _buildEmptyState() {
-    return Center(
+    return const Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -64,7 +64,7 @@ class _SavedPostsPageState extends State<SavedPostsPage> {
             size: 64,
             color: NatureColors.mediumGray,
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           Text(
             'No saved posts yet',
             style: TextStyle(
@@ -73,7 +73,7 @@ class _SavedPostsPageState extends State<SavedPostsPage> {
               fontWeight: FontWeight.w500,
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           Text(
             'Save posts you find interesting to view them later',
             style: TextStyle(
@@ -130,7 +130,7 @@ class _SavedPostsPageState extends State<SavedPostsPage> {
                         ),
                         Text(
                           _formatDate(post.createdAt),
-                          style: TextStyle(
+                          style: const TextStyle(
                             color: NatureColors.mediumGray,
                             fontSize: 12,
                           ),
@@ -138,7 +138,7 @@ class _SavedPostsPageState extends State<SavedPostsPage> {
                       ],
                     ),
                   ),
-                  Icon(
+                  const Icon(
                     Icons.bookmark,
                     color: NatureColors.primaryGreen,
                     size: 20,
@@ -223,14 +223,14 @@ class _SavedPostsPageState extends State<SavedPostsPage> {
               const SizedBox(height: 12),
               Row(
                 children: [
-                  Icon(Icons.favorite_border, color: NatureColors.mediumGray, size: 16),
+                  const Icon(Icons.favorite_border, color: NatureColors.mediumGray, size: 16),
                   const SizedBox(width: 4),
                   Text(
                     '${post.likes}',
                     style: const TextStyle(color: NatureColors.mediumGray, fontSize: 12),
                   ),
                   const SizedBox(width: 16),
-                  Icon(Icons.comment_outlined, color: NatureColors.mediumGray, size: 16),
+                  const Icon(Icons.comment_outlined, color: NatureColors.mediumGray, size: 16),
                   const SizedBox(width: 4),
                   Text(
                     '${post.savedBy.length}',

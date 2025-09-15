@@ -213,7 +213,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 value: _rememberMe,
                                 onChanged: (v) => setState(() => _rememberMe = v ?? false),
                                 side: const BorderSide(color: Colors.black, width: 2),
-                                fillColor: MaterialStatePropertyAll(Colors.transparent),
+                                fillColor: WidgetStatePropertyAll(Colors.transparent),
                                 checkColor: Colors.black,
                                 materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                               ),

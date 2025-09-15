@@ -662,15 +662,15 @@ class _FermentationGuideScreenState extends State<FermentationGuideScreen>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
+                  const Row(
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.warning,
                         color: Colors.red,
                         size: 20,
                       ),
-                      const SizedBox(width: 8),
-                      const Text(
+                      SizedBox(width: 8),
+                      Text(
                         'Important Warnings',
                         style: TextStyle(
                           fontSize: 18,

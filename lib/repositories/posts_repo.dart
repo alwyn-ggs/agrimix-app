@@ -63,7 +63,7 @@ class PostsRepo {
         limit: limit,
         startAfter: startAfter,
         where: where,
-        orderBy: [QueryOrder(field: 'createdAt', descending: true)],
+        orderBy: [const QueryOrder(field: 'createdAt', descending: true)],
       );
 
       var posts = docs.map((doc) => Post.fromMap(doc.id, doc.data()!)).toList();
@@ -95,7 +95,7 @@ class PostsRepo {
         Post.collectionPath,
         limit: limit,
         where: where,
-        orderBy: [QueryOrder(field: 'createdAt', descending: true)],
+        orderBy: [const QueryOrder(field: 'createdAt', descending: true)],
       ).map((docs) {
         var posts = docs.map((doc) => Post.fromMap(doc.id, doc.data()!)).toList();
 
@@ -212,7 +212,7 @@ class PostsRepo {
       final docs = await _fs.getDocuments(
         Post.collectionPath,
         limit: limit * 2, // Get more to filter
-        orderBy: [QueryOrder(field: 'createdAt', descending: true)],
+        orderBy: [const QueryOrder(field: 'createdAt', descending: true)],
       );
 
       final posts = docs.map((doc) => Post.fromMap(doc.id, doc.data()!)).toList();
@@ -237,7 +237,7 @@ class PostsRepo {
         Post.collectionPath,
         limit: limit * 2, // Get more to filter
         startAfter: startAfter,
-        orderBy: [QueryOrder(field: 'createdAt', descending: true)],
+        orderBy: [const QueryOrder(field: 'createdAt', descending: true)],
       );
 
       final posts = docs.map((doc) => Post.fromMap(doc.id, doc.data()!)).toList();
@@ -255,7 +255,7 @@ class PostsRepo {
       final docs = await _fs.getDocuments(
         Post.collectionPath,
         limit: limit,
-        orderBy: [QueryOrder(field: 'likes', descending: true)],
+        orderBy: [const QueryOrder(field: 'likes', descending: true)],
       );
 
       return docs.map((doc) => Post.fromMap(doc.id, doc.data()!)).toList();
@@ -270,7 +270,7 @@ class PostsRepo {
       final docs = await _fs.getDocuments(
         Post.collectionPath,
         limit: limit * 2, // Get more to filter
-        orderBy: [QueryOrder(field: 'createdAt', descending: true)],
+        orderBy: [const QueryOrder(field: 'createdAt', descending: true)],
       );
 
       final posts = docs.map((doc) => Post.fromMap(doc.id, doc.data()!)).toList();
@@ -288,7 +288,7 @@ class PostsRepo {
       final docs = await _fs.getDocuments(
         Post.collectionPath,
         limit: 1000, // Get many posts to extract tags
-        orderBy: [QueryOrder(field: 'createdAt', descending: true)],
+        orderBy: [const QueryOrder(field: 'createdAt', descending: true)],
       );
 
       final posts = docs.map((doc) => Post.fromMap(doc.id, doc.data()!)).toList();
@@ -327,7 +327,7 @@ class PostsRepo {
       final docs = await _fs.getDocuments(
         Post.collectionPath,
         limit: 1,
-        orderBy: [QueryOrder(field: 'createdAt', descending: true)],
+        orderBy: [const QueryOrder(field: 'createdAt', descending: true)],
       );
       return docs.isNotEmpty ? docs.first : null;
     } catch (e) {

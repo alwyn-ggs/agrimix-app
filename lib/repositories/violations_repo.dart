@@ -44,7 +44,7 @@ class ViolationsRepo {
       final docs = await _fs.getDocuments(
         Violation.collectionPath,
         limit: limit,
-        orderBy: [QueryOrder(field: 'createdAt', descending: true)],
+        orderBy: [const QueryOrder(field: 'createdAt', descending: true)],
       );
 
       return docs.map((doc) => Violation.fromMap(doc.id, doc.data()!)).toList();
@@ -60,7 +60,7 @@ class ViolationsRepo {
         Violation.collectionPath,
         limit: limit,
         where: [QueryFilter(field: 'targetType', value: targetType.name)],
-        orderBy: [QueryOrder(field: 'createdAt', descending: true)],
+        orderBy: [const QueryOrder(field: 'createdAt', descending: true)],
       );
 
       return docs.map((doc) => Violation.fromMap(doc.id, doc.data()!)).toList();
@@ -76,7 +76,7 @@ class ViolationsRepo {
         Violation.collectionPath,
         limit: limit,
         where: [QueryFilter(field: 'status', value: status.name)],
-        orderBy: [QueryOrder(field: 'createdAt', descending: true)],
+        orderBy: [const QueryOrder(field: 'createdAt', descending: true)],
       );
 
       return docs.map((doc) => Violation.fromMap(doc.id, doc.data()!)).toList();
@@ -91,7 +91,7 @@ class ViolationsRepo {
       return _fs.watchDocuments(
         Violation.collectionPath,
         limit: limit,
-        orderBy: [QueryOrder(field: 'createdAt', descending: true)],
+        orderBy: [const QueryOrder(field: 'createdAt', descending: true)],
       ).map((docs) => docs.map((doc) => Violation.fromMap(doc.id, doc.data()!)).toList());
     } catch (e) {
       throw Exception('Failed to watch violations: $e');

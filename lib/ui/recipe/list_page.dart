@@ -215,7 +215,7 @@ class _RecipeListPageState extends State<RecipeListPage> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.restaurant_menu, size: 64, color: NatureColors.mediumGray),
+                const Icon(Icons.restaurant_menu, size: 64, color: NatureColors.mediumGray),
                 const SizedBox(height: 16),
                 Text(
                   provider.searchQuery.isNotEmpty || provider.selectedMethod != null || provider.standardOnly || provider.showFavoritesOnly

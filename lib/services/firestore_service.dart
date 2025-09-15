@@ -141,7 +141,7 @@ class FirestoreService {
       } else {
         // Simple case-insensitive search (limited by Firestore)
         query = query.where(field, isGreaterThanOrEqualTo: searchTerm)
-                    .where(field, isLessThan: searchTerm + '\uf8ff');
+                    .where(field, isLessThan: '$searchTerm\uf8ff');
       }
 
       if (orderBy != null) {

@@ -160,7 +160,7 @@ class FermentationGuideService {
     
     return [
       // Preparation Phase
-      GuideStep(
+      const GuideStep(
         phase: 'Preparation',
         order: 1,
         title: 'Gather Materials and Tools',
@@ -180,7 +180,7 @@ class FermentationGuideService {
         ],
       ),
       
-      GuideStep(
+      const GuideStep(
         phase: 'Preparation',
         order: 2,
         title: 'Prepare Workspace',
@@ -245,7 +245,7 @@ class FermentationGuideService {
       ),
       
       // Mixing Phase
-      GuideStep(
+      const GuideStep(
         phase: 'Mixing',
         order: 5,
         title: 'Layer Materials and Sugar',
@@ -263,7 +263,7 @@ class FermentationGuideService {
         ],
       ),
       
-      GuideStep(
+      const GuideStep(
         phase: 'Mixing',
         order: 6,
         title: 'Mix Thoroughly',
@@ -281,7 +281,7 @@ class FermentationGuideService {
       ),
       
       // Fermentation Phase
-      GuideStep(
+      const GuideStep(
         phase: 'Fermentation',
         order: 7,
         title: 'Cover and Store',
@@ -298,7 +298,7 @@ class FermentationGuideService {
         ],
       ),
       
-      GuideStep(
+      const GuideStep(
         phase: 'Fermentation',
         order: 8,
         title: 'Daily Mixing (First 3 Days)',
@@ -315,7 +315,7 @@ class FermentationGuideService {
         ],
       ),
       
-      GuideStep(
+      const GuideStep(
         phase: 'Fermentation',
         order: 9,
         title: 'Monitor Fermentation',
@@ -333,7 +333,7 @@ class FermentationGuideService {
       ),
       
       // Harvesting Phase
-      GuideStep(
+      const GuideStep(
         phase: 'Harvesting',
         order: 10,
         title: 'Strain the Fermented Juice',
@@ -350,7 +350,7 @@ class FermentationGuideService {
         ],
       ),
       
-      GuideStep(
+      const GuideStep(
         phase: 'Harvesting',
         order: 11,
         title: 'Store the Final Product',
@@ -368,7 +368,7 @@ class FermentationGuideService {
       ),
       
       // Usage Phase
-      GuideStep(
+      const GuideStep(
         phase: 'Usage',
         order: 12,
         title: 'Application Guidelines',
