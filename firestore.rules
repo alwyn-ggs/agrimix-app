@@ -1,0 +1,113 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null && request.auth.uid != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    function isFarmer() {
+      return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'farmer';
+    }
+
+    // Common validators
+    function isValidStars(value) {
+      return value is int && value >= 1 && value <= 5;
+    }
+
+    function isValidRole(value) {
+      return value in ['farmer','admin'];
+    }
+
+    function isValidMethod(value) {
+      // Domain-specific: FPJ or FFJ
+      return value in ['FPJ','FFJ'];
+    }
+
+    // Fallback: require auth for all reads/writes unless explicitly allowed below
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Users collection: users/{userId}
+    match /users/{userId} {
+      allow create: if isSignedIn() && request.auth.uid == userId
+        && isValidRole(request.resource.data.role)
+        && (request.resource.data.approved is bool);
+      allow read: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      // Self can update profile fields but not role/approved
+      allow update: if isSignedIn() && request.auth.uid == userId
+        && request.resource.data.diff(resource.data).changedKeys().hasOnly(['name','photoUrl'])
+        && request.resource.data.role == resource.data.role
+        && request.resource.data.approved == resource.data.approved
+      || (isAdmin()
+        && request.resource.data.role is string && isValidRole(request.resource.data.role)
+        && request.resource.data.approved is bool);
+      allow delete: if isAdmin();
+    }
+
+    // Announcements: public read; admins manage
+    match /announcements/{announcementId} {
+      allow read: if true; // public read
+      allow create, update, delete: if isAdmin();
+    }
+
+    // Ingredients: allow all operations (temporary for development)
+    match /ingredients/{ingredientId} {
+      allow read, write: if true;
+    }
+
+    // Recipes and subcollections
+    match /recipes/{recipeId} {
+      // Readable by signed-in users (public within app)
+      allow read: if isSignedIn();
+
+      // Allow both admins and farmers to create recipes (temporary for seeding)
+      allow create, update, delete: if isSignedIn();
+
+      // Ratings: users can rate once per recipe; validate stars 1..5
+      match /ratings/{userId} {
+        allow read: if isSignedIn();
+        // Ratings stored as double 1..5 under 'rating'
+        allow create: if isSignedIn() && request.auth.uid == userId
+          && (request.resource.data.rating is number)
+          && request.resource.data.rating >= 1 && request.resource.data.rating <= 5
+          && request.resource.data.keys().hasOnly(['userId','rating','createdAt','updatedAt'])
+          && request.resource.data.userId == request.auth.uid
+          && !exists(/databases/$(database)/documents/recipes/$(recipeId)/ratings/$(userId));
+        allow update: if isSignedIn() && request.auth.uid == userId
+          && (request.resource.data.rating is number)
+          && request.resource.data.rating >= 1 && request.resource.data.rating <= 5
+          && request.resource.data.keys().hasOnly(['rating','updatedAt']);
+        allow delete: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      }
+    }
+
+    // Posts: farmers can CRUD their own; admins moderate
+    match /posts/{postId} {
+      allow read: if isSignedIn();
+      allow create: if isFarmer() && request.resource.data.ownerUid == request.auth.uid;
+      allow update, delete: if (isFarmer() && resource.data.ownerUid == request.auth.uid) || isAdmin();
+    }
+
+    // Fermentation logs: farmers CRUD own; admins can read all
+    match /fermentation_logs/{logId} {
+      allow read: if isSignedIn() && (isAdmin() || resource.data.ownerUid == request.auth.uid);
+      allow create: if isFarmer()
+        && request.resource.data.ownerUid == request.auth.uid
+        && isValidMethod(request.resource.data.method);
+      allow update, delete: if (isFarmer() && resource.data.ownerUid == request.auth.uid) || isAdmin();
+    }
+
+    // Audit logs: admins only
+    match /audit_logs/{id} {
+      allow read, create: if isAdmin();
+      allow update, delete: if false;
+    }
+  }
+}
+
+

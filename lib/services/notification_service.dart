@@ -1,0 +1,405 @@
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:timezone/timezone.dart' as tz;
+import 'messaging_service.dart';
+
+class NotificationService {
+  final MessagingService _messagingService;
+  final FirebaseFirestore _db = FirebaseFirestore.instance;
+  final FlutterLocalNotificationsPlugin _localNotifications = FlutterLocalNotificationsPlugin();
+
+  NotificationService(this._messagingService);
+
+  /// Initialize the notification service
+  Future<void> init() async {
+    // Initialize timezone data
+    // Initialize timezone data - this is done automatically in newer versions
+    // tz.initializeTimeZones();
+    
+    const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const iosSettings = DarwinInitializationSettings();
+    const initSettings = InitializationSettings(
+      android: androidSettings,
+      iOS: iosSettings,
+    );
+    
+    await _localNotifications.initialize(initSettings);
+  }
+
+  /// Send moderation notification to user
+  Future<void> sendModerationNotification({
+    required String userId,
+    required String title,
+    required String body,
+    required String type,
+    Map<String, dynamic>? data,
+  }) async {
+    try {
+      // Get user's FCM tokens
+      final tokens = await _messagingService.getUserTokens(userId);
+      
+      if (tokens.isNotEmpty) {
+        // In a real implementation, you would send FCM messages here
+        // For now, we'll create a notification record in the database
+        await _createNotificationRecord(
+          userId: userId,
+          title: title,
+          body: body,
+          type: type,
+          data: data,
+        );
+        
+        print('Moderation notification sent to user $userId: $title - $body');
+      }
+    } catch (e) {
+      print('Failed to send moderation notification: $e');
+    }
+  }
+
+  /// Create notification record in database
+  Future<void> _createNotificationRecord({
+    required String userId,
+    required String title,
+    required String body,
+    required String type,
+    Map<String, dynamic>? data,
+  }) async {
+    try {
+      await _db.collection('users').doc(userId).collection('notifications').add({
+        'title': title,
+        'body': body,
+        'type': type,
+        'data': data ?? {},
+        'read': false,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      print('Failed to create notification record: $e');
+    }
+  }
+
+  /// Send warning notification
+  Future<void> sendWarningNotification({
+    required String userId,
+    required String warningMessage,
+    required String violationId,
+  }) async {
+    await sendModerationNotification(
+      userId: userId,
+      title: 'Community Warning',
+      body: warningMessage,
+      type: 'warning',
+      data: {
+        'violationId': violationId,
+        'action': 'warning',
+      },
+    );
+  }
+
+  /// Send content deletion notification
+  Future<void> sendContentDeletionNotification({
+    required String userId,
+    required String reason,
+    required String contentType,
+    required String contentId,
+  }) async {
+    await sendModerationNotification(
+      userId: userId,
+      title: 'Content Removed',
+      body: 'Your $contentType has been removed due to: $reason',
+      type: 'content_removed',
+      data: {
+        'contentType': contentType,
+        'contentId': contentId,
+        'reason': reason,
+        'action': 'delete',
+      },
+    );
+  }
+
+  /// Send account suspension notification
+  Future<void> sendAccountSuspensionNotification({
+    required String userId,
+    required String reason,
+    required DateTime banExpiresAt,
+    required int banDurationDays,
+  }) async {
+    await sendModerationNotification(
+      userId: userId,
+      title: 'Account Suspended',
+      body: 'Your account has been temporarily suspended until ${banExpiresAt.toString().split(' ')[0]}. Reason: $reason',
+      type: 'account_suspended',
+      data: {
+        'reason': reason,
+        'banExpiresAt': banExpiresAt.toIso8601String(),
+        'banDurationDays': banDurationDays,
+        'action': 'ban',
+      },
+    );
+  }
+
+  /// Show local notification
+  Future<void> showNotification(
+    int id,
+    String title,
+    String body, {
+    String? payload,
+  }) async {
+    try {
+      const androidDetails = AndroidNotificationDetails(
+        'announcements',
+        'Announcements',
+        channelDescription: 'Notifications for announcements and updates',
+        importance: Importance.high,
+        priority: Priority.high,
+        showWhen: true,
+      );
+
+      const iosDetails = DarwinNotificationDetails(
+        presentAlert: true,
+        presentBadge: true,
+        presentSound: true,
+      );
+
+      const details = NotificationDetails(
+        android: androidDetails,
+        iOS: iosDetails,
+      );
+
+      await _localNotifications.show(
+        id,
+        title,
+        body,
+        details,
+        payload: payload,
+      );
+    } catch (e) {
+      print('Failed to show notification: $e');
+    }
+  }
+
+  /// Send violation report notification to admins
+  Future<void> sendViolationReportNotification({
+    required String violationId,
+    required String targetType,
+    required String targetId,
+    required String reason,
+    required String reporterUid,
+  }) async {
+    try {
+      // Get all admin users
+      final adminQuery = await _db
+          .collection('users')
+          .where('role', isEqualTo: 'admin')
+          .get();
+
+      for (final adminDoc in adminQuery.docs) {
+        final adminId = adminDoc.id;
+        final tokens = await _messagingService.getUserTokens(adminId);
+        
+        if (tokens.isNotEmpty) {
+          await _createNotificationRecord(
+            userId: adminId,
+            title: 'New Violation Report',
+            body: 'New $targetType reported: $reason',
+            type: 'violation_report',
+            data: {
+              'violationId': violationId,
+              'targetType': targetType,
+              'targetId': targetId,
+              'reason': reason,
+              'reporterUid': reporterUid,
+            },
+          );
+        }
+      }
+    } catch (e) {
+      print('Failed to send violation report notification: $e');
+    }
+  }
+
+  /// Get user notifications
+  Future<List<Map<String, dynamic>>> getUserNotifications(String userId) async {
+    try {
+      final snapshot = await _db
+          .collection('users')
+          .doc(userId)
+          .collection('notifications')
+          .orderBy('createdAt', descending: true)
+          .limit(50)
+          .get();
+
+      return snapshot.docs.map((doc) => {
+        'id': doc.id,
+        ...doc.data(),
+      }).toList();
+    } catch (e) {
+      print('Failed to get user notifications: $e');
+      return [];
+    }
+  }
+
+  /// Mark notification as read
+  Future<void> markNotificationAsRead(String userId, String notificationId) async {
+    try {
+      await _db
+          .collection('users')
+          .doc(userId)
+          .collection('notifications')
+          .doc(notificationId)
+          .update({'read': true});
+    } catch (e) {
+      print('Failed to mark notification as read: $e');
+    }
+  }
+
+  /// Mark all notifications as read
+  Future<void> markAllNotificationsAsRead(String userId) async {
+    try {
+      final batch = _db.batch();
+      final snapshot = await _db
+          .collection('users')
+          .doc(userId)
+          .collection('notifications')
+          .where('read', isEqualTo: false)
+          .get();
+
+      for (final doc in snapshot.docs) {
+        batch.update(doc.reference, {'read': true});
+      }
+
+      await batch.commit();
+    } catch (e) {
+      print('Failed to mark all notifications as read: $e');
+    }
+  }
+
+  /// Get unread notification count
+  Future<int> getUnreadNotificationCount(String userId) async {
+    try {
+      final snapshot = await _db
+          .collection('users')
+          .doc(userId)
+          .collection('notifications')
+          .where('read', isEqualTo: false)
+          .get();
+
+      return snapshot.docs.length;
+    } catch (e) {
+      print('Failed to get unread notification count: $e');
+      return 0;
+    }
+  }
+
+  /// Schedule fermentation notifications
+  Future<void> scheduleFermentationNotifications(
+    String logId,
+    String title,
+    List<Map<String, dynamic>> stages,
+    DateTime startDate,
+  ) async {
+    try {
+      // Schedule notifications for each stage
+      for (int i = 0; i < stages.length; i++) {
+        final stage = stages[i];
+        final day = stage['day'] as int;
+        final stageTitle = stage['title'] as String;
+        final notificationDate = startDate.add(Duration(days: day));
+        
+        // Only schedule if the date is in the future
+        if (notificationDate.isAfter(DateTime.now())) {
+          await _localNotifications.zonedSchedule(
+            logId.hashCode + i, // Unique ID for each notification
+            'Fermentation Reminder',
+            '$title - $stageTitle',
+            _convertToTZDateTime(notificationDate),
+            const NotificationDetails(
+              android: AndroidNotificationDetails(
+                'fermentation_channel',
+                'Fermentation Notifications',
+                channelDescription: 'Notifications for fermentation stages',
+                importance: Importance.high,
+                priority: Priority.high,
+              ),
+              iOS: DarwinNotificationDetails(),
+            ),
+            uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+            matchDateTimeComponents: DateTimeComponents.time,
+            payload: 'fermentation:$logId:$i',
+          );
+        }
+      }
+    } catch (e) {
+      print('Failed to schedule fermentation notifications: $e');
+    }
+  }
+
+  /// Schedule completion notification
+  Future<void> scheduleCompletionNotification(String logId, String title) async {
+    try {
+      await _localNotifications.show(
+        logId.hashCode + 999, // Unique ID for completion notification
+        'Fermentation Complete!',
+        '$title has finished fermenting',
+        const NotificationDetails(
+          android: AndroidNotificationDetails(
+            'fermentation_channel',
+            'Fermentation Notifications',
+            channelDescription: 'Notifications for fermentation stages',
+            importance: Importance.high,
+            priority: Priority.high,
+          ),
+          iOS: DarwinNotificationDetails(),
+        ),
+        payload: 'fermentation_complete:$logId',
+      );
+    } catch (e) {
+      print('Failed to schedule completion notification: $e');
+    }
+  }
+
+  /// Cancel fermentation notifications
+  Future<void> cancelFermentationNotifications(String logId) async {
+    try {
+      // Cancel all notifications for this fermentation log
+      // We'll cancel a range of IDs that could be used for this log
+      for (int i = 0; i < 100; i++) {
+        await _localNotifications.cancel(logId.hashCode + i);
+      }
+      // Also cancel the completion notification
+      await _localNotifications.cancel(logId.hashCode + 999);
+    } catch (e) {
+      print('Failed to cancel fermentation notifications: $e');
+    }
+  }
+
+  /// Show simple notification
+  Future<void> showSimple(String title, String body) async {
+    try {
+      await _localNotifications.show(
+        DateTime.now().millisecondsSinceEpoch.remainder(100000),
+        title,
+        body,
+        const NotificationDetails(
+          android: AndroidNotificationDetails(
+            'general_channel',
+            'General Notifications',
+            channelDescription: 'General app notifications',
+            importance: Importance.high,
+            priority: Priority.high,
+          ),
+          iOS: DarwinNotificationDetails(),
+        ),
+      );
+    } catch (e) {
+      print('Failed to show simple notification: $e');
+    }
+  }
+
+
+  /// Convert DateTime to TZDateTime for scheduling
+  tz.TZDateTime _convertToTZDateTime(DateTime dateTime) {
+    return tz.TZDateTime.from(dateTime, tz.local);
+  }
+}
