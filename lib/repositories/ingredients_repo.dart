@@ -1,5 +1,6 @@
 import '../services/firestore_service.dart';
 import '../models/ingredient.dart';
+import '../utils/logger.dart';
 
 class IngredientsRepo {
   final FirestoreService _fs;
@@ -199,7 +200,7 @@ class IngredientsRepo {
   // Batch create ingredients
   Future<void> batchCreateIngredients(List<Ingredient> ingredients) async {
     try {
-      print('Starting batch create for ${ingredients.length} ingredients...');
+      AppLogger.info('Starting batch create for ${ingredients.length} ingredients...');
       
       // Create ingredients in smaller batches to avoid timeout
       const batchSize = 10;
@@ -208,7 +209,7 @@ class IngredientsRepo {
         final endIndex = (i + batchSize < ingredients.length) ? i + batchSize : ingredients.length;
         final batchIngredients = ingredients.sublist(i, endIndex);
         
-        print('Processing batch ${(i ~/ batchSize) + 1}: ingredients ${i + 1}-$endIndex');
+        AppLogger.debug('Processing batch ${(i ~/ batchSize) + 1}: ingredients ${i + 1}-$endIndex');
         
         for (final ingredient in batchIngredients) {
           final docRef = _fs.db.collection(Ingredient.collectionPath).doc(ingredient.id);
@@ -216,12 +217,12 @@ class IngredientsRepo {
         }
         
         await batch.commit();
-        print('Batch ${(i ~/ batchSize) + 1} committed successfully');
+        AppLogger.info('Batch ${(i ~/ batchSize) + 1} committed successfully');
       }
       
-      print('All batches committed successfully');
+      AppLogger.info('All batches committed successfully');
     } catch (e) {
-      print('Error in batch create: $e');
+      AppLogger.error('Error in batch create: $e', e);
       throw Exception('Failed to batch create ingredients: $e');
     }
   }

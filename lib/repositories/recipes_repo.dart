@@ -3,7 +3,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../services/firestore_service.dart';
 import '../services/storage_service.dart';
 import '../models/recipe.dart';
-import '../models/rating.dart';
 
 class RecipesRepo {
   final FirestoreService _fs;
@@ -53,7 +52,7 @@ class RecipesRepo {
     try {
       final docs = await _fs.getDocuments(
         Recipe.collectionPath,
-        orderBy: [QueryOrder(field: 'createdAt', descending: true)],
+        orderBy: [const QueryOrder(field: 'createdAt', descending: true)],
       );
       return docs.map((doc) => Recipe.fromMap(doc.id, doc.data()!)).toList();
     } catch (e) {
@@ -77,7 +76,7 @@ class RecipesRepo {
       if (visibility != null) where.add(QueryFilter(field: 'visibility', value: visibility == RecipeVisibility.private ? 'private' : 'public'));
       if (isStandard != null) where.add(QueryFilter(field: 'isStandard', value: isStandard));
 
-      final orderBy = [QueryOrder(field: 'createdAt', descending: true)];
+      final orderBy = [const QueryOrder(field: 'createdAt', descending: true)];
 
       final docs = await _fs.getDocuments(
         Recipe.collectionPath,
@@ -100,7 +99,6 @@ class RecipesRepo {
     RecipeMethod? method,
     RecipeVisibility? visibility,
     bool? isStandard,
-    bool orderByCreatedAt = true,
   }) {
     try {
       final where = <QueryFilter>[];
@@ -109,7 +107,7 @@ class RecipesRepo {
       if (visibility != null) where.add(QueryFilter(field: 'visibility', value: visibility == RecipeVisibility.private ? 'private' : 'public'));
       if (isStandard != null) where.add(QueryFilter(field: 'isStandard', value: isStandard));
 
-      final orderBy = orderByCreatedAt ? [QueryOrder(field: 'createdAt', descending: true)] : null;
+      final orderBy = [const QueryOrder(field: 'createdAt', descending: true)];
 
       return _fs.watchDocuments(
         Recipe.collectionPath,
@@ -133,7 +131,7 @@ class RecipesRepo {
         'cropTarget',
         cropTarget,
         limit: limit,
-        orderBy: [QueryOrder(field: 'avgRating', descending: true)],
+        orderBy: [const QueryOrder(field: 'avgRating', descending: true)],
       );
 
       return docs.map((doc) => Recipe.fromMap(doc.id, doc.data()!)).toList();
@@ -150,7 +148,7 @@ class RecipesRepo {
       final docs = await _fs.getDocuments(
         Recipe.collectionPath,
         limit: limit,
-        orderBy: [QueryOrder(field: 'avgRating', descending: true)],
+        orderBy: [const QueryOrder(field: 'avgRating', descending: true)],
       );
 
       final recipes = docs.map((doc) => Recipe.fromMap(doc.id, doc.data()!)).toList();
@@ -173,10 +171,10 @@ class RecipesRepo {
         Recipe.collectionPath,
         limit: limit,
         orderBy: [
-          QueryOrder(field: 'likes', descending: true),
-          QueryOrder(field: 'avgRating', descending: true),
+          const QueryOrder(field: 'likes', descending: true),
+          const QueryOrder(field: 'avgRating', descending: true),
         ],
-        where: [QueryFilter(field: 'visibility', value: 'public')],
+        where: [const QueryFilter(field: 'visibility', value: 'public')],
       );
 
       return docs.map((doc) => Recipe.fromMap(doc.id, doc.data()!)).toList();
@@ -193,7 +191,7 @@ class RecipesRepo {
         limit: limit,
         startAfter: startAfter,
         where: [QueryFilter(field: 'ownerUid', value: userId)],
-        orderBy: [QueryOrder(field: 'createdAt', descending: true)],
+        orderBy: [const QueryOrder(field: 'createdAt', descending: true)],
       );
 
       return docs.map((doc) => Recipe.fromMap(doc.id, doc.data()!)).toList();
@@ -334,8 +332,8 @@ class RecipesRepo {
       final docs = await _fs.getDocuments(
         Recipe.collectionPath,
         limit: limit,
-        where: [QueryFilter(field: 'isStandard', value: true)],
-        orderBy: [QueryOrder(field: 'name', descending: false)],
+        where: [const QueryFilter(field: 'isStandard', value: true)],
+        orderBy: [const QueryOrder(field: 'name', descending: false)],
       );
 
       return docs.map((doc) => Recipe.fromMap(doc.id, doc.data()!)).toList();
@@ -352,9 +350,9 @@ class RecipesRepo {
         limit: limit,
         where: [
           QueryFilter(field: 'method', value: method == RecipeMethod.FPJ ? 'FPJ' : 'FFJ'),
-          QueryFilter(field: 'visibility', value: 'public'),
+          const QueryFilter(field: 'visibility', value: 'public'),
         ],
-        orderBy: [QueryOrder(field: 'avgRating', descending: true)],
+        orderBy: [const QueryOrder(field: 'avgRating', descending: true)],
       );
 
       return docs.map((doc) => Recipe.fromMap(doc.id, doc.data()!)).toList();

@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "279987657851",
-    "project_id": "agriplication",
-    "storage_bucket": "agriplication.firebasestorage.app"
+    "project_number": "410574757990",
+    "project_id": "storageapp-9a33b",
+    "storage_bucket": "storageapp-9a33b.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:279987657851:android:0de1e7b3c0069fb9ac16de",
+        "mobilesdk_app_id": "1:410574757990:android:c6cea467c970822551cda7",
         "android_client_info": {
           "package_name": "com.example.agrimix"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyDgj1HW9VAZwOVaA0q1n_RDLhKv_CIn-pQ"
+          "current_key": "AIzaSyABtUsk6FKcoMT3fyDJJwZ6Ad81Ifefl-M"
         }
       ],
       "services": {
@@ -26,53 +26,15 @@
     },
     {
       "client_info": {
-        "mobilesdk_app_id": "1:279987657851:android:2c2e514d73d61c98ac16de",
+        "mobilesdk_app_id": "1:410574757990:android:d96fc85fc923c6bd51cda7",
         "android_client_info": {
-          "package_name": "com.example.agrimixapp"
+          "package_name": "com.example.storageapp"
         }
       },
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyDgj1HW9VAZwOVaA0q1n_RDLhKv_CIn-pQ"
-        }
-      ],
-      "services": {
-        "appinvite_service": {
-          "other_platform_oauth_client": []
-        }
-      }
-    },
-    {
-      "client_info": {
-        "mobilesdk_app_id": "1:279987657851:android:8666cd53b83fb13aac16de",
-        "android_client_info": {
-          "package_name": "com.example.agriplition"
-        }
-      },
-      "oauth_client": [],
-      "api_key": [
-        {
-          "current_key": "AIzaSyDgj1HW9VAZwOVaA0q1n_RDLhKv_CIn-pQ"
-        }
-      ],
-      "services": {
-        "appinvite_service": {
-          "other_platform_oauth_client": []
-        }
-      }
-    },
-    {
-      "client_info": {
-        "mobilesdk_app_id": "1:279987657851:android:c08934102d53b075ac16de",
-        "android_client_info": {
-          "package_name": "com.example.projectapp"
-        }
-      },
-      "oauth_client": [],
-      "api_key": [
-        {
-          "current_key": "AIzaSyDgj1HW9VAZwOVaA0q1n_RDLhKv_CIn-pQ"
+          "current_key": "AIzaSyABtUsk6FKcoMT3fyDJJwZ6Ad81Ifefl-M"
         }
       ],
       "services": {

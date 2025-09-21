@@ -22,8 +22,8 @@ class _NewPostPageState extends State<NewPostPage> {
   final _bodyController = TextEditingController();
   final _tagController = TextEditingController();
   
-  List<File> _selectedImages = [];
-  List<String> _tags = [];
+  final List<File> _selectedImages = [];
+  final List<String> _tags = [];
   Recipe? _selectedRecipe;
   List<Recipe> _userRecipes = [];
   bool _isLoading = false;
@@ -189,7 +189,7 @@ class _NewPostPageState extends State<NewPostPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        const Text(
           'Share Recipe (Optional)',
           style: TextStyle(
             fontSize: 16,
@@ -209,9 +209,9 @@ class _NewPostPageState extends State<NewPostPage> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: NatureColors.lightGray.withOpacity(0.3),
+              color: NatureColors.lightGray.withAlpha((0.3 * 255).round()),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: NatureColors.lightGray.withOpacity(0.5)),
+              border: Border.all(color: NatureColors.lightGray.withAlpha((0.5 * 255).round())),
             ),
             child: const Center(
               child: Column(
@@ -253,7 +253,7 @@ class _NewPostPageState extends State<NewPostPage> {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: NatureColors.primaryGreen.withOpacity(0.1),
+                      color: NatureColors.primaryGreen.withAlpha((0.1 * 255).round()),
                       borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
                     ),
                     child: Row(
@@ -302,14 +302,14 @@ class _NewPostPageState extends State<NewPostPage> {
                     borderRadius: BorderRadius.circular(8),
                     child: Container(
                       padding: const EdgeInsets.all(16),
-                      child: Row(
+                      child: const Row(
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.add_circle_outline,
                             color: NatureColors.primaryGreen,
                             size: 24,
                           ),
-                          const SizedBox(width: 12),
+                          SizedBox(width: 12),
                           Expanded(
                             child: Text(
                               'Select a recipe to share',
@@ -319,7 +319,7 @@ class _NewPostPageState extends State<NewPostPage> {
                               ),
                             ),
                           ),
-                          const Icon(
+                          Icon(
                             Icons.arrow_forward_ios,
                             size: 16,
                             color: NatureColors.mediumGray,
@@ -376,7 +376,7 @@ class _NewPostPageState extends State<NewPostPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        const Text(
           'Tags',
           style: TextStyle(
             fontSize: 16,
@@ -433,7 +433,7 @@ class _NewPostPageState extends State<NewPostPage> {
                     _tags.remove(tag);
                   });
                 },
-                backgroundColor: NatureColors.lightGreen.withOpacity(0.2),
+                backgroundColor: NatureColors.lightGreen.withAlpha((0.2 * 255).round()),
                 labelStyle: const TextStyle(
                   color: NatureColors.primaryGreen,
                   fontWeight: FontWeight.w500,
@@ -452,48 +452,36 @@ class _NewPostPageState extends State<NewPostPage> {
       children: [
         Text(
           'Images (${_selectedImages.length}/5)',
-          style: TextStyle(
+          style: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
             color: NatureColors.darkGray,
           ),
         ),
         const SizedBox(height: 8),
-        LayoutBuilder(
-          builder: (context, constraints) {
-            final isWide = constraints.maxWidth > 300;
-            return Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                SizedBox(
-                  width: isWide ? null : double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: _pickImages,
-                    icon: const Icon(Icons.photo_library),
-                    label: const Text('Add Photos'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: NatureColors.primaryGreen,
-                      foregroundColor: NatureColors.pureWhite,
-                    ),
-                  ),
+        Row(
+          children: [
+            ElevatedButton.icon(
+              onPressed: _pickImages,
+              icon: const Icon(Icons.photo_library),
+              label: const Text('Add Photos'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: NatureColors.primaryGreen,
+                foregroundColor: NatureColors.pureWhite,
+              ),
+            ),
+            const SizedBox(width: 8),
+            if (_selectedImages.isNotEmpty)
+              ElevatedButton.icon(
+                onPressed: _clearImages,
+                icon: const Icon(Icons.clear),
+                label: const Text('Clear'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  foregroundColor: NatureColors.pureWhite,
                 ),
-                if (_selectedImages.isNotEmpty)
-                  SizedBox(
-                    width: isWide ? null : double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: _clearImages,
-                      icon: const Icon(Icons.clear),
-                      label: const Text('Clear'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red,
-                        foregroundColor: NatureColors.pureWhite,
-                      ),
-                    ),
-                  ),
-              ],
-            );
-          },
+              ),
+          ],
         ),
         if (_selectedImages.isNotEmpty) ...[
           const SizedBox(height: 12),

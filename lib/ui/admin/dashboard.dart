@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../theme/theme.dart';
 import '../../providers/auth_provider.dart';
-import '../../providers/admin_provider.dart';
 import 'users_page.dart';
 import 'recipes_page.dart';
 import 'ingredients_page.dart';

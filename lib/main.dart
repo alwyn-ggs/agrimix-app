@@ -7,6 +7,7 @@ import 'firebase_options.dart';
 import 'app.dart';
 import 'services/notification_service.dart';
 import 'services/messaging_service.dart';
+import 'utils/logger.dart';
 
 // Top-level function to handle background messages
 @pragma('vm:entry-point')
@@ -49,10 +50,10 @@ Future<void> main() async {
     notificationService.init().timeout(
       const Duration(seconds: 5),
       onTimeout: () {
-        print('Warning: Notification service initialization timed out');
+        AppLogger.warning('Warning: Notification service initialization timed out');
       },
     ).catchError((error) {
-      print('Warning: Notification service initialization failed: $error');
+      AppLogger.warning('Warning: Notification service initialization failed: $error');
     });
     
     // Request notification permissions on mobile only (Android/iOS)
@@ -71,17 +72,17 @@ Future<void> main() async {
           .timeout(
             const Duration(seconds: 5),
             onTimeout: () {
-              print('Warning: Notification permission request timed out');
+              AppLogger.warning('Warning: Notification permission request timed out');
             },
           )
           .catchError((error) {
-            print('Warning: Notification permission request failed: $error');
+            AppLogger.warning('Warning: Notification permission request failed: $error');
           });
     }
     
     runApp(const AgriMixAppRoot());
   } catch (e) {
-    print('Firebase initialization error: $e');
+    AppLogger.error('Firebase initialization error: $e', e);
     // If Firebase fails to initialize, show error screen
     runApp(MaterialApp(
       home: Scaffold(

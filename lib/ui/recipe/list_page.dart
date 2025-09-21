@@ -313,8 +313,8 @@ class _RecipeListPageState extends State<RecipeListPage> {
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                               decoration: BoxDecoration(
                                 color: recipe.method == RecipeMethod.FFJ 
-                                    ? NatureColors.lightGreen.withOpacity(0.2)
-                                    : NatureColors.accentGreen.withOpacity(0.2),
+                                    ? NatureColors.lightGreen.withAlpha((0.2 * 255).round())
+                                    : NatureColors.accentGreen.withAlpha((0.2 * 255).round()),
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Text(
@@ -393,7 +393,7 @@ class _RecipeListPageState extends State<RecipeListPage> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: Colors.blue.withOpacity(0.1),
+                        color: Colors.blue.withAlpha((0.1 * 255).round()),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Row(
@@ -421,7 +421,7 @@ class _RecipeListPageState extends State<RecipeListPage> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: NatureColors.primaryGreen.withOpacity(0.1),
+                        color: NatureColors.primaryGreen.withAlpha((0.5 * 255).round()),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: const Text(

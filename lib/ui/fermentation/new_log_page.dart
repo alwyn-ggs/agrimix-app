@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/fermentation_log.dart';
 import '../../models/recipe.dart';
-import '../../repositories/recipes_repo.dart';
 import '../../repositories/fermentation_repo.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/notification_service.dart';
@@ -30,31 +29,6 @@ class _NewLogPageState extends State<NewLogPage> {
   void initState() {
     super.initState();
     _stages = _defaultStages(_method);
-    // Preload from draft recipe if provided
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final args = ModalRoute.of(context)?.settings.arguments;
-      if (args is Map && args['draftRecipe'] != null) {
-        try {
-          final draft = args['draftRecipe'];
-          if (draft is Map && draft['data'] is Map) {
-            final data = Map<String, dynamic>.from(draft['data'] as Map);
-            final id = draft['id'] as String?;
-            final recipe = Recipe.fromMap(id ?? DateTime.now().millisecondsSinceEpoch.toString(), data);
-            setState(() {
-              _selectedRecipe = recipe;
-              _method = recipe.method == RecipeMethod.FPJ ? FermentationMethod.FPJ : FermentationMethod.FFJ;
-              _stages = _defaultStages(_method);
-              _ingredients = recipe.ingredients
-                  .map((ing) => FermentationIngredient(name: ing.name, amount: ing.amount, unit: ing.unit))
-                  .toList();
-              _title.text = '${recipe.method.name} - ${recipe.cropTarget.isNotEmpty ? recipe.cropTarget : 'New fermentation'}';
-            });
-          }
-        } catch (_) {
-          // Ignore malformed draft args
-        }
-      }
-    });
   }
 
   @override

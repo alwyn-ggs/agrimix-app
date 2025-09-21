@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/admin_provider.dart';
-import '../../providers/auth_provider.dart';
 import '../../models/recipe.dart';
 import '../../theme/theme.dart';
-import 'recipe_review_dialog.dart';
 import 'recipe_ratings_dialog.dart';
 import 'recipe_edit_dialog.dart';
 

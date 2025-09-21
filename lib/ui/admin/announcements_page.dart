@@ -152,7 +152,7 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
                   size: 48,
                 ),
                 const SizedBox(height: 16),
-                Text(
+                const Text(
                   'Error loading announcements',
                   style: TextStyle(
                     color: NatureColors.errorRed,
@@ -322,12 +322,12 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
                       PopupMenuItem(
                         value: 'send_push',
                         enabled: !announcement.pushSent,
-                        child: Row(
+                        child: const Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.notifications_active, color: NatureColors.primaryGreen, size: 16),
-                            const SizedBox(width: 6),
-                            const Text('Send Push', style: TextStyle(fontSize: 12)),
+                            Icon(Icons.notifications_active, color: NatureColors.primaryGreen, size: 16),
+                            SizedBox(width: 6),
+                            Text('Send Push', style: TextStyle(fontSize: 12)),
                           ],
                         ),
                       ),
@@ -375,7 +375,7 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(
+                      const Icon(
                         Icons.access_time,
                         size: 12,
                         color: NatureColors.lightGray,
@@ -393,7 +393,7 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(
+                      const Icon(
                         Icons.person,
                         size: 12,
                         color: NatureColors.lightGray,
@@ -902,7 +902,7 @@ class AnnouncementDetailsDialog extends StatelessWidget {
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(
+                    const Icon(
                       Icons.access_time,
                       size: 12,
                       color: NatureColors.lightGray,
@@ -920,7 +920,7 @@ class AnnouncementDetailsDialog extends StatelessWidget {
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(
+                    const Icon(
                       Icons.person,
                       size: 12,
                       color: NatureColors.lightGray,

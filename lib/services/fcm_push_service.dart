@@ -2,6 +2,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import '../utils/logger.dart';
 
 class FCMPushService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
@@ -64,14 +65,14 @@ class FCMPushService {
 
       if (response.statusCode == 200) {
         final responseData = json.decode(response.body);
-        print('FCM message sent successfully: ${responseData['message_id']}');
+        AppLogger.info('FCM message sent successfully: ${responseData['message_id']}');
         return true;
       } else {
-        print('Failed to send FCM message: ${response.statusCode} - ${response.body}');
+        AppLogger.error('Failed to send FCM message: ${response.statusCode} - ${response.body}');
         return false;
       }
     } catch (e) {
-      print('Error sending FCM message: $e');
+      AppLogger.error('Error sending FCM message: $e', e);
       return false;
     }
   }
@@ -114,7 +115,7 @@ class FCMPushService {
 
       return success;
     } catch (e) {
-      print('Error sending announcement push: $e');
+      AppLogger.error('Error sending announcement push: $e', e);
       return false;
     }
   }
@@ -132,7 +133,7 @@ class FCMPushService {
       for (final userId in userIds) {
         final userDoc = await _db.collection('users').doc(userId).get();
         if (userDoc.exists) {
-          final userData = userDoc.data() as Map<String, dynamic>?;
+          final userData = userDoc.data();
           final userTokens = userData?['fcmTokens'] as List<dynamic>?;
           if (userTokens != null) {
             tokens.addAll(userTokens.cast<String>());
@@ -141,7 +142,7 @@ class FCMPushService {
       }
 
       if (tokens.isEmpty) {
-        print('No FCM tokens found for users');
+        AppLogger.warning('No FCM tokens found for users');
         return false;
       }
 
@@ -193,15 +194,15 @@ class FCMPushService {
         );
 
         if (response.statusCode != 200) {
-          print('Failed to send FCM message to batch: ${response.statusCode} - ${response.body}');
+          AppLogger.error('Failed to send FCM message to batch: ${response.statusCode} - ${response.body}');
           return false;
         }
       }
 
-      print('FCM messages sent to ${tokens.length} tokens');
+      AppLogger.info('FCM messages sent to ${tokens.length} tokens');
       return true;
     } catch (e) {
-      print('Error sending FCM to users: $e');
+      AppLogger.error('Error sending FCM to users: $e', e);
       return false;
     }
   }
@@ -229,7 +230,7 @@ class FCMPushService {
         },
       });
     } catch (e) {
-      print('Error subscribing user to announcements: $e');
+      AppLogger.error('Error subscribing user to announcements: $e', e);
     }
   }
 
@@ -256,7 +257,7 @@ class FCMPushService {
         },
       });
     } catch (e) {
-      print('Error unsubscribing user from announcements: $e');
+      AppLogger.error('Error unsubscribing user from announcements: $e', e);
     }
   }
 
@@ -277,7 +278,7 @@ class FCMPushService {
       
       return crops.toList()..sort();
     } catch (e) {
-      print('Error getting crop topics: $e');
+      AppLogger.error('Error getting crop topics: $e', e);
       return [];
     }
   }

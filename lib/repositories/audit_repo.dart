@@ -157,7 +157,7 @@ class AuditRepo {
         _collection,
         limit: limit,
         orderBy: [const QueryOrder(field: 'createdAt', descending: true)],
-        where: [QueryFilter(field: 'actionType', value: 'adminAction')],
+        where: [const QueryFilter(field: 'actionType', value: 'adminAction')],
       );
 
       return docs

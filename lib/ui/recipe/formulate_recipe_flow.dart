@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../providers/recipe_provider.dart';
 import '../../repositories/ingredients_repo.dart';
 import '../../repositories/recipes_repo.dart';
@@ -24,8 +25,25 @@ class _FormulateRecipeFlowState extends State<FormulateRecipeFlow> {
   Set<String> _selectedIds = <String>{};
   final TextEditingController _cropCtrl = TextEditingController();
   final TextEditingController _newIngCtrl = TextEditingController();
+  final TextEditingController _nameCtrl = TextEditingController();
   bool _saving = false;
   final Map<String, Ingredient> _localAdded = <String, Ingredient>{};
+  // Shared cache for ingredient image URLs across steps
+  final Map<String, String?> _imageUrlCache = <String, String?>{};
+  final List<String> _cropOptions = const [
+    'Ampalaya',
+    'Eggplant',
+    'Tomatoes',
+    'Okra',
+    'Upo (gourd)',
+    'Squash',
+    'Pole sitaw',
+  ];
+  String? _selectedCrop;
+  List<String> get _filteredCropTargets {
+    // All crops are now available for both FFJ and FPJ methods
+    return _cropOptions;
+  }
   
   // Batch size options
   final List<double> _batchSizes = [1.5, 3.0, 6.0, 9.0];
@@ -36,6 +54,7 @@ class _FormulateRecipeFlowState extends State<FormulateRecipeFlow> {
   void dispose() {
     _cropCtrl.dispose();
     _newIngCtrl.dispose();
+    _nameCtrl.dispose();
     super.dispose();
   }
 
@@ -49,207 +68,225 @@ class _FormulateRecipeFlowState extends State<FormulateRecipeFlow> {
         title: const Text('Formulate Recipe', style: TextStyle(color: Colors.white)),
       ),
       backgroundColor: Colors.white,
-      body: Stepper(
-        currentStep: _step,
-        controlsBuilder: (context, details) => const SizedBox.shrink(),
-        steps: [
-          Step(
-            title: const Text('Choose method', style: TextStyle(color: Colors.black)),
-            content: Column(
+      body: SafeArea(
+        child: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 250),
+          child: _buildStepContent(context),
+        ),
+      ),
+      bottomNavigationBar: SafeArea(child: _buildBottomBar(context)),
+    );
+  }
+
+  Widget _buildStepContent(BuildContext context) {
+    final recipeProvider = context.watch<RecipeProvider>();
+    switch (_step) {
+      case 0:
+        return Padding(
+          key: const ValueKey('step0'),
+          padding: const EdgeInsets.all(16),
+          child: SingleChildScrollView(
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                const Text('Choose method', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.black)),
+                const SizedBox(height: 16),
                 ToggleButtons(
                   isSelected: [
                     _method == RecipeMethod.FFJ,
                     _method == RecipeMethod.FPJ,
                   ],
-                  onPressed: (i) => setState(() => _method = i == 0 ? RecipeMethod.FFJ : RecipeMethod.FPJ),
+                  onPressed: (i) => setState(() {
+                    _method = i == 0 ? RecipeMethod.FFJ : RecipeMethod.FPJ;
+                    // No need to reset selected crop since all crops are available for both methods
+                  }),
                   children: const [
                     Padding(padding: EdgeInsets.symmetric(horizontal: 12), child: Text('FFJ', style: TextStyle(color: Colors.black))),
                     Padding(padding: EdgeInsets.symmetric(horizontal: 12), child: Text('FPJ', style: TextStyle(color: Colors.black))),
                   ],
                 ),
-                const SizedBox(height: 12),
-                
-                // Batch Size Selection
+                const SizedBox(height: 16),
+                // Recipe name input
+                TextField(
+                  controller: _nameCtrl,
+                  style: const TextStyle(color: Colors.black),
+                  cursorColor: Colors.black,
+                  onChanged: (_) => setState(() {}),
+                  decoration: const InputDecoration(
+                    labelText: 'Recipe name*',
+                    border: OutlineInputBorder(),
+                    hintText: 'e.g., FFJ for Tomatoes - Banana Blend',
+                  ),
+                ),
+                const SizedBox(height: 16),
                 DropdownButtonFormField<double>(
                   value: _selectedBatchSize,
                   onChanged: (value) => setState(() => _selectedBatchSize = value!),
                   dropdownColor: Colors.white,
-                  decoration: InputDecoration(
+                  decoration: const InputDecoration(
                     labelText: 'Batch Size',
-                    labelStyle: const TextStyle(color: Colors.black),
-                    floatingLabelStyle: const TextStyle(color: Colors.black),
-                    border: OutlineInputBorder(
-                      borderSide: BorderSide(color: NatureColors.lightGreen, width: 1),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: NatureColors.lightGreen.withOpacity(0.5), width: 1),
-                    ),
-                    focusedBorder: const OutlineInputBorder(
-                      borderSide: BorderSide(color: NatureColors.lightGreen, width: 2),
-                    ),
-                    filled: true,
-                    fillColor: Colors.white,
+                    border: OutlineInputBorder(),
                   ),
                   items: List.generate(_batchSizes.length, (index) {
                     return DropdownMenuItem<double>(
                       value: _batchSizes[index],
-                      child: Container(
-                        color: Colors.white,
-                        child: Text(
-                          _batchSizeLabels[index],
-                          style: const TextStyle(color: Colors.black),
-                        ),
-                      ),
+                      child: Text(_batchSizeLabels[index], style: const TextStyle(color: Colors.black)),
                     );
                   }),
                 ),
-                
-                const SizedBox(height: 12),
-                TextField(
-                  controller: _cropCtrl,
-                  style: const TextStyle(color: Colors.black),
-                  cursorColor: Colors.black,
-                  decoration: InputDecoration(
-                    labelText: 'Crop target (optional)',
-                    labelStyle: const TextStyle(color: Colors.black),
-                    floatingLabelStyle: const TextStyle(color: Colors.black),
-                    hintText: 'e.g., tomato, leafy greens',
-                    hintStyle: const TextStyle(color: Colors.black54),
-                    border: OutlineInputBorder(
-                      borderSide: BorderSide(color: NatureColors.lightGreen, width: 1),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: NatureColors.lightGreen.withOpacity(0.5), width: 1),
-                    ),
-                    focusedBorder: const OutlineInputBorder(
-                      borderSide: BorderSide(color: NatureColors.lightGreen, width: 2),
-                    ),
-                    filled: true,
-                    fillColor: Colors.white,
+                const SizedBox(height: 16),
+                // Crop target dropdown
+                DropdownButtonFormField<String>(
+                  value: _filteredCropTargets.contains(_selectedCrop) ? _selectedCrop : null,
+                  onChanged: (value) => setState(() => _selectedCrop = value),
+                  decoration: const InputDecoration(
+                    labelText: 'Crop target*',
+                    border: OutlineInputBorder(),
                   ),
+                  items: _filteredCropTargets
+                      .map((c) => DropdownMenuItem<String>(
+                            value: c,
+                            child: Text(c),
+                          ))
+                      .toList(),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 16),
                 const _SafetyNote(),
-                const SizedBox(height: 12),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: FilledButton(
-                    onPressed: () => setState(() => _step = 1),
-                    child: const Text('Next'),
-                  ),
-                ),
               ],
             ),
-            isActive: _step == 0,
-            state: _step > 0 ? StepState.complete : StepState.indexed,
           ),
-          Step(
-            title: const Text('Pick ingredients', style: TextStyle(color: Colors.black)),
-            content: Builder(builder: (context) {
-              final all = recipeProvider.allIngredients;
-              if (all.isEmpty) {
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: const [
-                    SizedBox(height: 8),
-                    Center(child: CircularProgressIndicator()),
-                    SizedBox(height: 12),
-                    Center(child: Text('Loading ingredients...')),
-                  ],
-                );
-              }
-              return Column(
-                children: [
-                  _IngredientSelectionWidget(
-                    allIngredients: all,
-                    method: _method,
-                    selectedIds: _selectedIds,
-                    onSelectionChanged: (selectedIds) => setState(() => _selectedIds = selectedIds),
-                  ),
-                  const SizedBox(height: 16),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: FilledButton(
-                      onPressed: _selectedIds.isEmpty ? null : () => setState(() => _step = 2),
-                      child: const Text('Next'),
-                    ),
-                  ),
-                ],
-              );
-            }),
-            isActive: _step == 1,
-            state: _step > 1 ? StepState.complete : StepState.indexed,
+        );
+      case 1:
+        final all = recipeProvider.allIngredients;
+        return Padding(
+          key: const ValueKey('step1'),
+          padding: const EdgeInsets.all(16),
+          child: SingleChildScrollView(
+            child: Column(
+              children: [
+                _IngredientSelectionWidget(
+                  allIngredients: all,
+                  method: _method,
+                  selectedIds: _selectedIds,
+                  onSelectionChanged: (selectedIds) => setState(() => _selectedIds = selectedIds),
+                ),
+                const SizedBox(height: 100), // padding for bottom bar
+              ],
+            ),
           ),
-          Step(
-            title: const Text('Ratios & steps', style: TextStyle(color: Colors.black)),
-            content: Column(
+        );
+      case 2:
+        return Padding(
+          key: const ValueKey('step2'),
+          padding: const EdgeInsets.all(16),
+          child: SingleChildScrollView(
+            child: Column(
               children: [
                 _RatiosAndSteps(
-                  method: _method, 
+                  method: _method,
                   selected: _resolveSelectedIngredients(context),
                   batchSize: _selectedBatchSize,
                 ),
-                const SizedBox(height: 16),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: FilledButton(
-                    onPressed: () => setState(() => _step = 3),
-                    child: const Text('Next'),
-                  ),
-                ),
+                const SizedBox(height: 100), // padding for bottom bar
               ],
             ),
-            isActive: _step == 2,
-            state: _step > 2 ? StepState.complete : StepState.indexed,
           ),
-          Step(
-            title: const Text('Save or start', style: TextStyle(color: Colors.black)),
-            content: _saving
-                ? const Center(child: CircularProgressIndicator())
-                : Column(
+        );
+      case 3:
+      default:
+        return Padding(
+          key: const ValueKey('step3'),
+          padding: const EdgeInsets.all(16),
+          child: _saving
+              ? const Center(child: CircularProgressIndicator())
+              : SingleChildScrollView(
+                  child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text('Recipe Summary', style: TextStyle(fontWeight: FontWeight.w600, color: Colors.black)),
                       const SizedBox(height: 8),
                       Text('Method: ${_method.name}', style: const TextStyle(color: Colors.black87)),
-                      Text('Batch Size: ${_selectedBatchSize}kg', style: const TextStyle(color: Colors.black87)),
-                      if (_cropCtrl.text.trim().isNotEmpty)
-                        Text('Crop target: ${_cropCtrl.text.trim()}', style: const TextStyle(color: Colors.black87)),
+                    Text('Batch Size: ${_selectedBatchSize}kg', style: const TextStyle(color: Colors.black87)),
+                    if ((_selectedCrop ?? '').isNotEmpty)
+                      Text('Crop target: ${_selectedCrop!}', style: const TextStyle(color: Colors.black87)),
                       const SizedBox(height: 8),
-                      const Text('Selected ingredients:', style: TextStyle(color: Colors.black)),
-                      const SizedBox(height: 4),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 6,
-                        children: [
-                          for (final ing in _resolveSelectedIngredients(context))
-                            Chip(label: Text(ing.name)),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: FilledButton(
-                              onPressed: () => _saveDraft(context),
-                              child: const Text('Save as Draft'),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: OutlinedButton(
-                              onPressed: () => _proceedToStart(context),
-                              child: const Text('Proceed to Start'),
-                            ),
-                          ),
-                        ],
-                      ),
+                    const Text('Selected ingredients:', style: TextStyle(color: Colors.black)),
+                    const SizedBox(height: 8),
+                    _SelectedIngredientGrid(
+                      ingredients: _resolveSelectedIngredients(context),
+                      cache: _imageUrlCache,
+                    ),
+                      const SizedBox(height: 120), // padding for bottom bar
                     ],
                   ),
-            isActive: _step == 3,
-            state: StepState.indexed,
+                ),
+        );
+    }
+  }
+
+  Widget _buildBottomBar(BuildContext context) {
+    // Final step: show actions instead of Back/Done
+    if (_step == 3) {
+      return Container(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+        color: Colors.white,
+        child: Row(
+          children: [
+            Expanded(
+              child: FilledButton(
+                onPressed: () => _saveDraft(context),
+                child: const Text('Save as Draft'),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: OutlinedButton(
+                onPressed: () => _proceedToStart(context),
+                child: const Text('Proceed to Start'),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+      color: Colors.white,
+      child: Row(
+        children: [
+          if (_step > 0)
+            OutlinedButton(
+              onPressed: () => setState(() => _step = _step - 1),
+              child: const Text('Back'),
+            ),
+          if (_step > 0) const SizedBox(width: 12),
+          Expanded(
+            child: FilledButton(
+              onPressed: () {
+                // Validation per step
+                if (_step == 0) {
+                  final hasName = _nameCtrl.text.trim().isNotEmpty;
+                  final hasCrop = (_selectedCrop ?? '').trim().isNotEmpty;
+                  if (!hasName || !hasCrop) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Please provide recipe name and crop target.'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                    return;
+                  }
+                }
+                if (_step == 1 && _selectedIds.isEmpty) {
+                  return; // require at least one ingredient
+                }
+                if (_step < 3) {
+                  setState(() => _step = _step + 1);
+                }
+              },
+              child: const Text('Next'),
+            ),
           ),
         ],
       ),
@@ -262,16 +299,6 @@ class _FormulateRecipeFlowState extends State<FormulateRecipeFlow> {
   }
 
   Future<void> _saveDraft(BuildContext context) async {
-    if (_selectedIds.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please select at least one ingredient'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      setState(() => _step = 1);
-      return;
-    }
     setState(() => _saving = true);
     try {
       final recipesRepo = context.read<RecipesRepo>();
@@ -317,17 +344,7 @@ class _FormulateRecipeFlowState extends State<FormulateRecipeFlow> {
     }
   }
 
-  void _proceedToStart(BuildContext context) async {
-    if (_selectedIds.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please select at least one ingredient'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      setState(() => _step = 1);
-      return;
-    }
+  void _proceedToStart(BuildContext context) {
     try {
       final auth = context.read<AuthProvider>();
       final owner = auth.currentUser?.uid ?? '';
@@ -343,29 +360,9 @@ class _FormulateRecipeFlowState extends State<FormulateRecipeFlow> {
       }
 
       final generated = _generateRecipe(ownerUid: owner);
-      try {
-        // Persist the draft so it appears under My Recipes > Drafts
-        final recipesRepo = context.read<RecipesRepo>();
-        await recipesRepo.createRecipe(generated);
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Draft saved. Opening fermentation start...'),
-              backgroundColor: Colors.green,
-            ),
-          );
-        }
-      } catch (_) {
-        // Continue even if save fails; the next screen can still use the local draft
-      }
-      if (mounted) {
-        Navigator.of(context).pushNamed(Routes.newLog, arguments: {
-          'draftRecipe': {
-            'id': generated.id,
-            'data': generated.toMap(),
-          },
-        });
-      }
+      Navigator.of(context).pushNamed(Routes.newLog, arguments: {
+        'draftRecipe': generated.toMap(),
+      });
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -378,15 +375,54 @@ class _FormulateRecipeFlowState extends State<FormulateRecipeFlow> {
 
   Recipe _generateRecipe({required String ownerUid}) {
     final ingredients = _resolveSelectedIngredients(context);
-    final base = _baselineFor(_method, ingredients);
+    List<RecipeIngredient> base = _baselineFor(_method, ingredients);
+    if (base.isEmpty && ingredients.isNotEmpty) {
+      // Fallback: evenly distribute material weight among selected ingredients and add sugar
+      const String unit = 'kg';
+      final double total = _selectedBatchSize;
+      final double materialWeight = total * (2.0 / 3.0);
+      final double sugarWeight = total - materialWeight;
+      final double perIngredient = materialWeight / ingredients.length;
+      base = [
+        for (final ing in ingredients)
+          RecipeIngredient(
+            ingredientId: ing.id,
+            name: ing.name,
+            amount: double.parse(perIngredient.toStringAsFixed(2)),
+            unit: unit,
+          ),
+        RecipeIngredient(
+          ingredientId: 'brown_sugar',
+          name: 'Brown sugar',
+          amount: double.parse(sugarWeight.toStringAsFixed(2)),
+          unit: unit,
+        ),
+      ];
+    }
     final id = DateTime.now().millisecondsSinceEpoch.toString();
-    final name = '${_method.name} formula';
+
+    // Build human-friendly name and description from selections
+    final selectedNames = ingredients.map((e) => e.name).toList();
+    final crop = (_selectedCrop ?? '').trim();
+    String friendlyName;
+    if (selectedNames.isEmpty) {
+      friendlyName = _method.name;
+    } else if (selectedNames.length == 1) {
+      friendlyName = '${_method.name} - ${selectedNames.first}';
+    } else if (selectedNames.length == 2) {
+      friendlyName = '${_method.name} - ${selectedNames[0]}, ${selectedNames[1]}';
+    } else {
+      friendlyName = '${_method.name} - ${selectedNames[0]}, ${selectedNames[1]} +${selectedNames.length - 2}';
+    }
+    if (crop.isNotEmpty) {
+      friendlyName = '$friendlyName for $crop';
+    }
     
     // Generate step-by-step procedure for the draft
     final guide = FermentationGuideService.generateGuide(
       method: _method,
       ingredients: ingredients,
-      cropTarget: _cropCtrl.text.trim(),
+      cropTarget: (_selectedCrop ?? '').trim(),
       totalWeight: _selectedBatchSize,
     );
     
@@ -399,10 +435,10 @@ class _FormulateRecipeFlowState extends State<FormulateRecipeFlow> {
     return Recipe(
       id: id,
       ownerUid: ownerUid,
-      name: name,
-      description: 'Auto-generated ${_method.name} formula for ${_cropCtrl.text.trim()}',
+      name: (_nameCtrl.text.trim().isNotEmpty ? _nameCtrl.text.trim() : friendlyName),
+      description: 'Ingredients: ${selectedNames.isEmpty ? 'None' : selectedNames.join(', ')}${crop.isNotEmpty ? ' | Crop: $crop' : ''} | Batch: ${_selectedBatchSize.toStringAsFixed(1)} kg',
       method: _method,
-      cropTarget: _cropCtrl.text.trim(),
+      cropTarget: crop,
       ingredients: base,
       steps: recipeSteps, // Include step-by-step procedure in draft
       visibility: RecipeVisibility.private,
@@ -540,9 +576,9 @@ class _RatiosAndSteps extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        const Text(
           'Automatic Recipe Generation',
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
             color: Colors.black,
@@ -554,9 +590,9 @@ class _RatiosAndSteps extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: NatureColors.lightGreen.withOpacity(0.1),
+            color: NatureColors.lightGreen.withAlpha((0.1 * 255).round()),
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: NatureColors.lightGreen.withOpacity(0.3)),
+            border: Border.all(color: NatureColors.lightGreen.withAlpha((0.3 * 255).round())),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -607,7 +643,7 @@ class _RatiosAndSteps extends StatelessWidget {
                     ingredient.name,
                     style: const TextStyle(fontSize: 12),
                   ),
-                  backgroundColor: NatureColors.lightGreen.withOpacity(0.2),
+                  backgroundColor: NatureColors.lightGreen.withAlpha((0.2 * 255).round()),
                 ),
             ],
           ),
@@ -619,8 +655,8 @@ class _RatiosAndSteps extends StatelessWidget {
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: method == RecipeMethod.FFJ 
-                ? Colors.orange.withOpacity(0.1)
-                : Colors.green.withOpacity(0.1),
+                ? Colors.orange.withAlpha((0.1 * 255).round())
+                : Colors.green.withAlpha((0.1 * 255).round()),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Column(
@@ -665,13 +701,13 @@ class _RatiosAndSteps extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Colors.blue.withOpacity(0.1),
+            color: Colors.blue.withAlpha((0.1 * 255).round()),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Column(
+          child: const Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Row(
+              Row(
                 children: [
                   Icon(Icons.lightbulb_outline, color: Colors.blue),
                   SizedBox(width: 8),
@@ -684,8 +720,8 @@ class _RatiosAndSteps extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
-              const Text(
+              SizedBox(height: 8),
+              Text(
                 '• Temperature: 20-25°C (room temperature)\n'
                 '• Location: Cool, dark place away from direct sunlight\n'
                 '• Stirring: 2-3 times daily for first 3 days\n'
@@ -757,6 +793,7 @@ class _IngredientSelectionWidgetState extends State<_IngredientSelectionWidget> 
   String _searchQuery = '';
   String _selectedCategory = 'All';
   List<String> _categories = ['All'];
+  final Map<String, String?> _imageUrlCache = <String, String?>{}; // ingredientId -> imageUrl
 
   @override
   void initState() {
@@ -835,11 +872,11 @@ class _IngredientSelectionWidgetState extends State<_IngredientSelectionWidget> 
             hintText: 'e.g., banana, moringa, young leaves',
             hintStyle: const TextStyle(color: Colors.black54),
             prefixIcon: const Icon(Icons.search, color: NatureColors.lightGreen),
-            border: OutlineInputBorder(
+            border: const OutlineInputBorder(
               borderSide: BorderSide(color: NatureColors.lightGreen, width: 1),
             ),
             enabledBorder: OutlineInputBorder(
-              borderSide: BorderSide(color: NatureColors.lightGreen.withOpacity(0.5), width: 1),
+              borderSide: BorderSide(color: NatureColors.lightGreen.withAlpha((0.5 * 255).round()), width: 1),
             ),
             focusedBorder: const OutlineInputBorder(
               borderSide: BorderSide(color: NatureColors.lightGreen, width: 2),
@@ -900,84 +937,26 @@ class _IngredientSelectionWidgetState extends State<_IngredientSelectionWidget> 
           )
         else
           Container(
-            height: 300,
             decoration: BoxDecoration(
-              border: Border.all(color: NatureColors.lightGreen.withOpacity(0.3)),
+              border: Border.all(color: NatureColors.lightGreen.withAlpha((0.3 * 255).round())),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: ListView.builder(
+            child: Padding(
               padding: const EdgeInsets.all(8),
-              itemCount: filteredIngredients.length,
-              itemBuilder: (context, index) {
-                final ingredient = filteredIngredients[index];
-                final isSelected = widget.selectedIds.contains(ingredient.id);
-                
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  color: isSelected ? NatureColors.lightGreen.withOpacity(0.1) : Colors.white,
-                  child: ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: isSelected ? NatureColors.lightGreen : Colors.grey[300],
-                      child: Icon(
-                        isSelected ? Icons.check : Icons.add,
-                        color: isSelected ? Colors.white : Colors.grey[600],
-                      ),
-                    ),
-                    title: Text(
-                      ingredient.name,
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        color: isSelected ? NatureColors.lightGreen : Colors.black,
-                      ),
-                    ),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Category: ${ingredient.category}',
-                          style: const TextStyle(color: Colors.black87),
-                        ),
-                        if (ingredient.description != null && ingredient.description!.isNotEmpty)
-                          Text(
-                            ingredient.description!,
-                            style: const TextStyle(color: Colors.black54),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        if (ingredient.recommendedFor.isNotEmpty)
-                          Wrap(
-                            children: [
-                              const Text('Recommended for: ', style: TextStyle(color: Colors.black54)),
-                              ...ingredient.recommendedFor.take(3).map((crop) => 
-                                Text(
-                                  '$crop, ',
-                                  style: const TextStyle(color: Colors.black87),
-                                )
-                              ),
-                              if (ingredient.recommendedFor.length > 3)
-                                Text(
-                                  'and ${ingredient.recommendedFor.length - 3} more...',
-                                  style: const TextStyle(color: Colors.black54),
-                                ),
-                            ],
-                          ),
-                      ],
-                    ),
-                    trailing: IconButton(
-                      icon: Icon(
-                        isSelected ? Icons.remove_circle : Icons.add_circle,
-                        color: isSelected ? Colors.red : NatureColors.lightGreen,
-                      ),
-                      onPressed: () {
-                        final newSelection = Set<String>.from(widget.selectedIds);
-                        if (isSelected) {
-                          newSelection.remove(ingredient.id);
-                        } else {
-                          newSelection.add(ingredient.id);
-                        }
-                        widget.onSelectionChanged(newSelection);
-                      },
-                    ),
+              child: GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 8,
+                  mainAxisSpacing: 8,
+                  childAspectRatio: 0.9,
+                ),
+                itemCount: filteredIngredients.length,
+                itemBuilder: (context, index) {
+                  final ingredient = filteredIngredients[index];
+                  final isSelected = widget.selectedIds.contains(ingredient.id);
+                  return GestureDetector(
                     onTap: () {
                       final newSelection = Set<String>.from(widget.selectedIds);
                       if (isSelected) {
@@ -987,9 +966,75 @@ class _IngredientSelectionWidgetState extends State<_IngredientSelectionWidget> 
                       }
                       widget.onSelectionChanged(newSelection);
                     },
-                  ),
-                );
-              },
+                    child: Card(
+                      elevation: 2,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      child: Stack(
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: _IngredientImageTile(
+                              ingredientId: ingredient.id,
+                              nameFallback: ingredient.name,
+                              cache: _imageUrlCache,
+                            ),
+                          ),
+                          Positioned(
+                            left: 8,
+                            top: 8,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: Colors.black54,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                ingredient.category,
+                                style: const TextStyle(color: Colors.white, fontSize: 10),
+                              ),
+                            ),
+                          ),
+                          Positioned(
+                            left: 0,
+                            right: 0,
+                            bottom: 0,
+                            child: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: const BoxDecoration(
+                                color: Colors.black54,
+                                borderRadius: BorderRadius.only(
+                                  bottomLeft: Radius.circular(12),
+                                  bottomRight: Radius.circular(12),
+                                ),
+                              ),
+                              child: Text(
+                                ingredient.name,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                              ),
+                            ),
+                          ),
+                          Positioned(
+                            right: 8,
+                            top: 8,
+                            child: CircleAvatar(
+                              radius: 14,
+                              backgroundColor: isSelected ? NatureColors.lightGreen : Colors.white,
+                              child: Icon(
+                                isSelected ? Icons.check : Icons.add,
+                                size: 18,
+                                color: isSelected ? Colors.white : NatureColors.lightGreen,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
             ),
           ),
         
@@ -1000,7 +1045,7 @@ class _IngredientSelectionWidgetState extends State<_IngredientSelectionWidget> 
           width: double.infinity,
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: NatureColors.lightGreen.withOpacity(0.1),
+            color: NatureColors.lightGreen.withAlpha((0.1 * 255).round()),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Column(
@@ -1032,6 +1077,153 @@ class _IngredientSelectionWidgetState extends State<_IngredientSelectionWidget> 
   }
 }
 
+class _IngredientImageTile extends StatefulWidget {
+  final String ingredientId;
+  final String nameFallback;
+  final Map<String, String?> cache;
+
+  const _IngredientImageTile({
+    required this.ingredientId,
+    required this.nameFallback,
+    required this.cache,
+  });
+
+  @override
+  State<_IngredientImageTile> createState() => _IngredientImageTileState();
+}
+
+class _IngredientImageTileState extends State<_IngredientImageTile> {
+  String? _url;
+
+  @override
+  void initState() {
+    super.initState();
+    _url = widget.cache[widget.ingredientId];
+    if (_url == null) {
+      _fetch();
+    }
+  }
+
+  Future<void> _fetch() async {
+    try {
+      final doc = await FirebaseFirestore.instance.collection('ingredients').doc(widget.ingredientId).get();
+      final data = doc.data();
+      final url = data != null ? (data['imageUrl'] as String? ?? '') : '';
+      if (mounted) {
+        setState(() => _url = url);
+        widget.cache[widget.ingredientId] = url;
+      }
+    } catch (_) {
+      // ignore and show placeholder
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_url == null) {
+      return Container(color: Colors.grey[200]);
+    }
+    if (_url!.isEmpty) {
+      return Container(
+        color: Colors.grey[200],
+        alignment: Alignment.center,
+        child: const Icon(Icons.image_not_supported, size: 48, color: Colors.grey),
+      );
+    }
+    return Image.network(
+      _url!,
+      fit: BoxFit.cover,
+      width: double.infinity,
+      height: double.infinity,
+      loadingBuilder: (context, child, progress) {
+        if (progress == null) return child;
+        return Container(
+          color: Colors.grey[200],
+          alignment: Alignment.center,
+          child: const CircularProgressIndicator(),
+        );
+      },
+      errorBuilder: (context, error, stack) {
+        return Container(
+          color: Colors.grey[200],
+          alignment: Alignment.center,
+          child: const Icon(Icons.broken_image, size: 48, color: Colors.grey),
+        );
+      },
+    );
+  }
+}
+
+class _SelectedIngredientGrid extends StatelessWidget {
+  final List<Ingredient> ingredients;
+  final Map<String, String?> cache;
+
+  const _SelectedIngredientGrid({
+    required this.ingredients,
+    required this.cache,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (ingredients.isEmpty) {
+      return const Text('No ingredients selected yet', style: TextStyle(color: Colors.black54));
+    }
+
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        crossAxisSpacing: 8,
+        mainAxisSpacing: 8,
+        childAspectRatio: 0.8,
+      ),
+      itemCount: ingredients.length,
+      itemBuilder: (context, index) {
+        final ing = ingredients[index];
+        return Card(
+          elevation: 2,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          child: Stack(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: _IngredientImageTile(
+                  ingredientId: ing.id,
+                  nameFallback: ing.name,
+                  cache: cache,
+                ),
+              ),
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: const BoxDecoration(
+                    color: Colors.black54,
+                    borderRadius: BorderRadius.only(
+                      bottomLeft: Radius.circular(12),
+                      bottomRight: Radius.circular(12),
+                    ),
+                  ),
+                  child: Text(
+                    ing.name,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
 class _SafetyNote extends StatelessWidget {
   const _SafetyNote();
 
@@ -1041,7 +1233,7 @@ class _SafetyNote extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: NatureColors.lightGreen.withOpacity(0.15),
+        color: NatureColors.lightGreen.withAlpha((0.15 * 255).round()),
         borderRadius: BorderRadius.circular(8),
       ),
       child: const Text(

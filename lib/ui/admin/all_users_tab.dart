@@ -34,25 +34,37 @@ class _AllUsersTabState extends State<AllUsersTab> {
             await Future.delayed(const Duration(milliseconds: 200));
             if (mounted) setState(() => _isRefreshing = false);
           },
-          child: Column(
-            children: [
-              if (_isRefreshing) const LinearProgressIndicator(minHeight: 2),
-              Expanded(
-                child: AnimatedOpacity(
-                  duration: const Duration(milliseconds: 150),
-                  opacity: _isRefreshing ? 0.6 : 1,
-                  child: ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: visibleUsers.length,
-                    itemBuilder: (context, index) {
-                      final user = visibleUsers[index];
-                      return _UserCard(user: user);
-                    },
-                  ),
+          child: visibleUsers.isEmpty
+              ? ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.all(16),
+                  children: const [
+                    SizedBox(height: 8),
+                    Center(
+                      child: Text(
+                        'No users to display',
+                        style: TextStyle(color: NatureColors.mediumGray),
+                      ),
+                    ),
+                  ],
+                )
+              : ListView.builder(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.all(16),
+                  itemCount: visibleUsers.length + (_isRefreshing ? 1 : 0),
+                  itemBuilder: (context, index) {
+                    if (_isRefreshing && index == 0) {
+                      return const Padding(
+                        padding: EdgeInsets.only(bottom: 8),
+                        child: LinearProgressIndicator(minHeight: 2),
+                      );
+                    }
+                    final hasHeader = _isRefreshing;
+                    final userIndex = hasHeader ? index - 1 : index;
+                    final user = visibleUsers[userIndex];
+                    return _UserCard(user: user);
+                  },
                 ),
-              ),
-            ],
-          ),
         );
       },
     );
@@ -104,6 +116,7 @@ class _UserCard extends StatelessWidget {
           user.email,
           style: const TextStyle(color: NatureColors.mediumGray),
         ),
+        onTap: () {},
         trailing: Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(

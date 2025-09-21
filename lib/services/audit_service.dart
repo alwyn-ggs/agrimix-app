@@ -1,6 +1,6 @@
-import 'dart:io';
 import 'package:agrimix/models/audit_log.dart';
 import 'package:agrimix/repositories/audit_repo.dart';
+import '../utils/logger.dart';
 
 class AuditService {
   final AuditRepo _auditRepo;
@@ -39,7 +39,7 @@ class AuditService {
       await _auditRepo.createAuditLog(auditLog);
     } catch (e) {
       // Log error but don't throw to avoid breaking the main flow
-      print('Audit logging failed: $e');
+      AppLogger.error('Audit logging failed: $e', e);
     }
   }
 

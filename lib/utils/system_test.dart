@@ -1,27 +1,28 @@
 import '../models/ingredient.dart';
 import '../models/recipe.dart';
 import 'ingredient_seeder.dart';
+import 'logger.dart';
 
 /// Test script to demonstrate the fermentation recipe formulation system
 class SystemTest {
   static Future<void> runSystemTest() async {
-    print('🌱 AgriMix Fermentation System Test');
-    print('=====================================\n');
+    AppLogger.info('🌱 AgriMix Fermentation System Test');
+    AppLogger.info('=====================================\n');
     
     // Test 1: Ingredient Database
-    print('1. Testing Ingredient Database...');
+    AppLogger.info('1. Testing Ingredient Database...');
     final ingredients = IngredientSeeder.getLocalIngredients();
-    print('   ✅ Found ${ingredients.length} local ingredients');
+    AppLogger.info('   ✅ Found ${ingredients.length} local ingredients');
     
     final categories = ingredients.map((i) => i.category).toSet().toList();
-    print('   ✅ Categories: ${categories.join(', ')}');
+    AppLogger.info('   ✅ Categories: ${categories.join(', ')}');
     
     final ffjIngredients = ingredients.where((i) => 
       i.category.toLowerCase().contains('fruit') ||
       i.name.toLowerCase().contains('banana') ||
       i.name.toLowerCase().contains('papaya')
     ).toList();
-    print('   ✅ FFJ suitable ingredients: ${ffjIngredients.length}');
+    AppLogger.info('   ✅ FFJ suitable ingredients: ${ffjIngredients.length}');
     
     final fpjIngredients = ingredients.where((i) => 
       i.category.toLowerCase().contains('plant') ||
@@ -29,10 +30,10 @@ class SystemTest {
       i.name.toLowerCase().contains('moringa') ||
       i.name.toLowerCase().contains('kamote')
     ).toList();
-    print('   ✅ FPJ suitable ingredients: ${fpjIngredients.length}\n');
+    AppLogger.info('   ✅ FPJ suitable ingredients: ${fpjIngredients.length}\n');
     
     // Test 2: Recipe Generation
-    print('2. Testing Recipe Generation...');
+    AppLogger.info('2. Testing Recipe Generation...');
     
     // FFJ Recipe
     final ffjRecipe = generateTestRecipe(
@@ -40,8 +41,8 @@ class SystemTest {
       ffjIngredients.take(3).toList(),
       'Test FFJ Recipe',
     );
-    print('   ✅ FFJ Recipe generated with ${ffjRecipe.ingredients.length} ingredients');
-    print('   📊 FFJ Total weight: ${_calculateTotalWeight(ffjRecipe.ingredients).toStringAsFixed(1)} kg');
+    AppLogger.info('   ✅ FFJ Recipe generated with ${ffjRecipe.ingredients.length} ingredients');
+    AppLogger.info('   📊 FFJ Total weight: ${_calculateTotalWeight(ffjRecipe.ingredients).toStringAsFixed(1)} kg');
     
     // FPJ Recipe
     final fpjRecipe = generateTestRecipe(
@@ -49,37 +50,37 @@ class SystemTest {
       fpjIngredients.take(3).toList(),
       'Test FPJ Recipe',
     );
-    print('   ✅ FPJ Recipe generated with ${fpjRecipe.ingredients.length} ingredients');
-    print('   📊 FPJ Total weight: ${_calculateTotalWeight(fpjRecipe.ingredients).toStringAsFixed(1)} kg\n');
+    AppLogger.info('   ✅ FPJ Recipe generated with ${fpjRecipe.ingredients.length} ingredients');
+    AppLogger.info('   📊 FPJ Total weight: ${_calculateTotalWeight(fpjRecipe.ingredients).toStringAsFixed(1)} kg\n');
     
     // Test 3: Ingredient Recommendations
-    print('3. Testing Ingredient Recommendations...');
+    AppLogger.info('3. Testing Ingredient Recommendations...');
     final tomatoIngredients = ingredients.where((i) => 
       i.recommendedFor.any((crop) => crop.toLowerCase().contains('tomato'))
     ).toList();
-    print('   ✅ Ingredients recommended for tomato: ${tomatoIngredients.length}');
+    AppLogger.info('   ✅ Ingredients recommended for tomato: ${tomatoIngredients.length}');
     
     final riceIngredients = ingredients.where((i) => 
       i.recommendedFor.any((crop) => crop.toLowerCase().contains('rice'))
     ).toList();
-    print('   ✅ Ingredients recommended for rice: ${riceIngredients.length}\n');
+    AppLogger.info('   ✅ Ingredients recommended for rice: ${riceIngredients.length}\n');
     
     // Test 4: Recipe Steps
-    print('4. Testing Recipe Steps...');
-    print('   ✅ FFJ steps: ${ffjRecipe.steps.length} detailed steps');
-    print('   ✅ FPJ steps: ${fpjRecipe.steps.length} detailed steps\n');
+    AppLogger.info('4. Testing Recipe Steps...');
+    AppLogger.info('   ✅ FFJ steps: ${ffjRecipe.steps.length} detailed steps');
+    AppLogger.info('   ✅ FPJ steps: ${fpjRecipe.steps.length} detailed steps\n');
     
     // Test 5: System Summary
-    print('5. System Summary...');
-    print('   🌱 Fermentation methods: FFJ, FPJ');
-    print('   🍎 Fruit ingredients: ${ffjIngredients.length}');
-    print('   🌿 Plant ingredients: ${fpjIngredients.length}');
-    print('   📋 Total ingredients: ${ingredients.length}');
-    print('   🏷️ Categories: ${categories.length}');
-    print('   📖 Recipe steps: Detailed fermentation guidance\n');
+    AppLogger.info('5. System Summary...');
+    AppLogger.info('   🌱 Fermentation methods: FFJ, FPJ');
+    AppLogger.info('   🍎 Fruit ingredients: ${ffjIngredients.length}');
+    AppLogger.info('   🌿 Plant ingredients: ${fpjIngredients.length}');
+    AppLogger.info('   📋 Total ingredients: ${ingredients.length}');
+    AppLogger.info('   🏷️ Categories: ${categories.length}');
+    AppLogger.info('   📖 Recipe steps: Detailed fermentation guidance\n');
     
-    print('✅ All tests completed successfully!');
-    print('🎉 The fermentation-based liquid fertilizer system is ready for farmers!');
+    AppLogger.info('✅ All tests completed successfully!');
+    AppLogger.info('🎉 The fermentation-based liquid fertilizer system is ready for farmers!');
   }
   
   static Recipe generateTestRecipe(RecipeMethod method, List<Ingredient> ingredients, String name) {
@@ -105,7 +106,7 @@ class SystemTest {
     }
     
     // Add brown sugar
-    recipeIngredients.add(RecipeIngredient(
+    recipeIngredients.add(const RecipeIngredient(
       ingredientId: 'brown_sugar',
       name: 'Brown sugar',
       amount: sugarWeight,

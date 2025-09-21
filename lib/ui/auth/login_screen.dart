@@ -118,18 +118,18 @@ class _LoginScreenState extends State<LoginScreen> {
                                 color: NatureColors.textDark,
                               ),
                               filled: true,
-                              fillColor: NatureColors.offWhite.withOpacity(0.8),
+                              fillColor: NatureColors.offWhite.withAlpha((0.8 * 255).round()),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
                                 borderSide: BorderSide(
-                                  color: NatureColors.lightGreen.withOpacity(0.3),
+                                  color: NatureColors.lightGreen.withAlpha((0.3 * 255).round()),
                                   width: 1,
                                 ),
                               ),
                               enabledBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
                                 borderSide: BorderSide(
-                                  color: NatureColors.lightGreen.withOpacity(0.3),
+                                  color: NatureColors.lightGreen.withAlpha((0.3 * 255).round()),
                                   width: 1,
                                 ),
                               ),
@@ -175,18 +175,18 @@ class _LoginScreenState extends State<LoginScreen> {
                                 },
                               ),
                               filled: true,
-                              fillColor: NatureColors.offWhite.withOpacity(0.8),
+                              fillColor: NatureColors.offWhite.withAlpha((0.8 * 255).round()),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
                                 borderSide: BorderSide(
-                                  color: NatureColors.lightGreen.withOpacity(0.3),
+                                  color: NatureColors.lightGreen.withAlpha((0.3 * 255).round()),
                                   width: 1,
                                 ),
                               ),
                               enabledBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
                                 borderSide: BorderSide(
-                                  color: NatureColors.lightGreen.withOpacity(0.3),
+                                  color: NatureColors.lightGreen.withAlpha((0.3 * 255).round()),
                                   width: 1,
                                 ),
                               ),
@@ -213,7 +213,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 value: _rememberMe,
                                 onChanged: (v) => setState(() => _rememberMe = v ?? false),
                                 side: const BorderSide(color: Colors.black, width: 2),
-                                fillColor: WidgetStatePropertyAll(Colors.transparent),
+                                fillColor: const WidgetStatePropertyAll(Colors.transparent),
                                 checkColor: Colors.black,
                                 materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                               ),
@@ -273,7 +273,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                             style: OutlinedButton.styleFrom(
                               padding: const EdgeInsets.symmetric(vertical: 14),
-                              side: BorderSide(color: NatureColors.lightGreen.withOpacity(0.4)),
+                              side: BorderSide(color: NatureColors.lightGreen.withAlpha((0.4 * 255).round())),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                             ),
                           ),

@@ -16,7 +16,9 @@ class PostListPage extends StatefulWidget {
 }
 
 class _PostListPageState extends State<PostListPage> {
+  final TextEditingController _searchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  bool _isSearching = false;
 
   @override
   void initState() {
@@ -29,6 +31,7 @@ class _PostListPageState extends State<PostListPage> {
 
   @override
   void dispose() {
+    _searchController.dispose();
     _scrollController.dispose();
     super.dispose();
   }
@@ -46,44 +49,70 @@ class _PostListPageState extends State<PostListPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: NatureColors.natureBackground,
-      body: Consumer<CommunityProvider>(
-        builder: (context, provider, child) {
-          final posts = provider.posts;
-
-          if (posts.isEmpty && !provider.isLoadingPosts) {
-            return _buildEmptyState();
-          }
-
-          return RefreshIndicator(
-            onRefresh: () => provider.loadPosts(refresh: true),
-            child: ListView.builder(
-              controller: _scrollController,
-              padding: const EdgeInsets.all(16),
-              // Avoid showing the bottom spinner when there are no posts at all
-              itemCount: posts.isEmpty ? 0 : posts.length + (provider.hasMorePosts ? 1 : 0),
-              itemBuilder: (context, index) {
-                if (index >= posts.length) {
-                  return const Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(16),
-                      child: CircularProgressIndicator(),
-                    ),
-                  );
+      appBar: AppBar(
+        title: const Text('Community'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.bookmark_outlined),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const SavedPostsPage()),
+            ),
+          ),
+        ],
+      ),
+      body: Column(
+        children: [
+          _buildSearchAndFilters(),
+          Expanded(
+            child: Consumer<CommunityProvider>(
+              builder: (context, provider, child) {
+                if (provider.isSearching) {
+                  return const Center(child: CircularProgressIndicator());
                 }
 
-                return PostCard(
-                  post: posts[index],
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => PostDetailPage(post: posts[index]),
-                    ),
+                if (_isSearching && provider.searchResults.isEmpty) {
+                  return _buildEmptySearch();
+                }
+
+                final posts = _isSearching ? provider.searchResults : provider.posts;
+
+                if (posts.isEmpty && !provider.isLoadingPosts) {
+                  return _buildEmptyState();
+                }
+
+                return RefreshIndicator(
+                  onRefresh: () => provider.loadPosts(refresh: true),
+                  child: ListView.builder(
+                    controller: _scrollController,
+                    padding: const EdgeInsets.all(16),
+                    itemCount: posts.length + (provider.hasMorePosts ? 1 : 0),
+                    itemBuilder: (context, index) {
+                      if (index >= posts.length) {
+                        return const Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(16),
+                            child: CircularProgressIndicator(),
+                          ),
+                        );
+                      }
+
+                      return PostCard(
+                        post: posts[index],
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => PostDetailPage(post: posts[index]),
+                          ),
+                        ),
+                      );
+                    },
                   ),
                 );
               },
             ),
-          );
-        },
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => Navigator.push(
@@ -95,19 +124,150 @@ class _PostListPageState extends State<PostListPage> {
     );
   }
 
+  Widget _buildSearchAndFilters() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: NatureColors.pureWhite,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha((0.1 * 255).round()),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          // Search bar
+          TextField(
+            controller: _searchController,
+            decoration: InputDecoration(
+              hintText: 'Search posts...',
+              prefixIcon: const Icon(Icons.search),
+              suffixIcon: _searchController.text.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(Icons.clear),
+                      onPressed: () {
+                        _searchController.clear();
+                        setState(() {
+                          _isSearching = false;
+                        });
+                        context.read<CommunityProvider>().clearSearch();
+                      },
+                    )
+                  : null,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: NatureColors.mediumGray),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: NatureColors.primaryGreen, width: 2),
+              ),
+            ),
+            onChanged: (value) {
+              if (value.isNotEmpty) {
+                setState(() {
+                  _isSearching = true;
+                });
+                context.read<CommunityProvider>().searchPosts(value);
+              } else {
+                setState(() {
+                  _isSearching = false;
+                });
+                context.read<CommunityProvider>().clearSearch();
+              }
+            },
+          ),
+          const SizedBox(height: 12),
+          // Tags filter
+          Consumer<CommunityProvider>(
+            builder: (context, provider, child) {
+              if (provider.availableTags.isEmpty) {
+                return const SizedBox.shrink();
+              }
+
+              return SizedBox(
+                height: 40,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: provider.availableTags.length,
+                  itemBuilder: (context, index) {
+                    final tag = provider.availableTags[index];
+                    final isSelected = provider.selectedTags.contains(tag);
+                    
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: FilterChip(
+                        label: Text(tag),
+                        selected: isSelected,
+                        onSelected: (selected) {
+                          final newTags = List<String>.from(provider.selectedTags);
+                          if (selected) {
+                            newTags.add(tag);
+                          } else {
+                            newTags.remove(tag);
+                          }
+                          provider.setSelectedTags(newTags);
+                        },
+                        selectedColor: NatureColors.lightGreen.withAlpha((0.3 * 255).round()),
+                        checkmarkColor: NatureColors.primaryGreen,
+                      ),
+                    );
+                  },
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptySearch() {
+    return const Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.search_off,
+            size: 64,
+            color: NatureColors.mediumGray,
+          ),
+          SizedBox(height: 16),
+          Text(
+            'No posts found',
+            style: TextStyle(
+              fontSize: 18,
+              color: NatureColors.darkGray,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          SizedBox(height: 8),
+          Text(
+            'Try adjusting your search terms',
+            style: TextStyle(
+              color: NatureColors.mediumGray,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   Widget _buildEmptyState() {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
+          const Icon(
             Icons.article_outlined,
             size: 64,
             color: NatureColors.mediumGray,
           ),
           const SizedBox(height: 16),
-          Text(
+          const Text(
             'No posts yet',
             style: TextStyle(
               fontSize: 18,
@@ -116,7 +276,7 @@ class _PostListPageState extends State<PostListPage> {
             ),
           ),
           const SizedBox(height: 8),
-          Text(
+          const Text(
             'Be the first to share something!',
             style: TextStyle(
               color: NatureColors.mediumGray,
@@ -188,7 +348,7 @@ class PostCard extends StatelessWidget {
                         ),
                         Text(
                           _formatDate(post.createdAt),
-                          style: TextStyle(
+                          style: const TextStyle(
                             color: NatureColors.mediumGray,
                             fontSize: 12,
                           ),
@@ -285,7 +445,7 @@ class PostCard extends StatelessWidget {
                     return Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: NatureColors.lightGreen.withOpacity(0.2),
+                        color: NatureColors.lightGreen.withAlpha((0.2 * 255).round()),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(

@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/moderation_provider.dart';
 import '../../models/violation.dart';
-import '../../models/post.dart';
-import '../../models/comment.dart';
 import '../../theme/theme.dart';
 import 'moderation_action_dialog.dart';
 
@@ -99,7 +97,7 @@ class _ModerationQueuePageState extends State<ModerationQueuePage> with TickerPr
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.error, size: 64, color: NatureColors.errorRed),
+                const Icon(Icons.error, size: 64, color: NatureColors.errorRed),
                 const SizedBox(height: 16),
                 Text(
                   'Error: ${moderationProvider.error}',
@@ -204,7 +202,7 @@ class _ModerationQueuePageState extends State<ModerationQueuePage> with TickerPr
             // Target ID
             Text(
               'Target ID: ${violation.targetId}',
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 12,
                 color: NatureColors.mediumGray,
               ),
@@ -214,7 +212,7 @@ class _ModerationQueuePageState extends State<ModerationQueuePage> with TickerPr
             // Timestamp
             Text(
               'Reported: ${_formatDate(violation.createdAt)}',
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 12,
                 color: NatureColors.mediumGray,
               ),
@@ -257,7 +255,7 @@ class _ModerationQueuePageState extends State<ModerationQueuePage> with TickerPr
               const SizedBox(height: 4),
               Text(
                 'Reason: ${violation.actionReason}',
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 12,
                   color: NatureColors.mediumGray,
                 ),

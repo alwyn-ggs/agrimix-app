@@ -4,7 +4,6 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../repositories/recipes_repo.dart';
 import '../../models/recipe.dart';
 import '../../providers/auth_provider.dart';
-import '../../providers/recipe_provider.dart';
 import '../../theme/theme.dart';
 import '../../router.dart';
 
@@ -121,7 +120,7 @@ class _RecipeDetailBody extends StatelessWidget {
                   end: Alignment.bottomCenter,
                   colors: [
                     Colors.transparent,
-                    Colors.black.withOpacity(0.7),
+                    Colors.black.withAlpha((0.7 * 255).round()),
                   ],
                 ),
               ),
@@ -253,7 +252,7 @@ class _RecipeDetailBody extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: NatureColors.primaryGreen.withOpacity(0.1),
+                      color: NatureColors.primaryGreen.withAlpha((0.1 * 255).round()),
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: const Text(
@@ -569,7 +568,7 @@ class _RecipeDetailBody extends StatelessWidget {
                     leading: Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: NatureColors.primaryGreen.withOpacity(0.1),
+                        color: NatureColors.primaryGreen.withAlpha((0.1 * 255).round()),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: const Icon(
@@ -607,7 +606,7 @@ class _RecipeDetailBody extends StatelessWidget {
                     leading: Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: NatureColors.accentGreen.withOpacity(0.1),
+                        color: NatureColors.accentGreen.withAlpha((0.1 * 255).round()),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: const Icon(

@@ -252,7 +252,9 @@ class _ProfileTabState extends State<ProfileTab> {
 
   Future<void> _saveProfile(BuildContext context) async {
     if (!_formKey.currentState!.validate()) return;
-    setState(() { _saving = true; _status = null; });
+    if (mounted) {
+      setState(() { _saving = true; _status = null; });
+    }
     final auth = context.read<AuthProvider>();
     final u = auth.currentAppUser!;
     try {
@@ -262,11 +264,17 @@ class _ProfileTabState extends State<ProfileTab> {
       );
       await context.read<AuthProvider>().usersRepo.updateUser(updated);
       await auth.refreshCurrentUser();
-      setState(() { _status = 'Profile updated.'; });
+      if (mounted) {
+        setState(() { _status = 'Profile updated.'; });
+      }
     } catch (e) {
-      setState(() { _status = 'Failed to update: $e'; });
+      if (mounted) {
+        setState(() { _status = 'Failed to update: $e'; });
+      }
     } finally {
-      setState(() { _saving = false; });
+      if (mounted) {
+        setState(() { _saving = false; });
+      }
     }
   }
 
@@ -280,12 +288,18 @@ class _ProfileTabState extends State<ProfileTab> {
       if (token != null) {
         await messaging.saveTokenToUser(uid, token);
         await auth.refreshCurrentUser();
-        setState(() { _status = 'Token synced.'; });
+        if (mounted) {
+          setState(() { _status = 'Token synced.'; });
+        }
       } else {
-        setState(() { _status = 'No token available.'; });
+        if (mounted) {
+          setState(() { _status = 'No token available.'; });
+        }
       }
     } catch (e) {
-      setState(() { _status = 'Token sync failed: $e'; });
+      if (mounted) {
+        setState(() { _status = 'Token sync failed: $e'; });
+      }
     }
   }
 
@@ -293,9 +307,13 @@ class _ProfileTabState extends State<ProfileTab> {
     final messaging = context.read<MessagingService>();
     try {
       await messaging.requestPermission();
-      setState(() { _status = 'Notification permission requested.'; });
+      if (mounted) {
+        setState(() { _status = 'Notification permission requested.'; });
+      }
     } catch (e) {
-      setState(() { _status = 'Permission request failed: $e'; });
+      if (mounted) {
+        setState(() { _status = 'Permission request failed: $e'; });
+      }
     }
   }
 }

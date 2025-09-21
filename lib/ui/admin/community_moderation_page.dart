@@ -276,8 +276,8 @@ class _CommunityModerationPageState extends State<CommunityModerationPage> with 
           children: [
             Row(
               children: [
-                CircleAvatar(
-                  child: const Icon(Icons.person),
+                const CircleAvatar(
+                  child: Icon(Icons.person),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -376,13 +376,13 @@ class _CommunityModerationPageState extends State<CommunityModerationPage> with 
                   child: Text('${post.likes}'),
                 ),
                 const SizedBox(width: 16),
-                Icon(
+                const Icon(
                   Icons.comment,
                   color: NatureColors.lightGray,
                   size: 16,
                 ),
                 const SizedBox(width: 4),
-                Flexible(
+                const Flexible(
                   child: Text('0'), // Comment count will be calculated separately
                 ),
               ],
@@ -403,9 +403,9 @@ class _CommunityModerationPageState extends State<CommunityModerationPage> with 
           children: [
             Row(
               children: [
-                CircleAvatar(
-                  child: const Icon(Icons.person),
+                const CircleAvatar(
                   radius: 16,
+                  child: Icon(Icons.person),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
@@ -477,7 +477,7 @@ class _CommunityModerationPageState extends State<CommunityModerationPage> with 
           children: [
             Row(
               children: [
-                Icon(
+                const Icon(
                   Icons.report_problem,
                   color: Colors.orange,
                   size: 20,

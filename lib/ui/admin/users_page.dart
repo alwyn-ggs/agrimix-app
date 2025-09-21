@@ -36,7 +36,7 @@ class _UsersPageState extends State<UsersPage> with SingleTickerProviderStateMix
             color: NatureColors.pureWhite,
             boxShadow: [
               BoxShadow(
-                color: NatureColors.darkGray.withOpacity(0.1),
+                color: NatureColors.darkGray.withAlpha((0.1 * 255).round()),
                 blurRadius: 4,
                 offset: const Offset(0, 2),
               ),

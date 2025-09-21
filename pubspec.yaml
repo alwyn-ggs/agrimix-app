@@ -30,6 +30,9 @@ dependencies:
   flutter_local_notifications: ^17.2.3
   timezone: ^0.9.4
   http: ^1.2.2
+  
+  # Logging
+  logger: ^2.4.0
 
 dev_dependencies:
   flutter_test:

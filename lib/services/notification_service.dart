@@ -1,8 +1,8 @@
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'messaging_service.dart';
+import '../utils/logger.dart';
 
 class NotificationService {
   final MessagingService _messagingService;
@@ -50,10 +50,10 @@ class NotificationService {
           data: data,
         );
         
-        print('Moderation notification sent to user $userId: $title - $body');
+        AppLogger.info('Moderation notification sent to user $userId: $title - $body');
       }
     } catch (e) {
-      print('Failed to send moderation notification: $e');
+      AppLogger.error('Failed to send moderation notification: $e', e);
     }
   }
 
@@ -75,7 +75,7 @@ class NotificationService {
         'createdAt': FieldValue.serverTimestamp(),
       });
     } catch (e) {
-      print('Failed to create notification record: $e');
+      AppLogger.error('Failed to create notification record: $e', e);
     }
   }
 
@@ -175,7 +175,7 @@ class NotificationService {
         payload: payload,
       );
     } catch (e) {
-      print('Failed to show notification: $e');
+      AppLogger.error('Failed to show notification: $e', e);
     }
   }
 
@@ -215,7 +215,7 @@ class NotificationService {
         }
       }
     } catch (e) {
-      print('Failed to send violation report notification: $e');
+      AppLogger.error('Failed to send violation report notification: $e', e);
     }
   }
 
@@ -235,7 +235,7 @@ class NotificationService {
         ...doc.data(),
       }).toList();
     } catch (e) {
-      print('Failed to get user notifications: $e');
+      AppLogger.error('Failed to get user notifications: $e', e);
       return [];
     }
   }
@@ -250,7 +250,7 @@ class NotificationService {
           .doc(notificationId)
           .update({'read': true});
     } catch (e) {
-      print('Failed to mark notification as read: $e');
+      AppLogger.error('Failed to mark notification as read: $e', e);
     }
   }
 
@@ -271,7 +271,7 @@ class NotificationService {
 
       await batch.commit();
     } catch (e) {
-      print('Failed to mark all notifications as read: $e');
+      AppLogger.error('Failed to mark all notifications as read: $e', e);
     }
   }
 
@@ -287,7 +287,7 @@ class NotificationService {
 
       return snapshot.docs.length;
     } catch (e) {
-      print('Failed to get unread notification count: $e');
+      AppLogger.error('Failed to get unread notification count: $e', e);
       return 0;
     }
   }
@@ -331,7 +331,7 @@ class NotificationService {
         }
       }
     } catch (e) {
-      print('Failed to schedule fermentation notifications: $e');
+      AppLogger.error('Failed to schedule fermentation notifications: $e', e);
     }
   }
 
@@ -355,7 +355,7 @@ class NotificationService {
         payload: 'fermentation_complete:$logId',
       );
     } catch (e) {
-      print('Failed to schedule completion notification: $e');
+      AppLogger.error('Failed to schedule completion notification: $e', e);
     }
   }
 
@@ -370,7 +370,7 @@ class NotificationService {
       // Also cancel the completion notification
       await _localNotifications.cancel(logId.hashCode + 999);
     } catch (e) {
-      print('Failed to cancel fermentation notifications: $e');
+      AppLogger.error('Failed to cancel fermentation notifications: $e', e);
     }
   }
 
@@ -393,7 +393,7 @@ class NotificationService {
         ),
       );
     } catch (e) {
-      print('Failed to show simple notification: $e');
+      AppLogger.error('Failed to show simple notification: $e', e);
     }
   }
 

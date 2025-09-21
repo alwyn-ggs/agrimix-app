@@ -56,36 +56,43 @@ class AppRouter {
         return _guardedRoute(
           builder: (_) => const farmer.Dashboard(),
           requiredRole: 'farmer',
+          settings: settings,
         );
       case Routes.adminDashboard:
         return _guardedRoute(
           builder: (_) => const admin.Dashboard(),
           requiredRole: 'admin',
+          settings: settings,
         );
       case Routes.recipes:
         return _guardedRoute(
           builder: (_) => const RecipeListPage(),
           requireAuth: true,
+          settings: settings,
         );
       case Routes.recipeDetail:
         return _guardedRoute(
           builder: (_) => const RecipeDetailPage(),
           requireAuth: true,
+          settings: settings,
         );
       case Routes.recipeEdit:
         return _guardedRoute(
           builder: (_) => const RecipeEditPage(),
           requireAuth: true,
+          settings: settings,
         );
       case Routes.formulateRecipe:
         return _guardedRoute(
           builder: (_) => const FormulateRecipeFlow(),
           requireAuth: true,
+          settings: settings,
         );
       case Routes.posts:
         return _guardedRoute(
           builder: (_) => const PostListPage(),
           requireAuth: true,
+          settings: settings,
         );
       case Routes.postDetail:
         return _guardedRoute(
@@ -100,26 +107,31 @@ class AppRouter {
             return PostDetailPage(post: post);
           },
           requireAuth: true,
+          settings: settings,
         );
       case Routes.newPost:
         return _guardedRoute(
           builder: (_) => const NewPostPage(),
           requireAuth: true,
+          settings: settings,
         );
       case Routes.newLog:
         return _guardedRoute(
           builder: (_) => const NewLogPage(),
           requireAuth: true,
+          settings: settings,
         );
       case Routes.logDetail:
         return _guardedRoute(
           builder: (_) => const LogDetailPage(),
           requireAuth: true,
+          settings: settings,
         );
       case Routes.ingredientManagement:
         return _guardedRoute(
           builder: (_) => const IngredientManagementScreen(),
           requiredRole: 'admin',
+          settings: settings,
         );
       default:
         return MaterialPageRoute(
@@ -134,8 +146,10 @@ class AppRouter {
     required Widget Function(BuildContext) builder,
     String? requiredRole,
     bool requireAuth = false,
+    RouteSettings? settings,
   }) {
     return MaterialPageRoute(
+      settings: settings,
       builder: (context) {
         final authProvider = context.watch<AuthProvider>();
         

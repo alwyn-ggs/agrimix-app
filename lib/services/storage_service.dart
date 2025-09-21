@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:typed_data';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:path/path.dart' as path;
 
@@ -85,6 +86,16 @@ class StorageService {
     required String userId,
   }) async {
     return uploadFiles(files: imageFiles, userId: userId, folder: 'fermentation');
+  }
+
+  // Convenience: Upload a single image, inferring userId and using a default folder
+  Future<String> uploadImage(
+    File imageFile, {
+    String folder = 'ingredients',
+    String? userId,
+  }) async {
+    final resolvedUserId = userId ?? FirebaseAuth.instance.currentUser?.uid ?? 'anonymous';
+    return uploadFile(file: imageFile, userId: resolvedUserId, folder: folder);
   }
 
   // Upload recipe images

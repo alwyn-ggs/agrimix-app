@@ -50,19 +50,19 @@ class DefaultFirebaseOptions {
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyDgj1HW9VAZwOVaA0q1n_RDLhKv_CIn-pQ',
-    appId: '1:279987657851:android:0de1e7b3c0069fb9ac16de',
-    messagingSenderId: '279987657851',
-    projectId: 'agriplication',
-    storageBucket: 'agriplication.firebasestorage.app',
+    apiKey: 'AIzaSyABtUsk6FKcoMT3fyDJJwZ6Ad81Ifefl-M',
+    appId: '1:410574757990:android:c6cea467c970822551cda7',
+    messagingSenderId: '410574757990',
+    projectId: 'storageapp-9a33b',
+    storageBucket: 'storageapp-9a33b.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyCBBlkcYpD9Ie-AwSHlgcHhVVKjzgFsd9M',
-    appId: '1:279987657851:ios:d5c56c6c8226a0d9ac16de',
-    messagingSenderId: '279987657851',
-    projectId: 'agriplication',
-    storageBucket: 'agriplication.firebasestorage.app',
+    apiKey: 'AIzaSyAKLvCvm-6O6d-VxSFIPWVSak2oPkpRndw',
+    appId: '1:410574757990:ios:b68070199cb602e651cda7',
+    messagingSenderId: '410574757990',
+    projectId: 'storageapp-9a33b',
+    storageBucket: 'storageapp-9a33b.firebasestorage.app',
     iosBundleId: 'com.example.agrimix',
   );
 

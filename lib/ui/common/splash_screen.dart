@@ -25,21 +25,21 @@ class SplashScreen extends StatelessWidget {
             children: [
               // Logo
               Container(
-                padding: const EdgeInsets.all(20), // Reduced from 24 for mobile
+                padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
                   color: NatureColors.primaryGreen,
-                  borderRadius: BorderRadius.circular(16), // Reduced from 20 for mobile
+                  borderRadius: BorderRadius.circular(20),
                   boxShadow: [
                     BoxShadow(
-                      color: NatureColors.darkGray.withOpacity(0.2),
-                      blurRadius: 16, // Reduced from 20 for mobile
-                      offset: const Offset(0, 8), // Reduced from 10 for mobile
+                      color: NatureColors.darkGray.withAlpha((0.2 * 255).round()),
+                      blurRadius: 20,
+                      offset: const Offset(0, 10),
                     ),
                   ],
                 ),
-                child: Icon(
+                child: const Icon(
                   Icons.eco,
-                  size: 64, // Reduced from 80 for mobile
+                  size: 80,
                   color: NatureColors.pureWhite,
                 ),
               ),
@@ -49,7 +49,7 @@ class SplashScreen extends StatelessWidget {
               const Text(
                 'AgriMix',
                 style: TextStyle(
-                  fontSize: 28, // Reduced from 36 for mobile
+                  fontSize: 36,
                   fontWeight: FontWeight.bold,
                   color: NatureColors.primaryGreen,
                 ),
@@ -58,35 +58,24 @@ class SplashScreen extends StatelessWidget {
               const Text(
                 'Your Organic Fertilizer Assistant',
                 style: TextStyle(
-                  fontSize: 14, // Reduced from 16 for mobile
+                  fontSize: 16,
                   color: NatureColors.darkGray,
                 ),
-                textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 32), // Reduced from 48 for mobile
+              const SizedBox(height: 48),
               
               // Loading Indicator
               const CircularProgressIndicator(
                 valueColor: AlwaysStoppedAnimation<Color>(NatureColors.primaryGreen),
-                strokeWidth: 2.5, // Reduced from 3 for mobile
+                strokeWidth: 3,
               ),
               const SizedBox(height: 16),
               const Text(
-                'Initializing AgriMix...',
+                'Loading...',
                 style: TextStyle(
-                  fontSize: 13, // Reduced from 14 for mobile
+                  fontSize: 14,
                   color: NatureColors.mediumGray,
                 ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'Please wait while we set up your experience',
-                style: TextStyle(
-                  fontSize: 11, // Reduced from 12 for mobile
-                  color: NatureColors.lightGray,
-                ),
-                textAlign: TextAlign.center,
               ),
             ],
           ),

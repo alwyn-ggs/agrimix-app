@@ -70,9 +70,9 @@ class _ModerationActionDialogState extends State<ModerationActionDialog> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  const Text(
                     'Violation Details',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
                     ),
@@ -336,7 +336,7 @@ class _ModerationActionDialogState extends State<ModerationActionDialog> {
       if (mounted) {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
+          const SnackBar(
             content: Text('Action executed successfully'),
             backgroundColor: NatureColors.successGreen,
           ),

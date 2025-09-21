@@ -77,14 +77,14 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                             labelText: 'Email',
                             prefixIcon: const Icon(Icons.email_outlined, color: NatureColors.pureBlack),
                             filled: true,
-                            fillColor: NatureColors.offWhite.withOpacity(0.8),
+                            fillColor: NatureColors.offWhite.withAlpha((0.8 * 255).round()),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(color: NatureColors.lightGreen.withOpacity(0.3), width: 1),
+                              borderSide: BorderSide(color: NatureColors.lightGreen.withAlpha((0.3 * 255).round()), width: 1),
                             ),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(color: NatureColors.lightGreen.withOpacity(0.3), width: 1),
+                              borderSide: BorderSide(color: NatureColors.lightGreen.withAlpha((0.3 * 255).round()), width: 1),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),

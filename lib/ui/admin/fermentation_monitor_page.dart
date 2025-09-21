@@ -4,7 +4,6 @@ import 'package:fl_chart/fl_chart.dart';
 import '../../providers/admin_fermentation_provider.dart';
 import '../../providers/admin_provider.dart';
 import '../../models/fermentation_log.dart';
-import '../../models/user.dart';
 import 'fermentation_log_detail_page.dart';
 
 class FermentationMonitorPage extends StatefulWidget {
@@ -215,7 +214,7 @@ class _FermentationMonitorPageState extends State<FermentationMonitorPage> {
               height: 180,
               child: LineChart(
                 LineChartData(
-                  gridData: FlGridData(show: true),
+                  gridData: const FlGridData(show: true),
                   titlesData: FlTitlesData(
                     leftTitles: AxisTitles(
                       sideTitles: SideTitles(

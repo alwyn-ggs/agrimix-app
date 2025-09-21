@@ -380,8 +380,8 @@ class _FarmerCommunityModerationPageState extends State<FarmerCommunityModeratio
           children: [
             Row(
               children: [
-                CircleAvatar(
-                  child: const Icon(Icons.person),
+                const CircleAvatar(
+                  child: Icon(Icons.person),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -470,13 +470,13 @@ class _FarmerCommunityModerationPageState extends State<FarmerCommunityModeratio
                   child: Text('${post.likes}'),
                 ),
                 const SizedBox(width: 16),
-                Icon(
+                const Icon(
                   Icons.comment,
                   color: NatureColors.lightGray,
                   size: 16,
                 ),
                 const SizedBox(width: 4),
-                Flexible(
+                const Flexible(
                   child: Text('0'),
                 ),
               ],
@@ -497,9 +497,9 @@ class _FarmerCommunityModerationPageState extends State<FarmerCommunityModeratio
           children: [
             Row(
               children: [
-                CircleAvatar(
-                  child: const Icon(Icons.person),
+                const CircleAvatar(
                   radius: 16,
+                  child: Icon(Icons.person),
                 ),
                 const SizedBox(width: 8),
                 Expanded(

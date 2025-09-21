@@ -3,20 +3,16 @@ import 'package:flutter/foundation.dart';
 import '../repositories/violations_repo.dart';
 import '../repositories/posts_repo.dart';
 import '../repositories/comments_repo.dart';
-import '../repositories/users_repo.dart';
-import '../services/messaging_service.dart';
 import '../services/notification_service.dart';
 import '../models/violation.dart';
 import '../models/post.dart';
 import '../models/comment.dart';
-import '../models/user.dart';
+import '../utils/logger.dart';
 
 class ModerationProvider extends ChangeNotifier {
   final ViolationsRepo _violationsRepo;
   final PostsRepo _postsRepo;
   final CommentsRepo _commentsRepo;
-  final UsersRepo _usersRepo;
-  final MessagingService _messagingService;
   final NotificationService _notificationService;
 
   List<Violation> _violations = [];
@@ -30,8 +26,6 @@ class ModerationProvider extends ChangeNotifier {
     this._violationsRepo,
     this._postsRepo,
     this._commentsRepo,
-    this._usersRepo,
-    this._messagingService,
     this._notificationService,
   ) {
     _startListeningToViolations();
@@ -109,7 +103,7 @@ class ModerationProvider extends ChangeNotifier {
 
       notifyListeners();
     } catch (e) {
-      print('Error loading reported content: $e');
+      AppLogger.error('Error loading reported content: $e', e);
     }
   }
 

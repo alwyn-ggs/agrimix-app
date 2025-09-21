@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/admin_provider.dart';
-import '../../providers/auth_provider.dart';
 import '../../models/recipe.dart';
 import '../../theme/theme.dart';
 import 'recipe_review_dialog.dart';
@@ -19,7 +18,6 @@ class _RecipesPageCompleteState extends State<RecipesPageComplete> with TickerPr
   late TabController _tabController;
   String _searchQuery = '';
   RecipeMethod? _selectedMethod;
-  bool _showStandardOnly = false;
 
   @override
   void initState() {
@@ -67,7 +65,7 @@ class _RecipesPageCompleteState extends State<RecipesPageComplete> with TickerPr
         color: NatureColors.pureWhite,
         boxShadow: [
           BoxShadow(
-            color: NatureColors.darkGray.withOpacity(0.1),
+            color: NatureColors.darkGray.withAlpha((0.1 * 255).round()),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),

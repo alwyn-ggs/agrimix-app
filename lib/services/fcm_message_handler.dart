@@ -1,6 +1,7 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'notification_service.dart';
+import '../utils/logger.dart';
 
 class FCMMessageHandler {
   final NotificationService _notificationService;
@@ -10,7 +11,7 @@ class FCMMessageHandler {
   // Handle foreground messages
   void handleForegroundMessage(BuildContext context) {
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      print('Received foreground message: ${message.messageId}');
+      AppLogger.info('Received foreground message: ${message.messageId}');
       
       // Check if it's an announcement
       if (message.data['type'] == 'announcement' || 
@@ -126,7 +127,7 @@ class FCMMessageHandler {
   void handleNotificationTap(String? payload) {
     if (payload != null && payload.startsWith('announcement:')) {
       final announcementId = payload.substring('announcement:'.length);
-      print('Notification tapped for announcement: $announcementId');
+      AppLogger.info('Notification tapped for announcement: $announcementId');
       // Navigate to announcement detail or home tab
       // This will be handled by the app's navigation system
     }

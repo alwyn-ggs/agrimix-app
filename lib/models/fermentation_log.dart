@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../utils/logger.dart';
 
 enum FermentationStatus { active, done, cancelled }
 enum FermentationMethod { FFJ, FPJ }
@@ -228,7 +229,7 @@ class FermentationLog {
                 }
                 return null;
               } catch (e) {
-                print('Error parsing ingredient: $e');
+                AppLogger.error('Error parsing ingredient: $e', e);
                 return null;
               }
             })
@@ -238,7 +239,7 @@ class FermentationLog {
       }
       return const <FermentationIngredient>[];
     } catch (e) {
-      print('Error parsing ingredients list: $e');
+      AppLogger.error('Error parsing ingredients list: $e', e);
       return const <FermentationIngredient>[];
     }
   }
@@ -256,7 +257,7 @@ class FermentationLog {
                 }
                 return null;
               } catch (e) {
-                print('Error parsing stage: $e');
+                AppLogger.error('Error parsing stage: $e', e);
                 return null;
               }
             })
@@ -266,7 +267,7 @@ class FermentationLog {
       }
       return const <FermentationStage>[];
     } catch (e) {
-      print('Error parsing stages list: $e');
+      AppLogger.error('Error parsing stages list: $e', e);
       return const <FermentationStage>[];
     }
   }
@@ -281,7 +282,7 @@ class FermentationLog {
       }
       return const <String>[];
     } catch (e) {
-      print('Error parsing photos list: $e');
+      AppLogger.error('Error parsing photos list: $e', e);
       return const <String>[];
     }
   }

@@ -205,7 +205,7 @@ class _SavedPostsPageState extends State<SavedPostsPage> {
                     return Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: NatureColors.lightGreen.withOpacity(0.2),
+                        color: NatureColors.lightGreen.withAlpha((0.2 * 255).round()),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(

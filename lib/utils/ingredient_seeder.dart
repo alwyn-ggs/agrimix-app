@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../models/ingredient.dart';
 import '../repositories/ingredients_repo.dart';
 import '../services/firestore_service.dart';
+import 'logger.dart';
 
 class IngredientSeeder {
   static final FirestoreService _firestoreService = FirestoreService();
@@ -294,12 +295,12 @@ class IngredientSeeder {
   static Future<void> seedIngredients() async {
     try {
       final ingredients = getLocalIngredients();
-      print('Seeding ${ingredients.length} local ingredients...');
+      AppLogger.info('Seeding ${ingredients.length} local ingredients...');
       
       // Check if user is authenticated
       final auth = FirebaseAuth.instance;
       final user = auth.currentUser;
-      print('Current user: ${user?.uid ?? 'Not authenticated'}');
+      AppLogger.debug('Current user: ${user?.uid ?? 'Not authenticated'}');
       
       if (user == null) {
         throw Exception('User must be authenticated to seed ingredients');
@@ -307,9 +308,9 @@ class IngredientSeeder {
       
       await _ingredientsRepo.batchCreateIngredients(ingredients);
       
-      print('Successfully seeded ingredient database!');
+      AppLogger.info('Successfully seeded ingredient database!');
     } catch (e) {
-      print('Error seeding ingredients: $e');
+      AppLogger.error('Error seeding ingredients: $e', e);
       rethrow;
     }
   }
@@ -320,9 +321,9 @@ class IngredientSeeder {
       for (final ingredient in ingredients) {
         await _ingredientsRepo.deleteIngredient(ingredient.id);
       }
-      print('Cleared all ingredients from database');
+      AppLogger.info('Cleared all ingredients from database');
     } catch (e) {
-      print('Error clearing ingredients: $e');
+      AppLogger.error('Error clearing ingredients: $e', e);
       rethrow;
     }
   }
@@ -331,7 +332,7 @@ class IngredientSeeder {
     try {
       return await _ingredientsRepo.getIngredientStats();
     } catch (e) {
-      print('Error getting ingredient stats: $e');
+      AppLogger.error('Error getting ingredient stats: $e', e);
       return {'total': 0, 'categories': 0, 'crops': 0};
     }
   }

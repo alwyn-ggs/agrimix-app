@@ -75,52 +75,14 @@ class _MyRecipesTabState extends State<MyRecipesTab> with TickerProviderStateMix
   }
 
   Widget _buildDraftsTab(String userId, RecipeProvider recipeProvider) {
-    final recipesRepo = context.read<RecipesRepo>();
-    if (userId.isEmpty) {
-      return _buildEmptyState(
-        icon: Icons.edit_note,
-        title: 'No Draft Recipes',
-        subtitle: 'Please log in to see your drafts',
-      );
-    }
-    return StreamBuilder<List<Recipe>>(
-      stream: recipesRepo.watchRecipes(
-        ownerUid: userId,
-        visibility: RecipeVisibility.private,
-        isStandard: false,
-        orderByCreatedAt: false,
-      ),
-      initialData: const <Recipe>[],
+    return FutureBuilder<List<Recipe>>(
+      future: _getDraftRecipes(userId),
       builder: (context, snapshot) {
-        if (snapshot.hasError) {
-          // Fallback to one-time load (e.g., if Firestore index/orderBy error)
-          return FutureBuilder<List<Recipe>>(
-            future: recipesRepo.getRecipes(
-              ownerUid: userId,
-              visibility: RecipeVisibility.private,
-              isStandard: false,
-            ),
-            builder: (context, fbSnap) {
-              if (fbSnap.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
-              }
-              final list = (fbSnap.data ?? const <Recipe>[]);
-              if (list.isEmpty) {
-                return _buildEmptyState(
-                  icon: Icons.edit_note,
-                  title: 'No Draft Recipes',
-                  subtitle: 'Start creating a new recipe to see your drafts here',
-                );
-              }
-              return _buildRecipeList(list, 'Draft Recipes');
-            },
-          );
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
         }
 
-        final drafts = List<Recipe>.from(snapshot.data ?? const <Recipe>[]);
-        drafts.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-
-        if (drafts.isEmpty) {
+        if (!snapshot.hasData || snapshot.data!.isEmpty) {
           return _buildEmptyState(
             icon: Icons.edit_note,
             title: 'No Draft Recipes',
@@ -128,6 +90,7 @@ class _MyRecipesTabState extends State<MyRecipesTab> with TickerProviderStateMix
           );
         }
 
+        final drafts = snapshot.data!;
         return _buildRecipeList(drafts, 'Draft Recipes');
       },
     );
@@ -270,17 +233,17 @@ class _MyRecipesTabState extends State<MyRecipesTab> with TickerProviderStateMix
           width: double.infinity,
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: NatureColors.lightGreen.withOpacity(0.1),
+            color: NatureColors.lightGreen.withAlpha((0.1 * 255).round()),
             border: Border(
               bottom: BorderSide(
-                color: NatureColors.lightGreen.withOpacity(0.3),
+                color: NatureColors.lightGreen.withAlpha((0.3 * 255).round()),
                 width: 1,
               ),
             ),
           ),
           child: Row(
             children: [
-              Icon(
+              const Icon(
                 Icons.restaurant_menu,
                 color: NatureColors.primaryGreen,
                 size: 20,
@@ -430,8 +393,8 @@ class _MyRecipesTabState extends State<MyRecipesTab> with TickerProviderStateMix
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                               decoration: BoxDecoration(
                                 color: recipe.method == RecipeMethod.FFJ 
-                                    ? NatureColors.lightGreen.withOpacity(0.2)
-                                    : NatureColors.accentGreen.withOpacity(0.2),
+                                    ? NatureColors.lightGreen.withAlpha((0.2 * 255).round())
+                                    : NatureColors.accentGreen.withAlpha((0.2 * 255).round()),
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Text(
@@ -468,7 +431,7 @@ class _MyRecipesTabState extends State<MyRecipesTab> with TickerProviderStateMix
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
-                            color: Colors.blue.withOpacity(0.1),
+                            color: Colors.blue.withAlpha((0.1 * 255).round()),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Row(
@@ -496,7 +459,7 @@ class _MyRecipesTabState extends State<MyRecipesTab> with TickerProviderStateMix
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
-                            color: NatureColors.primaryGreen.withOpacity(0.1),
+                            color: NatureColors.primaryGreen.withAlpha((0.1 * 255).round()),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: const Text(
@@ -587,8 +550,9 @@ class _MyRecipesTabState extends State<MyRecipesTab> with TickerProviderStateMix
   Future<List<Recipe>> _getDraftRecipes(String userId) async {
     final recipesRepo = context.read<RecipesRepo>();
     try {
-      final mine = await recipesRepo.getUserRecipes(userId);
-      return mine.where((recipe) =>
+      final allRecipes = await recipesRepo.getAllRecipes();
+      return allRecipes.where((recipe) => 
+        recipe.ownerUid == userId && 
         recipe.visibility == RecipeVisibility.private &&
         !recipe.isStandard
       ).toList();

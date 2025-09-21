@@ -192,7 +192,7 @@ class _RecipeEditDialogState extends State<RecipeEditDialog> {
                     ),
                     const SizedBox(height: 12),
                     Card(
-                      color: NatureColors.warning.withOpacity(0.1),
+                      color: NatureColors.warning.withAlpha((0.3 * 255).round()),
                       child: Padding(
                         padding: const EdgeInsets.all(12),
                         child: Row(
@@ -232,7 +232,7 @@ class _RecipeEditDialogState extends State<RecipeEditDialog> {
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: NatureColors.lightGray.withOpacity(0.3),
+                        color: NatureColors.lightGray.withAlpha((0.3 * 255).round()),
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(color: NatureColors.lightGray),
                       ),
@@ -246,7 +246,7 @@ class _RecipeEditDialogState extends State<RecipeEditDialog> {
                           const SizedBox(height: 8),
                           ...widget.recipe.ingredients.take(3).map((ingredient) => 
                             Text('• ${ingredient.name} - ${ingredient.amount} ${ingredient.unit}')
-                          ).toList(),
+                          ),
                           if (widget.recipe.ingredients.length > 3)
                             Text('... and ${widget.recipe.ingredients.length - 3} more'),
                         ],
@@ -256,7 +256,7 @@ class _RecipeEditDialogState extends State<RecipeEditDialog> {
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: NatureColors.lightGray.withOpacity(0.3),
+                        color: NatureColors.lightGray.withAlpha((0.3 * 255).round()),
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(color: NatureColors.lightGray),
                       ),
@@ -270,7 +270,7 @@ class _RecipeEditDialogState extends State<RecipeEditDialog> {
                           const SizedBox(height: 8),
                           ...widget.recipe.steps.take(2).map((step) => 
                             Text('${step.order}. ${step.text}')
-                          ).toList(),
+                          ),
                           if (widget.recipe.steps.length > 2)
                             Text('... and ${widget.recipe.steps.length - 2} more steps'),
                         ],

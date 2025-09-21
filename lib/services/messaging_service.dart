@@ -1,5 +1,6 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../utils/logger.dart';
 
 class MessagingService {
   final FirebaseMessaging _messaging = FirebaseMessaging.instance;
@@ -10,7 +11,7 @@ class MessagingService {
     try {
       return await _messaging.getToken();
     } catch (e) {
-      print('Failed to get FCM token: $e');
+      AppLogger.error('Failed to get FCM token: $e', e);
       return null;
     }
   }
@@ -23,7 +24,7 @@ class MessagingService {
         'lastTokenUpdate': FieldValue.serverTimestamp(),
       });
     } catch (e) {
-      print('Failed to save FCM token: $e');
+      AppLogger.error('Failed to save FCM token: $e', e);
     }
   }
 
@@ -37,13 +38,13 @@ class MessagingService {
     try {
       final doc = await _db.collection('users').doc(userId).get();
       if (doc.exists) {
-        final data = doc.data() as Map<String, dynamic>?;
+        final data = doc.data();
         final tokens = data?['fcmTokens'] as List<dynamic>?;
         return tokens?.cast<String>() ?? [];
       }
       return [];
     } catch (e) {
-      print('Failed to get user tokens: $e');
+      AppLogger.error('Failed to get user tokens: $e', e);
       return [];
     }
   }
@@ -55,7 +56,7 @@ class MessagingService {
         'fcmTokens': FieldValue.arrayRemove([token]),
       });
     } catch (e) {
-      print('Failed to remove FCM token: $e');
+      AppLogger.error('Failed to remove FCM token: $e', e);
     }
   }
 
@@ -64,7 +65,7 @@ class MessagingService {
     try {
       await _messaging.subscribeToTopic(topic);
     } catch (e) {
-      print('Failed to subscribe to topic $topic: $e');
+      AppLogger.error('Failed to subscribe to topic $topic: $e', e);
     }
   }
 
@@ -73,7 +74,7 @@ class MessagingService {
     try {
       await _messaging.unsubscribeFromTopic(topic);
     } catch (e) {
-      print('Failed to unsubscribe from topic $topic: $e');
+      AppLogger.error('Failed to unsubscribe from topic $topic: $e', e);
     }
   }
 
@@ -88,7 +89,7 @@ class MessagingService {
       );
       return settings.authorizationStatus == AuthorizationStatus.authorized;
     } catch (e) {
-      print('Failed to request notification permission: $e');
+      AppLogger.error('Failed to request notification permission: $e', e);
       return false;
     }
   }

@@ -3,6 +3,7 @@ import 'package:agrimix/models/ingredient.dart';
 import 'package:agrimix/models/recipe.dart';
 import 'package:agrimix/utils/ingredient_seeder.dart';
 import 'package:agrimix/utils/system_test.dart';
+import 'package:agrimix/utils/logger.dart';
 
 void main() {
   group('Fermentation System Tests', () {
@@ -112,11 +113,11 @@ void main() {
 
   group('System Integration Tests', () {
     test('should demonstrate complete fermentation workflow', () async {
-      print('\n🌱 Running Fermentation System Integration Test...');
+      AppLogger.info('\n🌱 Running Fermentation System Integration Test...');
       
       // Get ingredients
       final ingredients = IngredientSeeder.getLocalIngredients();
-      print('✅ Found ${ingredients.length} ingredients');
+      AppLogger.info('✅ Found ${ingredients.length} ingredients');
       
       // Test FFJ workflow
       final ffjIngredients = ingredients.where((i) => 
@@ -129,7 +130,7 @@ void main() {
         'Integration Test FFJ',
       );
       
-      print('✅ FFJ Recipe: ${ffjRecipe.ingredients.length} ingredients, ${ffjRecipe.steps.length} steps');
+      AppLogger.info('✅ FFJ Recipe: ${ffjRecipe.ingredients.length} ingredients, ${ffjRecipe.steps.length} steps');
       
       // Test FPJ workflow
       final fpjIngredients = ingredients.where((i) => 
@@ -142,7 +143,7 @@ void main() {
         'Integration Test FPJ',
       );
       
-      print('✅ FPJ Recipe: ${fpjRecipe.ingredients.length} ingredients, ${fpjRecipe.steps.length} steps');
+      AppLogger.info('✅ FPJ Recipe: ${fpjRecipe.ingredients.length} ingredients, ${fpjRecipe.steps.length} steps');
       
       // Verify system functionality
       expect(ffjRecipe.method, equals(RecipeMethod.FFJ));
@@ -150,7 +151,7 @@ void main() {
       expect(ffjRecipe.ingredients.isNotEmpty, isTrue);
       expect(fpjRecipe.ingredients.isNotEmpty, isTrue);
       
-      print('🎉 Integration test completed successfully!');
+      AppLogger.info('🎉 Integration test completed successfully!');
     });
   });
 }

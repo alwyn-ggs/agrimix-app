@@ -1,20 +1,18 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../repositories/fermentation_repo.dart';
 import '../models/fermentation_log.dart';
 import '../models/user.dart';
+import '../utils/logger.dart';
 
 class AdminFermentationProvider extends ChangeNotifier {
-  final FermentationRepo _fermentationRepo;
-  
   List<FermentationLog> _allLogs = [];
   List<AppUser> _farmers = [];
   bool _isLoading = false;
   String? _error;
   StreamSubscription<List<FermentationLog>>? _logsSubscription;
 
-  AdminFermentationProvider(this._fermentationRepo);
+  AdminFermentationProvider();
 
   @override
   void dispose() {
@@ -62,12 +60,10 @@ class AdminFermentationProvider extends ChangeNotifier {
           for (final doc in snapshot.docs) {
             try {
               final data = doc.data();
-              if (data != null) {
-                final log = FermentationLog.fromMap(doc.id, data);
-                logs.add(log);
-              }
-            } catch (e) {
-              print('Error parsing fermentation log ${doc.id}: $e');
+              final log = FermentationLog.fromMap(doc.id, data);
+              logs.add(log);
+                        } catch (e) {
+              AppLogger.error('Error parsing fermentation log ${doc.id}: $e', e);
               // Skip this log and continue with others
             }
           }

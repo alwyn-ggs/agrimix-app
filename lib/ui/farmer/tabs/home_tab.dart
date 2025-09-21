@@ -35,7 +35,7 @@ class HomeTab extends StatelessWidget {
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: NatureColors.primaryGreen.withOpacity(0.3),
+                  color: NatureColors.primaryGreen.withAlpha((0.3 * 255).round()),
                   blurRadius: 8,
                   offset: const Offset(0, 4),
                 ),
@@ -146,9 +146,9 @@ class HomeTab extends StatelessWidget {
                 return Container(
                   padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
-                    color: NatureColors.lightGray.withOpacity(0.3),
+                    color: NatureColors.lightGray.withAlpha((0.3 * 255).round()),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: NatureColors.lightGray.withOpacity(0.5)),
+                    border: Border.all(color: NatureColors.lightGray.withAlpha((0.5 * 255).round())),
                   ),
                   child: const Center(
                     child: Column(
@@ -214,7 +214,7 @@ class HomeTab extends StatelessWidget {
                           label: const Text('View All Announcements'),
                           style: OutlinedButton.styleFrom(
                             foregroundColor: NatureColors.primaryGreen,
-                            side: BorderSide(color: NatureColors.primaryGreen),
+                            side: const BorderSide(color: NatureColors.primaryGreen),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),
@@ -289,12 +289,12 @@ class HomeTab extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: isPinned 
-                  ? NatureColors.primaryGreen.withOpacity(0.5)
-                  : NatureColors.lightGray.withOpacity(0.3),
+                  ? NatureColors.primaryGreen.withAlpha((0.5 * 255).round())
+                  : NatureColors.lightGray.withAlpha((0.3 * 255).round()),
               width: isPinned ? 2 : 1,
             ),
             color: isPinned 
-                ? NatureColors.primaryGreen.withOpacity(0.05)
+                ? NatureColors.primaryGreen.withAlpha((0.05 * 255).round())
                 : NatureColors.pureWhite,
           ),
           child: Column(
@@ -436,7 +436,7 @@ class HomeTab extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: NatureColors.lightGray.withOpacity(0.3),
+                          color: NatureColors.lightGray.withAlpha((0.3 * 255).round()),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Row(
@@ -552,7 +552,7 @@ class HomeTab extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withOpacity(0.25), width: 1),
+          border: Border.all(color: color.withAlpha((0.25 * 255).round()), width: 1),
           color: NatureColors.pureWhite,
         ),
         child: Column(

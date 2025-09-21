@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../providers/auth_provider.dart';
-import '../../providers/recipe_provider.dart';
 import '../../repositories/recipes_repo.dart';
 import '../../models/recipe.dart';
 import '../../theme/theme.dart';
@@ -74,7 +73,7 @@ class _RecipeFormState extends State<_RecipeForm> {
     setState(() => _isLoading = true);
     try {
       final recipe = await context.read<RecipesRepo>().getRecipe(widget.recipeId!);
-      if (recipe != null) {
+      if (recipe != null && mounted) {
         setState(() {
           _existingRecipe = recipe;
           _name.text = recipe.name;

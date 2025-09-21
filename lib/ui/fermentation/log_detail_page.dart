@@ -6,7 +6,6 @@ import '../../repositories/fermentation_repo.dart';
 import '../../models/fermentation_log.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/notification_service.dart';
-import '../../services/storage_service.dart';
 
 class LogDetailPage extends StatelessWidget {
   const LogDetailPage({super.key});
@@ -131,16 +130,18 @@ class _DetailState extends State<_Detail> {
                             value: _log.alertsEnabled,
                             onChanged: (v) async {
                               await context.read<FermentationRepo>().toggleFermentationAlerts(_log.id, v);
-                              setState(() => _log = _log.copyWith(alertsEnabled: v));
-                              if (v) {
-                                await context.read<NotificationService>().scheduleFermentationNotifications(
-                                      _log.id,
-                                      _log.title,
-                                      _log.stages.map((s) => s.toMap()).toList(),
-                                      _log.startAt,
-                                    );
-                              } else {
-                                await context.read<NotificationService>().cancelFermentationNotifications(_log.id);
+                              if (mounted) {
+                                setState(() => _log = _log.copyWith(alertsEnabled: v));
+                                if (v) {
+                                  await context.read<NotificationService>().scheduleFermentationNotifications(
+                                        _log.id,
+                                        _log.title,
+                                        _log.stages.map((s) => s.toMap()).toList(),
+                                        _log.startAt,
+                                      );
+                                } else {
+                                  await context.read<NotificationService>().cancelFermentationNotifications(_log.id);
+                                }
                               }
                             },
                           ),

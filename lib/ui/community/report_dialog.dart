@@ -79,7 +79,7 @@ class _ReportDialogState extends State<ReportDialog> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: NatureColors.lightGray.withOpacity(0.3),
+                color: NatureColors.lightGray.withAlpha((0.3 * 255).round()),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Column(
@@ -124,7 +124,7 @@ class _ReportDialogState extends State<ReportDialog> {
                   _selectedReason = value!;
                 });
               },
-            )).toList(),
+            )),
             
             const SizedBox(height: 16),
             

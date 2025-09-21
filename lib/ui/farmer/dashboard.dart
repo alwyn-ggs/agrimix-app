@@ -38,23 +38,23 @@ class _DashboardState extends State<Dashboard> {
             _buildTopBar(),
             // Content
             Expanded(
-              child: Container(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      NatureColors.natureBackground,
-                      NatureColors.offWhite,
-                    ],
-                  ),
+            child: Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    NatureColors.natureBackground,
+                    NatureColors.offWhite,
+                  ],
                 ),
-                child: _tabs[_index],
               ),
+              child: _tabs[_index],
             ),
-            // Bottom Navigation
-            _buildBottomNavigation(),
-          ],
+          ),
+          // Bottom Navigation
+          _buildBottomNavigation(),
+        ],
         ),
       ),
     );
@@ -62,12 +62,12 @@ class _DashboardState extends State<Dashboard> {
 
   Widget _buildTopBar() {
     return Container(
-      height: 60, // Reduced from 70 for mobile
+      height: 70,
       decoration: BoxDecoration(
         color: NatureColors.primaryGreen,
         boxShadow: [
           BoxShadow(
-            color: NatureColors.textDark.withOpacity(0.1),
+            color: NatureColors.textDark.withAlpha((0.1 * 255).round()),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -78,20 +78,20 @@ class _DashboardState extends State<Dashboard> {
           // Logo and Title
           const Expanded(
             child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16), // Reduced from 20 for mobile
+              padding: EdgeInsets.symmetric(horizontal: 20),
               child: Row(
                 children: [
                   Icon(
                     Icons.eco,
                     color: NatureColors.pureWhite,
-                    size: 24, // Reduced from 28 for mobile
+                    size: 28,
                   ),
-                  SizedBox(width: 8), // Reduced from 12 for mobile
+                  SizedBox(width: 12),
                   Text(
                     'AgriMix',
                     style: TextStyle(
                       color: NatureColors.pureWhite,
-                      fontSize: 18, // Reduced from 20 for mobile
+                      fontSize: 20,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -105,14 +105,14 @@ class _DashboardState extends State<Dashboard> {
               // Notifications
               IconButton(
                 onPressed: () {
-                  // TODO: Implement notifications
+                  /* TODO: Implement notifications*/
                 },
                 icon: Stack(
                   children: [
                     const Icon(
                       Icons.notifications_outlined,
                       color: NatureColors.pureWhite,
-                      size: 24, // Reduced from 28 for mobile
+                      size: 28,
                     ),
                     Positioned(
                       right: 0,
@@ -128,7 +128,6 @@ class _DashboardState extends State<Dashboard> {
                     ),
                   ],
                 ),
-                padding: const EdgeInsets.all(8), // Added padding for better touch target
               ),
               const SizedBox(width: 8),
               // Profile Menu
@@ -222,7 +221,7 @@ class _DashboardState extends State<Dashboard> {
         color: NatureColors.pureWhite,
         boxShadow: [
           BoxShadow(
-            color: NatureColors.textDark.withOpacity(0.1),
+            color: NatureColors.textDark.withAlpha((0.1 * 255).round()),
             blurRadius: 8,
             offset: const Offset(0, -2),
           ),
@@ -234,7 +233,7 @@ class _DashboardState extends State<Dashboard> {
         backgroundColor: NatureColors.pureWhite,
         indicatorColor: NatureColors.lightGreen,
         labelBehavior: NavigationDestinationLabelBehavior.alwaysHide,
-        destinations: [
+        destinations: const [
           NavigationDestination(
             icon: Tooltip(
               message: 'Home',

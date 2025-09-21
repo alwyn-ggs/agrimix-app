@@ -94,7 +94,7 @@ class _RecipeRatingsDialogState extends State<RecipeRatingsDialog> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: NatureColors.lightGray.withOpacity(0.3),
+                color: NatureColors.lightGray.withAlpha((0.3 * 255).round()),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
@@ -147,7 +147,7 @@ class _RecipeRatingsDialogState extends State<RecipeRatingsDialog> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: NatureColors.primaryGreen.withOpacity(0.1),
+        color: NatureColors.primaryGreen.withAlpha((0.1 * 255).round()),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -238,7 +238,7 @@ class _RecipeRatingsDialogState extends State<RecipeRatingsDialog> {
                 width: double.infinity,
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: NatureColors.lightGray.withOpacity(0.3),
+                  color: NatureColors.lightGray.withAlpha((0.3 * 255).round()),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(

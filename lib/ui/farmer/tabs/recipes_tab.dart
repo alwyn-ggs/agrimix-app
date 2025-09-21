@@ -1,7 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../../recipe/list_page.dart';
-import '../../../repositories/recipes_repo.dart';
 import '../../../models/recipe.dart';
 import '../../../theme/theme.dart';
 
@@ -62,10 +59,10 @@ class RecipesTab extends StatelessWidget {
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   decoration: BoxDecoration(
-                    color: NatureColors.lightGreen.withOpacity(0.1),
+                    color: NatureColors.lightGreen.withAlpha((0.1 * 255).round()),
                     border: Border(
                       bottom: BorderSide(
-                        color: NatureColors.lightGreen.withOpacity(0.3),
+                        color: NatureColors.lightGreen.withAlpha((0.3 * 255).round()),
                         width: 1,
                       ),
                     ),
@@ -316,7 +313,7 @@ class RecipesTab extends StatelessWidget {
           ElevatedButton(
             onPressed: () {
               Navigator.of(context).pop();
-              // TODO: Navigate to recipe details or implementation
+              
             },
             child: const Text('View Details'),
           ),

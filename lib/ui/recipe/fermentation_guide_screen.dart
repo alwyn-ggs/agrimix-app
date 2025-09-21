@@ -327,7 +327,7 @@ class _FermentationGuideScreenState extends State<FermentationGuideScreen>
                       child: Row(
                         children: [
                           CircleAvatar(
-                            backgroundColor: _getCategoryColor(ingredient.category).withOpacity(0.2),
+                            backgroundColor: _getCategoryColor(ingredient.category).withAlpha((0.2 * 255).round()),
                             child: Icon(
                               _getCategoryIcon(ingredient.category),
                               color: _getCategoryColor(ingredient.category),
@@ -392,7 +392,7 @@ class _FermentationGuideScreenState extends State<FermentationGuideScreen>
           child: Container(
             height: 20,
             decoration: BoxDecoration(
-              color: color.withOpacity(0.3),
+              color: color.withAlpha((0.3 * 255).round()),
               borderRadius: BorderRadius.circular(10),
             ),
             child: FractionallySizedBox(
