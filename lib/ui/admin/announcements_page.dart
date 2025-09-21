@@ -129,7 +129,7 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
                 _showPinnedOnly = selected;
               });
             },
-            selectedColor: NatureColors.primaryGreen.withOpacity(0.2),
+            selectedColor: NatureColors.primaryGreen.withAlpha((0.2 * 255).round()),
             checkmarkColor: NatureColors.primaryGreen,
             materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
           ),
@@ -415,7 +415,7 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
-                        color: NatureColors.primaryGreen.withOpacity(0.1),
+                        color: NatureColors.primaryGreen.withAlpha((0.1 * 255).round()),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
@@ -431,7 +431,7 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
-                        color: NatureColors.successGreen.withOpacity(0.1),
+                        color: NatureColors.successGreen.withAlpha((0.1 * 255).round()),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: const Row(
@@ -725,7 +725,7 @@ class _AnnouncementFormDialogState extends State<AnnouncementFormDialog> {
                         }
                       });
                     },
-                    selectedColor: NatureColors.primaryGreen.withOpacity(0.2),
+                    selectedColor: NatureColors.primaryGreen.withAlpha((0.2 * 255).round()),
                     checkmarkColor: NatureColors.primaryGreen,
                     materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   );
@@ -878,9 +878,9 @@ class AnnouncementDetailsDialog extends StatelessWidget {
                   return Container(
                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
-                      color: NatureColors.primaryGreen.withOpacity(0.1),
+                      color: NatureColors.primaryGreen.withAlpha((0.1 * 255).round()),
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: NatureColors.primaryGreen.withOpacity(0.3)),
+                      border: Border.all(color: NatureColors.primaryGreen.withAlpha((0.3 * 255).round())),
                     ),
                     child: Text(
                       crop,
@@ -939,7 +939,7 @@ class AnnouncementDetailsDialog extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                     decoration: BoxDecoration(
-                      color: NatureColors.successGreen.withOpacity(0.1),
+                      color: NatureColors.successGreen.withAlpha((0.1 * 255).round()),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: const Row(

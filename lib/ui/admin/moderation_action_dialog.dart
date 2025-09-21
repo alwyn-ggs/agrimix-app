@@ -64,7 +64,7 @@ class _ModerationActionDialogState extends State<ModerationActionDialog> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: NatureColors.lightGray.withOpacity(0.3),
+                color: NatureColors.lightGray.withAlpha((0.3 * 255).round()),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Column(
@@ -224,7 +224,7 @@ class _ModerationActionDialogState extends State<ModerationActionDialog> {
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       elevation: isSelected ? 4 : 1,
-      color: isSelected ? color.withOpacity(0.1) : null,
+      color: isSelected ? color.withAlpha((0.1 * 255).round()) : null,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),
         side: BorderSide(

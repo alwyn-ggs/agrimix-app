@@ -722,7 +722,7 @@ class _FermentationGuideScreenState extends State<FermentationGuideScreen>
   }
 
   Color _getMethodColor() {
-    return widget.method == RecipeMethod.FFJ 
+    return widget.method == RecipeMethod.ffj
         ? NatureColors.accentGreen 
         : NatureColors.lightGreen;
   }

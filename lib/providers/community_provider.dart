@@ -220,6 +220,25 @@ class CommunityProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> deletePost(String postId, String userId) async {
+    try {
+      // Check if user is the owner of the post
+      final post = posts.firstWhere((p) => p.id == postId);
+      if (post.ownerUid != userId) {
+        throw Exception('You can only delete your own posts');
+      }
+
+      await _postsRepo.deletePost(postId);
+      
+      // Remove from local state
+      posts.removeWhere((p) => p.id == postId);
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error deleting post: $e');
+      rethrow; // Re-throw to show error to user
+    }
+  }
+
   // Comments
   Future<void> loadComments(String postId) async {
     if (isLoadingComments) return;

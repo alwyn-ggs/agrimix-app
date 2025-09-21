@@ -294,8 +294,8 @@ class FermentationRepo {
         'active': logs.where((log) => log.status == FermentationStatus.active).length,
         'completed': logs.where((log) => log.status == FermentationStatus.done).length,
         'cancelled': logs.where((log) => log.status == FermentationStatus.cancelled).length,
-        'ffj': logs.where((log) => log.method == FermentationMethod.FFJ).length,
-        'fpj': logs.where((log) => log.method == FermentationMethod.FPJ).length,
+        'ffj': logs.where((log) => log.method == FermentationMethod.ffj).length,
+        'fpj': logs.where((log) => log.method == FermentationMethod.fpj).length,
       };
       return stats;
     } catch (e) {

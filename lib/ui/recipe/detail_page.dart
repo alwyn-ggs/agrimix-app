@@ -147,7 +147,7 @@ class _RecipeDetailBody extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
-                          color: recipe.method == RecipeMethod.FFJ 
+                          color: recipe.method == RecipeMethod.ffj 
                               ? NatureColors.lightGreen
                               : NatureColors.accentGreen,
                           borderRadius: BorderRadius.circular(16),

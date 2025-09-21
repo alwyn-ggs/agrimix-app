@@ -73,7 +73,7 @@ class FermentationLogDetailPage extends StatelessWidget {
               children: [
                 Icon(
                   Icons.local_florist,
-                  color: log.method == FermentationMethod.FFJ ? Colors.purple : Colors.teal,
+                  color: log.method == FermentationMethod.ffj ? Colors.purple : Colors.teal,
                   size: 32,
                 ),
                 const SizedBox(width: 12),
@@ -172,7 +172,7 @@ class FermentationLogDetailPage extends StatelessWidget {
                     : 0.0,
                 backgroundColor: Colors.grey[300],
                 valueColor: AlwaysStoppedAnimation<Color>(
-                  log.method == FermentationMethod.FFJ ? Colors.purple : Colors.teal,
+                  log.method == FermentationMethod.ffj ? Colors.purple : Colors.teal,
                 ),
               ),
             ],
@@ -201,10 +201,10 @@ class FermentationLogDetailPage extends StatelessWidget {
             Row(
               children: [
                 Icon(
-                  log.method == FermentationMethod.FFJ 
+                  log.method == FermentationMethod.ffj
                       ? Icons.local_florist 
                       : Icons.eco,
-                  color: log.method == FermentationMethod.FFJ ? Colors.purple : Colors.teal,
+                  color: log.method == FermentationMethod.ffj ? Colors.purple : Colors.teal,
                   size: 24,
                 ),
                 const SizedBox(width: 12),
@@ -220,7 +220,7 @@ class FermentationLogDetailPage extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        log.method == FermentationMethod.FFJ
+                        log.method == FermentationMethod.ffj
                             ? 'Fermented Fruit Juice'
                             : 'Fermented Plant Juice',
                         style: TextStyle(
@@ -329,14 +329,14 @@ class FermentationLogDetailPage extends StatelessWidget {
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: isCurrent 
-                        ? (log.method == FermentationMethod.FFJ ? Colors.purple[50] : Colors.teal[50])
+                        ? (log.method == FermentationMethod.ffj ? Colors.purple[50] : Colors.teal[50])
                         : isCompleted 
                             ? Colors.green[50] 
                             : Colors.grey[50],
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
                       color: isCurrent 
-                          ? (log.method == FermentationMethod.FFJ ? Colors.purple : Colors.teal)
+                          ? (log.method == FermentationMethod.ffj ? Colors.purple : Colors.teal)
                           : isCompleted 
                               ? Colors.green 
                               : Colors.grey,
@@ -350,7 +350,7 @@ class FermentationLogDetailPage extends StatelessWidget {
                         height: 32,
                         decoration: BoxDecoration(
                           color: isCurrent 
-                              ? (log.method == FermentationMethod.FFJ ? Colors.purple : Colors.teal)
+                              ? (log.method == FermentationMethod.ffj ? Colors.purple : Colors.teal)
                               : isCompleted 
                                   ? Colors.green 
                                   : Colors.grey,
@@ -381,7 +381,7 @@ class FermentationLogDetailPage extends StatelessWidget {
                                 fontSize: 14,
                                 fontWeight: FontWeight.w600,
                                 color: isCurrent 
-                                    ? (log.method == FermentationMethod.FFJ ? Colors.purple[700] : Colors.teal[700])
+                                    ? (log.method == FermentationMethod.ffj ? Colors.purple[700] : Colors.teal[700])
                                     : isCompleted 
                                         ? Colors.green[700] 
                                         : Colors.grey[700],

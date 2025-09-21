@@ -181,45 +181,6 @@ class _PostListPageState extends State<PostListPage> {
             },
           ),
           const SizedBox(height: 12),
-          // Tags filter
-          Consumer<CommunityProvider>(
-            builder: (context, provider, child) {
-              if (provider.availableTags.isEmpty) {
-                return const SizedBox.shrink();
-              }
-
-              return SizedBox(
-                height: 40,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: provider.availableTags.length,
-                  itemBuilder: (context, index) {
-                    final tag = provider.availableTags[index];
-                    final isSelected = provider.selectedTags.contains(tag);
-                    
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: FilterChip(
-                        label: Text(tag),
-                        selected: isSelected,
-                        onSelected: (selected) {
-                          final newTags = List<String>.from(provider.selectedTags);
-                          if (selected) {
-                            newTags.add(tag);
-                          } else {
-                            newTags.remove(tag);
-                          }
-                          provider.setSelectedTags(newTags);
-                        },
-                        selectedColor: NatureColors.lightGreen.withAlpha((0.3 * 255).round()),
-                        checkmarkColor: NatureColors.primaryGreen,
-                      ),
-                    );
-                  },
-                ),
-              );
-            },
-          ),
         ],
       ),
     );
@@ -436,31 +397,6 @@ class PostCard extends StatelessWidget {
                 const SizedBox(height: 12),
               ],
               
-              // Tags
-              if (post.tags.isNotEmpty) ...[
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 4,
-                  children: post.tags.map((tag) {
-                    return Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: NatureColors.lightGreen.withAlpha((0.2 * 255).round()),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        '#$tag',
-                        style: const TextStyle(
-                          color: NatureColors.primaryGreen,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                ),
-                const SizedBox(height: 12),
-              ],
               
               // Actions
               Row(

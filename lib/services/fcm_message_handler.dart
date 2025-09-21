@@ -58,14 +58,14 @@ class FCMMessageHandler {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.green.withOpacity(0.3)),
+              border: Border.all(color: Colors.green.withAlpha((0.3 * 255).round())),
             ),
             child: Row(
               children: [
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.green.withOpacity(0.1),
+                    color: Colors.green.withAlpha((0.1 * 255).round()),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: const Icon(

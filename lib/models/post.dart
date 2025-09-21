@@ -35,10 +35,10 @@ class Post {
         ownerUid: map['ownerUid'] ?? map['authorId'] ?? '',
         title: map['title'] ?? '',
         body: map['body'] ?? map['content'] ?? '',
-        images: List<String>.from(map['images'] ?? const <String>[]),
-        tags: List<String>.from(map['tags'] ?? const <String>[]),
+        images: _convertToStringList(map['images']),
+        tags: _convertToStringList(map['tags']),
         likes: (map['likes'] ?? 0) as int,
-        savedBy: List<String>.from(map['savedBy'] ?? const <String>[]),
+        savedBy: _convertToStringList(map['savedBy']),
         createdAt: map['createdAt'] is Timestamp
             ? (map['createdAt'] as Timestamp).toDate()
             : DateTime.now(),
@@ -117,5 +117,14 @@ class Post {
       if (a[i] != b[i]) return false;
     }
     return true;
+  }
+
+  static List<String> _convertToStringList(dynamic value) {
+    if (value == null) return <String>[];
+    if (value is List<String>) return value;
+    if (value is List) {
+      return value.map((e) => e.toString()).toList();
+    }
+    return <String>[];
   }
 }

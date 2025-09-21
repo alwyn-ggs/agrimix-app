@@ -37,7 +37,7 @@ class SystemTest {
     
     // FFJ Recipe
     final ffjRecipe = generateTestRecipe(
-      RecipeMethod.FFJ,
+      RecipeMethod.ffj,
       ffjIngredients.take(3).toList(),
       'Test FFJ Recipe',
     );
@@ -46,7 +46,7 @@ class SystemTest {
     
     // FPJ Recipe
     final fpjRecipe = generateTestRecipe(
-      RecipeMethod.FPJ,
+      RecipeMethod.fpj,
       fpjIngredients.take(3).toList(),
       'Test FPJ Recipe',
     );
@@ -140,7 +140,7 @@ class SystemTest {
     final steps = <String>[
       'Maghanda ng malinis na kagamitan at lalagyan (glass o food-grade plastic).',
       'Siguraduhing malinis ang mga kamay at lugar ng paggawa.',
-      if (method == RecipeMethod.FFJ) ...[
+      if (method == RecipeMethod.ffj) ...[
         'Hugasan at tuyuin ang mga prutas. Tanggalin ang mga bulok na parte.',
         'Gayatin ang mga prutas sa maliliit na piraso (1-2 cm) para sa mas mabilis na fermentation.',
         'Ilagay ang mga prutas sa lalagyan at haluan ng brown sugar. Ihalo nang mabuti.',

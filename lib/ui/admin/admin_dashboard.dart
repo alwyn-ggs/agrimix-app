@@ -95,7 +95,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
           ),
         ),
         selected: isSelected,
-        selectedTileColor: NatureColors.primaryGreen.withOpacity(0.1),
+        selectedTileColor: NatureColors.primaryGreen.withAlpha((0.1 * 255).round()),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         onTap: () {
           setState(() {

@@ -224,7 +224,7 @@ class _ModerationQueuePageState extends State<ModerationQueuePage> with TickerPr
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: _getActionColor(violation.actionTaken!).withOpacity(0.1),
+                  color: _getActionColor(violation.actionTaken!).withAlpha((0.1 * 255).round()),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Row(
@@ -334,7 +334,7 @@ class _ModerationQueuePageState extends State<ModerationQueuePage> with TickerPr
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withAlpha((0.1 * 255).round()),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Text(

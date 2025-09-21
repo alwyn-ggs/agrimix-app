@@ -4,12 +4,12 @@ import '../models/recipe.dart';
 class FermentationGuideService {
   // Baseline ratios for FFJ and FPJ
   static const Map<RecipeMethod, Map<String, double>> baselineRatios = {
-    RecipeMethod.FFJ: {
+    RecipeMethod.ffj: {
       'material': 2.0,  // 2 parts fruit material
       'sugar': 1.0,     // 1 part brown sugar
       'total': 3.0,     // Total parts
     },
-    RecipeMethod.FPJ: {
+    RecipeMethod.fpj: {
       'material': 2.0,  // 2 parts plant material
       'sugar': 1.0,     // 1 part brown sugar
       'total': 3.0,     // Total parts
@@ -18,7 +18,7 @@ class FermentationGuideService {
 
   // Method-specific characteristics
   static const Map<RecipeMethod, Map<String, dynamic>> methodCharacteristics = {
-    RecipeMethod.FFJ: {
+    RecipeMethod.ffj: {
       'name': 'Fermented Fruit Juice',
       'description': 'For flowering and fruit development',
       'icon': '🍌',
@@ -32,7 +32,7 @@ class FermentationGuideService {
         'Boosts plant immunity',
       ],
     },
-    RecipeMethod.FPJ: {
+    RecipeMethod.fpj: {
       'name': 'Fermented Plant Juice',
       'description': 'For general plant growth and development',
       'icon': '🌱',
@@ -108,13 +108,13 @@ class FermentationGuideService {
       double adjustedWeight = baseWeight;
       
       // Method-specific adjustments
-      if (method == RecipeMethod.FFJ) {
+      if (method == RecipeMethod.ffj) {
         if (ingredient.category.toLowerCase().contains('fruit')) {
           adjustedWeight *= 1.3; // Fruits are primary in FFJ
         } else if (ingredient.category.toLowerCase().contains('flower')) {
           adjustedWeight *= 0.7; // Flowers are secondary
         }
-      } else if (method == RecipeMethod.FPJ) {
+      } else if (method == RecipeMethod.fpj) {
         if (ingredient.category.toLowerCase().contains('plant')) {
           adjustedWeight *= 1.2; // Plants are primary in FPJ
         } else if (ingredient.category.toLowerCase().contains('weed')) {
@@ -203,7 +203,7 @@ class FermentationGuideService {
         order: 3,
         title: 'Select and Clean Materials',
         description: 'Choose the best quality $materialType for fermentation',
-        details: method == RecipeMethod.FFJ ? [
+        details: method == RecipeMethod.ffj ? [
           'Select ripe, sweet fruits (banana, papaya, mango, etc.)',
           'Choose fresh, clean flowers if available',
           'Remove any damaged or rotten parts',
@@ -227,7 +227,7 @@ class FermentationGuideService {
         order: 4,
         title: 'Cut Materials',
         description: 'Cut materials into appropriate sizes for fermentation',
-        details: method == RecipeMethod.FFJ ? [
+        details: method == RecipeMethod.ffj ? [
           'Cut fruits into small pieces (1-2 cm)',
           'Remove seeds and hard parts',
           'Cut flowers into smaller pieces',
@@ -397,7 +397,7 @@ class FermentationGuideService {
       'Use glass containers for better fermentation results',
     ];
     
-    if (method == RecipeMethod.FFJ) {
+    if (method == RecipeMethod.ffj) {
       tips.addAll([
         'Choose the sweetest, ripest fruits for best results',
         'Fruits with high sugar content ferment better',

@@ -241,7 +241,7 @@ class FermentationProvider extends ChangeNotifier {
       'active': activeLogs.length,
       'completed': completedLogs.length,
       'overdue': overdueLogs.length,
-      'ffj': myLogs.where((log) => log.method == FermentationMethod.FFJ).length,
+      'ffj': myLogs.where((log) => log.method == FermentationMethod.ffj).length,
       'fpj': myLogs.where((log) => log.method == FermentationMethod.fpj).length,
     };
   }

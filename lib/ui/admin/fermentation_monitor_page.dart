@@ -494,7 +494,7 @@ class _FermentationMonitorPageState extends State<FermentationMonitorPage> {
                       barRods: [
                         BarChartRodData(
                           toY: entry.value.toDouble(),
-                          color: Colors.blue.withOpacity(0.7),
+                          color: Colors.blue.withAlpha((0.7 * 255).round()),
                           width: 20,
                         ),
                       ],
@@ -544,7 +544,7 @@ class _FermentationMonitorPageState extends State<FermentationMonitorPage> {
                   
                   return ListTile(
                     leading: CircleAvatar(
-                      backgroundColor: log.method == FermentationMethod.FFJ 
+                      backgroundColor: log.method == FermentationMethod.ffj 
                           ? Colors.purple 
                           : Colors.teal,
                       child: Text(

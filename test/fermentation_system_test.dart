@@ -52,12 +52,12 @@ void main() {
       ).take(3).toList();
       
       final recipe = SystemTest.generateTestRecipe(
-        RecipeMethod.FFJ,
+        RecipeMethod.ffj,
         ffjIngredients,
         'Test FFJ Recipe',
       );
       
-      expect(recipe.method, equals(RecipeMethod.FFJ));
+      expect(recipe.method, equals(RecipeMethod.ffj));
       expect(recipe.ingredients.length, greaterThan(0));
       
       // Check that brown sugar is included
@@ -72,12 +72,12 @@ void main() {
       ).take(3).toList();
       
       final recipe = SystemTest.generateTestRecipe(
-        RecipeMethod.FPJ,
+        RecipeMethod.fpj,
         fpjIngredients,
         'Test FPJ Recipe',
       );
       
-      expect(recipe.method, equals(RecipeMethod.FPJ));
+      expect(recipe.method, equals(RecipeMethod.fpj));
       expect(recipe.ingredients.length, greaterThan(0));
       
       // Check that brown sugar is included
@@ -92,7 +92,7 @@ void main() {
       ).take(2).toList();
       
       final recipe = SystemTest.generateTestRecipe(
-        RecipeMethod.FFJ,
+        RecipeMethod.ffj,
         ffjIngredients,
         'Test Recipe',
       );
@@ -125,7 +125,7 @@ void main() {
       ).take(2).toList();
       
       final ffjRecipe = SystemTest.generateTestRecipe(
-        RecipeMethod.FFJ,
+        RecipeMethod.ffj,
         ffjIngredients,
         'Integration Test FFJ',
       );
@@ -138,7 +138,7 @@ void main() {
       ).take(2).toList();
       
       final fpjRecipe = SystemTest.generateTestRecipe(
-        RecipeMethod.FPJ,
+        RecipeMethod.fpj,
         fpjIngredients,
         'Integration Test FPJ',
       );
@@ -146,8 +146,8 @@ void main() {
       AppLogger.info('✅ FPJ Recipe: ${fpjRecipe.ingredients.length} ingredients, ${fpjRecipe.steps.length} steps');
       
       // Verify system functionality
-      expect(ffjRecipe.method, equals(RecipeMethod.FFJ));
-      expect(fpjRecipe.method, equals(RecipeMethod.FPJ));
+      expect(ffjRecipe.method, equals(RecipeMethod.ffj));
+      expect(fpjRecipe.method, equals(RecipeMethod.fpj));
       expect(ffjRecipe.ingredients.isNotEmpty, isTrue);
       expect(fpjRecipe.ingredients.isNotEmpty, isTrue);
       

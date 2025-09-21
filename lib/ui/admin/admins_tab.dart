@@ -91,7 +91,7 @@ class _AdminCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: NatureColors.darkGray.withOpacity(0.1),
+            color: NatureColors.darkGray.withAlpha((0.1 * 255).round()),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -120,7 +120,7 @@ class _AdminCard extends StatelessWidget {
         trailing: Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
-            color: NatureColors.darkGreen.withOpacity(0.1),
+            color: NatureColors.darkGreen.withAlpha((0.1 * 255).round()),
             borderRadius: BorderRadius.circular(12),
           ),
           child: const Text(

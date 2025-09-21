@@ -120,7 +120,7 @@ ThemeData buildTheme() {
     cardTheme: CardThemeData(
       color: NatureColors.cardBackground,
       elevation: 2, // Reduced from 3 for mobile
-      shadowColor: NatureColors.primaryGreen.withOpacity(0.1),
+      shadowColor: NatureColors.primaryGreen.withAlpha((0.1 * 255).round()),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), // Reduced from 16
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), // Added margin for mobile
     ),
@@ -131,7 +131,7 @@ ThemeData buildTheme() {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)), // Reduced from 12
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12), // Reduced padding
         elevation: 1, // Reduced from 2
-        shadowColor: NatureColors.primaryGreen.withOpacity(0.3),
+        shadowColor: NatureColors.primaryGreen.withAlpha((0.3 * 255).round()),
         minimumSize: const Size(120, 44), // Minimum touch target size
       ),
     ),
@@ -142,7 +142,7 @@ ThemeData buildTheme() {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)), // Reduced from 12
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12), // Reduced padding
         elevation: 1, // Reduced from 2
-        shadowColor: NatureColors.primaryGreen.withOpacity(0.3),
+        shadowColor: NatureColors.primaryGreen.withAlpha((0.3 * 255).round()),
         minimumSize: const Size(120, 44), // Minimum touch target size
       ),
     ),
@@ -261,7 +261,7 @@ ThemeData buildDarkTheme() {
     cardTheme: CardThemeData(
       color: const Color(0xFF2D2D2D), // Darker card background
       elevation: 2, // Reduced from 3 for mobile
-      shadowColor: NatureColors.lightGreen.withOpacity(0.1),
+      shadowColor: NatureColors.lightGreen.withAlpha((0.1 * 255).round()),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), // Reduced from 16
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), // Added margin for mobile
     ),
@@ -272,7 +272,7 @@ ThemeData buildDarkTheme() {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)), // Reduced from 12
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12), // Reduced padding
         elevation: 1, // Reduced from 2
-        shadowColor: NatureColors.lightGreen.withOpacity(0.3),
+        shadowColor: NatureColors.lightGreen.withAlpha((0.3 * 255).round()),
         minimumSize: const Size(120, 44), // Minimum touch target size
       ),
     ),
@@ -283,7 +283,7 @@ ThemeData buildDarkTheme() {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)), // Reduced from 12
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12), // Reduced padding
         elevation: 1, // Reduced from 2
-        shadowColor: NatureColors.lightGreen.withOpacity(0.3),
+        shadowColor: NatureColors.lightGreen.withAlpha((0.3 * 255).round()),
         minimumSize: const Size(120, 44), // Minimum touch target size
       ),
     ),
