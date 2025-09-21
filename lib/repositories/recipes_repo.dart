@@ -72,7 +72,7 @@ class RecipesRepo {
     try {
       final where = <QueryFilter>[];
       if (ownerUid != null) where.add(QueryFilter(field: 'ownerUid', value: ownerUid));
-      if (method != null) where.add(QueryFilter(field: 'method', value: method == RecipeMethod.FPJ ? 'FPJ' : 'FFJ'));
+      if (method != null) where.add(QueryFilter(field: 'method', value: method == RecipeMethod.fpj ? 'fpj' : 'ffj'));
       if (visibility != null) where.add(QueryFilter(field: 'visibility', value: visibility == RecipeVisibility.private ? 'private' : 'public'));
       if (isStandard != null) where.add(QueryFilter(field: 'isStandard', value: isStandard));
 
@@ -103,7 +103,7 @@ class RecipesRepo {
     try {
       final where = <QueryFilter>[];
       if (ownerUid != null) where.add(QueryFilter(field: 'ownerUid', value: ownerUid));
-      if (method != null) where.add(QueryFilter(field: 'method', value: method == RecipeMethod.FPJ ? 'FPJ' : 'FFJ'));
+      if (method != null) where.add(QueryFilter(field: 'method', value: method == RecipeMethod.fpj ? 'fpj' : 'ffj'));
       if (visibility != null) where.add(QueryFilter(field: 'visibility', value: visibility == RecipeVisibility.private ? 'private' : 'public'));
       if (isStandard != null) where.add(QueryFilter(field: 'isStandard', value: isStandard));
 
@@ -349,7 +349,7 @@ class RecipesRepo {
         Recipe.collectionPath,
         limit: limit,
         where: [
-          QueryFilter(field: 'method', value: method == RecipeMethod.FPJ ? 'FPJ' : 'FFJ'),
+          QueryFilter(field: 'method', value: method == RecipeMethod.fpj ? 'fpj' : 'ffj'),
           const QueryFilter(field: 'visibility', value: 'public'),
         ],
         orderBy: [const QueryOrder(field: 'avgRating', descending: true)],

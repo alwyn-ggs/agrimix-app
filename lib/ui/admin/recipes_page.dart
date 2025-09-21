@@ -179,7 +179,26 @@ class _RecipesPageState extends State<RecipesPage> with TickerProviderStateMixin
   }
 
   Widget _buildRecipesList(List<Recipe> recipes) {
-    if (recipes.isEmpty) {
+    // Filter recipes based on search query and selected method
+    final filteredRecipes = recipes.where((recipe) {
+      // Filter by search query
+      if (_searchQuery.isNotEmpty) {
+        final query = _searchQuery.toLowerCase();
+        final matchesSearch = recipe.name.toLowerCase().contains(query) ||
+            recipe.description.toLowerCase().contains(query) ||
+            recipe.ingredients.any((ing) => ing.name.toLowerCase().contains(query));
+        if (!matchesSearch) return false;
+      }
+      
+      // Filter by method
+      if (_selectedMethod != null && recipe.method != _selectedMethod) {
+        return false;
+      }
+      
+      return true;
+    }).toList();
+
+    if (filteredRecipes.isEmpty) {
       return const Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -200,9 +219,9 @@ class _RecipesPageState extends State<RecipesPage> with TickerProviderStateMixin
 
     return ListView.builder(
       padding: const EdgeInsets.all(16),
-      itemCount: recipes.length,
+      itemCount: filteredRecipes.length,
       itemBuilder: (context, index) {
-        final recipe = recipes[index];
+        final recipe = filteredRecipes[index];
         return Card(
           margin: const EdgeInsets.only(bottom: 12),
           child: ListTile(

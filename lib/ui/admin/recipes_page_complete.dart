@@ -71,24 +71,59 @@ class _RecipesPageCompleteState extends State<RecipesPageComplete> with TickerPr
           ),
         ],
       ),
-      child: TextField(
-        decoration: InputDecoration(
-          hintText: 'Search recipes...',
-          prefixIcon: const Icon(Icons.search, color: NatureColors.darkGray),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: NatureColors.lightGray),
+      child: Column(
+        children: [
+          // Search Bar
+          TextField(
+            decoration: InputDecoration(
+              hintText: 'Search recipes...',
+              prefixIcon: const Icon(Icons.search, color: NatureColors.darkGray),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: NatureColors.lightGray),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: NatureColors.primaryGreen),
+              ),
+            ),
+            onChanged: (value) {
+              setState(() {
+                _searchQuery = value;
+              });
+            },
           ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: NatureColors.primaryGreen),
+          const SizedBox(height: 12),
+          // Method Filter
+          Row(
+            children: [
+              Expanded(
+                child: DropdownButtonFormField<RecipeMethod?>(
+                  value: _selectedMethod,
+                  decoration: const InputDecoration(
+                    labelText: 'Filter by Method',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: [
+                    const DropdownMenuItem<RecipeMethod?>(
+                      value: null,
+                      child: Text('All Methods'),
+                    ),
+                    ...RecipeMethod.values.map((method) => DropdownMenuItem(
+                      value: method,
+                      child: Text(method.name),
+                    )),
+                  ],
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedMethod = value;
+                    });
+                  },
+                ),
+              ),
+            ],
           ),
-        ),
-        onChanged: (value) {
-          setState(() {
-            _searchQuery = value;
-          });
-        },
+        ],
       ),
     );
   }
@@ -120,7 +155,26 @@ class _RecipesPageCompleteState extends State<RecipesPageComplete> with TickerPr
           return const Center(child: CircularProgressIndicator());
         }
 
-        if (recipes.isEmpty) {
+        // Filter recipes based on search query and selected method
+        final filteredRecipes = recipes.where((recipe) {
+          // Filter by search query
+          if (_searchQuery.isNotEmpty) {
+            final query = _searchQuery.toLowerCase();
+            final matchesSearch = recipe.name.toLowerCase().contains(query) ||
+                recipe.description.toLowerCase().contains(query) ||
+                recipe.ingredients.any((ing) => ing.name.toLowerCase().contains(query));
+            if (!matchesSearch) return false;
+          }
+          
+          // Filter by method
+          if (_selectedMethod != null && recipe.method != _selectedMethod) {
+            return false;
+          }
+          
+          return true;
+        }).toList();
+
+        if (filteredRecipes.isEmpty) {
           return const Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -138,9 +192,9 @@ class _RecipesPageCompleteState extends State<RecipesPageComplete> with TickerPr
 
         return ListView.builder(
           padding: const EdgeInsets.all(16),
-          itemCount: recipes.length,
+          itemCount: filteredRecipes.length,
           itemBuilder: (context, index) {
-            final recipe = recipes[index];
+            final recipe = filteredRecipes[index];
             return _buildRecipeCard(recipe);
           },
         );
@@ -157,7 +211,26 @@ class _RecipesPageCompleteState extends State<RecipesPageComplete> with TickerPr
           return const Center(child: CircularProgressIndicator());
         }
 
-        if (pendingRecipes.isEmpty) {
+        // Filter recipes based on search query and selected method
+        final filteredRecipes = pendingRecipes.where((recipe) {
+          // Filter by search query
+          if (_searchQuery.isNotEmpty) {
+            final query = _searchQuery.toLowerCase();
+            final matchesSearch = recipe.name.toLowerCase().contains(query) ||
+                recipe.description.toLowerCase().contains(query) ||
+                recipe.ingredients.any((ing) => ing.name.toLowerCase().contains(query));
+            if (!matchesSearch) return false;
+          }
+          
+          // Filter by method
+          if (_selectedMethod != null && recipe.method != _selectedMethod) {
+            return false;
+          }
+          
+          return true;
+        }).toList();
+
+        if (filteredRecipes.isEmpty) {
           return const Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -175,9 +248,9 @@ class _RecipesPageCompleteState extends State<RecipesPageComplete> with TickerPr
 
         return ListView.builder(
           padding: const EdgeInsets.all(16),
-          itemCount: pendingRecipes.length,
+          itemCount: filteredRecipes.length,
           itemBuilder: (context, index) {
-            final recipe = pendingRecipes[index];
+            final recipe = filteredRecipes[index];
             return _buildReviewRecipeCard(recipe);
           },
         );
@@ -194,7 +267,26 @@ class _RecipesPageCompleteState extends State<RecipesPageComplete> with TickerPr
           return const Center(child: CircularProgressIndicator());
         }
 
-        if (recipes.isEmpty) {
+        // Filter recipes based on search query and selected method
+        final filteredRecipes = recipes.where((recipe) {
+          // Filter by search query
+          if (_searchQuery.isNotEmpty) {
+            final query = _searchQuery.toLowerCase();
+            final matchesSearch = recipe.name.toLowerCase().contains(query) ||
+                recipe.description.toLowerCase().contains(query) ||
+                recipe.ingredients.any((ing) => ing.name.toLowerCase().contains(query));
+            if (!matchesSearch) return false;
+          }
+          
+          // Filter by method
+          if (_selectedMethod != null && recipe.method != _selectedMethod) {
+            return false;
+          }
+          
+          return true;
+        }).toList();
+
+        if (filteredRecipes.isEmpty) {
           return const Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -212,9 +304,9 @@ class _RecipesPageCompleteState extends State<RecipesPageComplete> with TickerPr
 
         return ListView.builder(
           padding: const EdgeInsets.all(16),
-          itemCount: recipes.length,
+          itemCount: filteredRecipes.length,
           itemBuilder: (context, index) {
-            final recipe = recipes[index];
+            final recipe = filteredRecipes[index];
             return _buildRecipeCard(recipe);
           },
         );
@@ -231,7 +323,26 @@ class _RecipesPageCompleteState extends State<RecipesPageComplete> with TickerPr
           return const Center(child: CircularProgressIndicator());
         }
 
-        if (recipes.isEmpty) {
+        // Filter recipes based on search query and selected method
+        final filteredRecipes = recipes.where((recipe) {
+          // Filter by search query
+          if (_searchQuery.isNotEmpty) {
+            final query = _searchQuery.toLowerCase();
+            final matchesSearch = recipe.name.toLowerCase().contains(query) ||
+                recipe.description.toLowerCase().contains(query) ||
+                recipe.ingredients.any((ing) => ing.name.toLowerCase().contains(query));
+            if (!matchesSearch) return false;
+          }
+          
+          // Filter by method
+          if (_selectedMethod != null && recipe.method != _selectedMethod) {
+            return false;
+          }
+          
+          return true;
+        }).toList();
+
+        if (filteredRecipes.isEmpty) {
           return const Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -249,9 +360,9 @@ class _RecipesPageCompleteState extends State<RecipesPageComplete> with TickerPr
 
         return ListView.builder(
           padding: const EdgeInsets.all(16),
-          itemCount: recipes.length,
+          itemCount: filteredRecipes.length,
           itemBuilder: (context, index) {
-            final recipe = recipes[index];
+            final recipe = filteredRecipes[index];
             return _buildFlaggedRecipeCard(recipe);
           },
         );

@@ -76,15 +76,17 @@ class _IngredientsPageState extends State<IngredientsPage> {
   }
 
   // Upload single image
-  Future<String?> uploadSelectedImage() async {
+  Future<String?> uploadSelectedImage({VoidCallback? onStateChange}) async {
     if (_selectedImage == null) return null;
     final storageService = Provider.of<StorageService>(context, listen: false);
 
     setState(() => _isUploadingImage = true);
+    onStateChange?.call();
     try {
       return await storageService.uploadImage(_selectedImage!);
     } finally {
       setState(() => _isUploadingImage = false);
+      onStateChange?.call();
     }
   }
 
@@ -102,10 +104,10 @@ class _IngredientsPageState extends State<IngredientsPage> {
   }
 
   // Add ingredient
-  Future<void> addIngredient() async {
+  Future<void> addIngredient({VoidCallback? onStateChange}) async {
     if (!_formKey.currentState!.validate()) return;
 
-    final uploadedUrl = await uploadSelectedImage();
+    final uploadedUrl = await uploadSelectedImage(onStateChange: onStateChange);
     final extraUrls = await uploadExtraImages();
 
     await ingredients.add({
@@ -181,7 +183,21 @@ class _IngredientsPageState extends State<IngredientsPage> {
                     const SizedBox(height: 12),
 
                     _selectedImage != null
-                        ? Image.file(_selectedImage!, height: 120)
+                        ? Stack(
+                            children: [
+                              Image.file(_selectedImage!, height: 120),
+                              if (_isUploadingImage)
+                                Container(
+                                  height: 120,
+                                  color: Colors.black54,
+                                  child: const Center(
+                                    child: CircularProgressIndicator(
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          )
                         : (_uploadedImageUrl != null &&
                                 _uploadedImageUrl!.isNotEmpty)
                             ? Image.network(_uploadedImageUrl!, height: 120)
@@ -192,7 +208,7 @@ class _IngredientsPageState extends State<IngredientsPage> {
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
                         OutlinedButton.icon(
-                          onPressed: () async {
+                          onPressed: _isUploadingImage ? null : () async {
                             await pickImage(ImageSource.gallery);
                             setStateDialog(() {});
                           },
@@ -200,7 +216,7 @@ class _IngredientsPageState extends State<IngredientsPage> {
                           label: const Text("Gallery"),
                         ),
                         OutlinedButton.icon(
-                          onPressed: () async {
+                          onPressed: _isUploadingImage ? null : () async {
                             await pickImage(ImageSource.camera);
                             setStateDialog(() {});
                           },
@@ -213,7 +229,7 @@ class _IngredientsPageState extends State<IngredientsPage> {
 
                     // Add extra images button
                     OutlinedButton.icon(
-                      onPressed: () async {
+                      onPressed: _isUploadingImage ? null : () async {
                         await pickExtraImages();
                         setStateDialog(() {});
                       },
@@ -241,11 +257,24 @@ class _IngredientsPageState extends State<IngredientsPage> {
                 child: const Text('Cancel'),
               ),
               ElevatedButton(
-                onPressed: () async {
-                  await addIngredient();
+                onPressed: _isUploadingImage ? null : () async {
+                  await addIngredient(onStateChange: () => setStateDialog(() {}));
                   Navigator.pop(context);
                 },
-                child: const Text('Add'),
+                child: _isUploadingImage 
+                    ? const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                          SizedBox(width: 8),
+                          Text('Uploading...'),
+                        ],
+                      )
+                    : const Text('Add'),
               ),
             ],
           );

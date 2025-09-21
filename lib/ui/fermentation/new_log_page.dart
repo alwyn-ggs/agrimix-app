@@ -18,7 +18,7 @@ class _NewLogPageState extends State<NewLogPage> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _title = TextEditingController();
   final TextEditingController _notes = TextEditingController();
-  FermentationMethod _method = FermentationMethod.FFJ;
+  FermentationMethod _method = FermentationMethod.ffj;
   DateTime _startAt = DateTime.now();
   bool _alerts = true;
   List<FermentationStage> _stages = const <FermentationStage>[];
@@ -83,10 +83,10 @@ class _NewLogPageState extends State<NewLogPage> {
                             child: RadioListTile<FermentationMethod>(
                               title: const Text('FFJ'),
                               subtitle: const Text('Fermented Fruit Juice'),
-                              value: FermentationMethod.FFJ,
+                              value: FermentationMethod.ffj,
                               groupValue: _method,
                               onChanged: (v) => setState(() {
-                                _method = v ?? FermentationMethod.FFJ;
+                                _method = v ?? FermentationMethod.ffj;
                                 _stages = _defaultStages(_method);
                               }),
                             ),
@@ -95,10 +95,10 @@ class _NewLogPageState extends State<NewLogPage> {
                             child: RadioListTile<FermentationMethod>(
                               title: const Text('FPJ'),
                               subtitle: const Text('Fermented Plant Juice'),
-                              value: FermentationMethod.FPJ,
+                              value: FermentationMethod.fpj,
                               groupValue: _method,
                               onChanged: (v) => setState(() {
-                                _method = v ?? FermentationMethod.FPJ;
+                                _method = v ?? FermentationMethod.fpj;
                                 _stages = _defaultStages(_method);
                               }),
                             ),
@@ -345,7 +345,7 @@ class _NewLogPageState extends State<NewLogPage> {
   }
 
   List<FermentationStage> _defaultStages(FermentationMethod m) {
-    if (m == FermentationMethod.FFJ) {
+    if (m == FermentationMethod.ffj) {
       return const [
         FermentationStage(day: 0, label: 'Day 1', action: 'Mix ingredients'),
         FermentationStage(day: 2, label: 'Day 3', action: 'Stir mixture'),

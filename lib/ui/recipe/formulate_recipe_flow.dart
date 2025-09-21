@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../providers/recipe_provider.dart';
-import '../../repositories/ingredients_repo.dart';
 import '../../repositories/recipes_repo.dart';
 import '../../models/recipe.dart';
 import '../../models/ingredient.dart';
@@ -21,7 +20,7 @@ class FormulateRecipeFlow extends StatefulWidget {
 
 class _FormulateRecipeFlowState extends State<FormulateRecipeFlow> {
   int _step = 0;
-  RecipeMethod _method = RecipeMethod.FFJ;
+  RecipeMethod _method = RecipeMethod.ffj;
   Set<String> _selectedIds = <String>{};
   final TextEditingController _cropCtrl = TextEditingController();
   final TextEditingController _newIngCtrl = TextEditingController();
@@ -60,9 +59,6 @@ class _FormulateRecipeFlowState extends State<FormulateRecipeFlow> {
 
   @override
   Widget build(BuildContext context) {
-    final ingredientsRepo = context.read<IngredientsRepo>();
-    final recipeProvider = context.watch<RecipeProvider>();
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('Formulate Recipe', style: TextStyle(color: Colors.white)),
@@ -93,11 +89,11 @@ class _FormulateRecipeFlowState extends State<FormulateRecipeFlow> {
                 const SizedBox(height: 16),
                 ToggleButtons(
                   isSelected: [
-                    _method == RecipeMethod.FFJ,
-                    _method == RecipeMethod.FPJ,
+                    _method == RecipeMethod.ffj,
+                    _method == RecipeMethod.fpj,
                   ],
                   onPressed: (i) => setState(() {
-                    _method = i == 0 ? RecipeMethod.FFJ : RecipeMethod.FPJ;
+                    _method = i == 0 ? RecipeMethod.ffj : RecipeMethod.fpj;
                     // No need to reset selected crop since all crops are available for both methods
                   }),
                   children: const [
@@ -293,11 +289,6 @@ class _FormulateRecipeFlowState extends State<FormulateRecipeFlow> {
     );
   }
 
-  void _next(BuildContext context) {
-    if (_step == 1 && _selectedIds.isEmpty) return; // require at least one ingredient
-    if (_step < 3) setState(() => _step += 1);
-  }
-
   Future<void> _saveDraft(BuildContext context) async {
     setState(() => _saving = true);
     try {
@@ -459,8 +450,8 @@ class _FormulateRecipeFlowState extends State<FormulateRecipeFlow> {
     if (ingredients.isEmpty) return const <RecipeIngredient>[];
 
     // Method-specific ratios based on fermentation science
-    final double sugarParts = method == RecipeMethod.FFJ ? 1.0 : 1.0;
-    final double materialParts = method == RecipeMethod.FFJ ? 2.0 : 2.0; // More material for better fermentation
+    final double sugarParts = method == RecipeMethod.ffj ? 1.0 : 1.0;
+    final double materialParts = method == RecipeMethod.ffj ? 2.0 : 2.0; // More material for better fermentation
     final double materialWeight = total * (materialParts / (materialParts + sugarParts));
     final double sugarWeight = total - materialWeight;
 
@@ -493,13 +484,13 @@ class _FormulateRecipeFlowState extends State<FormulateRecipeFlow> {
       double adjustedWeight = baseWeight;
       
       // Adjust based on ingredient category and method
-      if (method == RecipeMethod.FFJ) {
+      if (method == RecipeMethod.ffj) {
         if (ingredient.category.toLowerCase().contains('fruit')) {
           adjustedWeight *= 1.2; // Fruits get slightly more weight in FFJ
         } else if (ingredient.category.toLowerCase().contains('flower')) {
           adjustedWeight *= 0.8; // Flowers get less weight
         }
-      } else if (method == RecipeMethod.FPJ) {
+      } else if (method == RecipeMethod.fpj) {
         if (ingredient.category.toLowerCase().contains('plant')) {
           adjustedWeight *= 1.1; // Plants get slightly more weight in FPJ
         } else if (ingredient.category.toLowerCase().contains('weed')) {
@@ -520,7 +511,7 @@ class _FormulateRecipeFlowState extends State<FormulateRecipeFlow> {
     }
     
     // Normalize weights to maintain total
-    final totalCalculated = weights.values.fold(0.0, (sum, weight) => sum + weight);
+    final totalCalculated = weights.values.fold(0.0, (total, weight) => total + weight);
     final factor = totalWeight / totalCalculated;
     
     for (final key in weights.keys) {
@@ -557,8 +548,6 @@ class _FormulateRecipeFlowState extends State<FormulateRecipeFlow> {
         if (byId.containsKey(id)) byId[id]!
     ];
   }
-
-  static String _slugify(String name) => name.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), '_');
 }
 
 class _RatiosAndSteps extends StatelessWidget {
@@ -654,7 +643,7 @@ class _RatiosAndSteps extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: method == RecipeMethod.FFJ 
+            color: method == RecipeMethod.ffj 
                 ? Colors.orange.withAlpha((0.1 * 255).round())
                 : Colors.green.withAlpha((0.1 * 255).round()),
             borderRadius: BorderRadius.circular(8),
@@ -665,12 +654,12 @@ class _RatiosAndSteps extends StatelessWidget {
               Row(
                 children: [
                   Icon(
-                    method == RecipeMethod.FFJ ? Icons.local_fire_department : Icons.eco,
-                    color: method == RecipeMethod.FFJ ? Colors.orange : Colors.green,
+                    method == RecipeMethod.ffj ? Icons.local_fire_department : Icons.eco,
+                    color: method == RecipeMethod.ffj ? Colors.orange : Colors.green,
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    method == RecipeMethod.FFJ ? 'FFJ (Fermented Fruit Juice)' : 'FPJ (Fermented Plant Juice)',
+                    method == RecipeMethod.ffj ? 'FFJ (Fermented Fruit Juice)' : 'FPJ (Fermented Plant Juice)',
                     style: const TextStyle(
                       fontWeight: FontWeight.w600,
                       color: Colors.black87,
@@ -680,7 +669,7 @@ class _RatiosAndSteps extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                method == RecipeMethod.FFJ
+                method == RecipeMethod.ffj
                     ? '• Uses ripe fruits rich in natural sugars\n'
                       '• Provides energy and nutrients to plants\n'
                       '• Best for fruiting and flowering plants\n'
@@ -743,7 +732,7 @@ class _RatiosAndSteps extends StatelessWidget {
             icon: const Icon(Icons.timeline),
             label: const Text('View Step-by-Step Guide'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: method == RecipeMethod.FFJ 
+              backgroundColor: method == RecipeMethod.ffj 
                   ? Colors.orange 
                   : Colors.green,
               foregroundColor: Colors.white,
@@ -816,7 +805,7 @@ class _IngredientSelectionWidgetState extends State<_IngredientSelectionWidget> 
     List<Ingredient> list = widget.allIngredients;
 
     // Filter by method recommendation
-    if (widget.method == RecipeMethod.FFJ) {
+    if (widget.method == RecipeMethod.ffj) {
       final fruits = list.where((i) => 
         i.category.toLowerCase().contains('fruit') ||
         i.category.toLowerCase().contains('flower') ||
@@ -1052,7 +1041,7 @@ class _IngredientSelectionWidgetState extends State<_IngredientSelectionWidget> 
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                widget.method == RecipeMethod.FFJ ? 'FFJ Tips:' : 'FPJ Tips:',
+                widget.method == RecipeMethod.ffj ? 'FFJ Tips:' : 'FPJ Tips:',
                 style: const TextStyle(
                   fontWeight: FontWeight.w600,
                   color: Colors.black87,
@@ -1060,7 +1049,7 @@ class _IngredientSelectionWidgetState extends State<_IngredientSelectionWidget> 
               ),
               const SizedBox(height: 4),
               Text(
-                widget.method == RecipeMethod.FFJ 
+                widget.method == RecipeMethod.ffj 
                   ? '• Choose ripe, sweet fruits for best fermentation\n'
                     '• Bananas, papayas, and citrus work well\n'
                     '• Avoid overripe or spoiled fruits'

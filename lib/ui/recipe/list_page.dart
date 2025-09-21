@@ -129,8 +129,8 @@ class _RecipeListPageState extends State<RecipeListPage> {
                       ),
                       items: const [
                         DropdownMenuItem(value: null, child: Text('All Methods')),
-                        DropdownMenuItem(value: RecipeMethod.FFJ, child: Text('FFJ')),
-                        DropdownMenuItem(value: RecipeMethod.FPJ, child: Text('FPJ')),
+                        DropdownMenuItem(value: RecipeMethod.ffj, child: Text('FFJ')),
+                        DropdownMenuItem(value: RecipeMethod.fpj, child: Text('FPJ')),
                       ],
                       onChanged: (value) => provider.setMethodFilter(value),
                     );
@@ -312,7 +312,7 @@ class _RecipeListPageState extends State<RecipeListPage> {
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                               decoration: BoxDecoration(
-                                color: recipe.method == RecipeMethod.FFJ 
+                                color: recipe.method == RecipeMethod.ffj 
                                     ? NatureColors.lightGreen.withAlpha((0.2 * 255).round())
                                     : NatureColors.accentGreen.withAlpha((0.2 * 255).round()),
                                 borderRadius: BorderRadius.circular(12),
@@ -322,7 +322,7 @@ class _RecipeListPageState extends State<RecipeListPage> {
                                 style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w600,
-                                  color: recipe.method == RecipeMethod.FFJ 
+                                  color: recipe.method == RecipeMethod.ffj 
                                       ? NatureColors.primaryGreen
                                       : NatureColors.darkGreen,
                                 ),

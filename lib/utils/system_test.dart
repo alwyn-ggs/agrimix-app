@@ -175,6 +175,6 @@ class SystemTest {
   }
   
   static double _calculateTotalWeight(List<RecipeIngredient> ingredients) {
-    return ingredients.fold(0.0, (sum, ingredient) => sum + ingredient.amount);
+    return ingredients.fold(0.0, (total, ingredient) => total + ingredient.amount);
   }
 }

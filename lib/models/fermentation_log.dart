@@ -2,7 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../utils/logger.dart';
 
 enum FermentationStatus { active, done, cancelled }
-enum FermentationMethod { FFJ, FPJ }
+enum FermentationMethod { ffj, fpj }
 
 class FermentationStage {
   final int day;
@@ -93,7 +93,7 @@ class FermentationLog {
         ownerUid: map['ownerUid'] ?? '',
         recipeId: map['recipeId'],
         title: map['title'] ?? '',
-        method: (map['method'] == 'FPJ') ? FermentationMethod.FPJ : FermentationMethod.FFJ,
+        method: (map['method'] == 'fpj') ? FermentationMethod.fpj : FermentationMethod.ffj,
         ingredients: _parseIngredients(map['ingredients']),
         startAt: map['startAt'] is Timestamp
             ? (map['startAt'] as Timestamp).toDate()
@@ -122,7 +122,7 @@ class FermentationLog {
         'ownerUid': ownerUid,
         'recipeId': recipeId,
         'title': title,
-        'method': method == FermentationMethod.FPJ ? 'FPJ' : 'FFJ',
+        'method': method == FermentationMethod.fpj ? 'fpj' : 'ffj',
         'ingredients': ingredients.map((e) => e.toMap()).toList(),
         'startAt': Timestamp.fromDate(startAt),
         'stages': stages.map((e) => e.toMap()).toList(),

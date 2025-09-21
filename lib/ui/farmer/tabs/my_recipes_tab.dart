@@ -226,6 +226,25 @@ class _MyRecipesTabState extends State<MyRecipesTab> with TickerProviderStateMix
   }
 
   Widget _buildRecipeList(List<Recipe> recipes, String title) {
+    // Filter recipes based on search query and selected method
+    final filteredRecipes = recipes.where((recipe) {
+      // Filter by search query
+      if (_searchQuery.isNotEmpty) {
+        final query = _searchQuery.toLowerCase();
+        final matchesSearch = recipe.name.toLowerCase().contains(query) ||
+            recipe.description.toLowerCase().contains(query) ||
+            recipe.ingredients.any((ing) => ing.name.toLowerCase().contains(query));
+        if (!matchesSearch) return false;
+      }
+      
+      // Filter by method
+      if (_selectedMethod != null && recipe.method != _selectedMethod) {
+        return false;
+      }
+      
+      return true;
+    }).toList();
+
     return Column(
       children: [
         // Header with count
@@ -265,7 +284,7 @@ class _MyRecipesTabState extends State<MyRecipesTab> with TickerProviderStateMix
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
-                  '${recipes.length}',
+                  '${filteredRecipes.length}',
                   style: const TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
@@ -299,8 +318,8 @@ class _MyRecipesTabState extends State<MyRecipesTab> with TickerProviderStateMix
                 hint: const Text('Method'),
                 items: const [
                   DropdownMenuItem(value: null, child: Text('All')),
-                  DropdownMenuItem(value: RecipeMethod.FFJ, child: Text('FFJ')),
-                  DropdownMenuItem(value: RecipeMethod.FPJ, child: Text('FPJ')),
+                  DropdownMenuItem(value: RecipeMethod.ffj, child: Text('FFJ')),
+                  DropdownMenuItem(value: RecipeMethod.fpj, child: Text('FPJ')),
                 ],
                 onChanged: (value) => setState(() => _selectedMethod = value),
               ),
@@ -312,9 +331,9 @@ class _MyRecipesTabState extends State<MyRecipesTab> with TickerProviderStateMix
         Expanded(
           child: ListView.builder(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            itemCount: recipes.length,
+            itemCount: filteredRecipes.length,
             itemBuilder: (context, index) {
-              final recipe = recipes[index];
+              final recipe = filteredRecipes[index];
               return _buildRecipeCard(recipe);
             },
           ),
@@ -392,7 +411,7 @@ class _MyRecipesTabState extends State<MyRecipesTab> with TickerProviderStateMix
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                               decoration: BoxDecoration(
-                                color: recipe.method == RecipeMethod.FFJ 
+                                color: recipe.method == RecipeMethod.ffj 
                                     ? NatureColors.lightGreen.withAlpha((0.2 * 255).round())
                                     : NatureColors.accentGreen.withAlpha((0.2 * 255).round()),
                                 borderRadius: BorderRadius.circular(12),
@@ -402,7 +421,7 @@ class _MyRecipesTabState extends State<MyRecipesTab> with TickerProviderStateMix
                                 style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w600,
-                                  color: recipe.method == RecipeMethod.FFJ 
+                                  color: recipe.method == RecipeMethod.ffj 
                                       ? NatureColors.primaryGreen
                                       : NatureColors.darkGreen,
                                 ),

@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-enum RecipeMethod { FFJ, FPJ }
+enum RecipeMethod { ffj, fpj }
 enum RecipeVisibility { public, private }
 
 class RecipeIngredient {
@@ -109,7 +109,7 @@ class Recipe {
         ownerUid: map['ownerUid'] ?? '',
         name: map['name'] ?? '',
         description: map['description'] ?? '',
-        method: (map['method'] == 'FPJ') ? RecipeMethod.FPJ : RecipeMethod.FFJ,
+        method: (map['method'] == 'fpj') ? RecipeMethod.fpj : RecipeMethod.ffj,
         cropTarget: map['cropTarget'] ?? '',
         ingredients: (map['ingredients'] as List?)
                 ?.map((e) => RecipeIngredient.fromMap(Map<String, dynamic>.from(e as Map)))
@@ -142,7 +142,7 @@ class Recipe {
         'ownerUid': ownerUid,
         'name': name,
         'description': description,
-        'method': method == RecipeMethod.FPJ ? 'FPJ' : 'FFJ',
+        'method': method == RecipeMethod.fpj ? 'fpj' : 'ffj',
         'cropTarget': cropTarget,
         'ingredients': ingredients.map((e) => e.toMap()).toList(),
         'steps': steps.map((e) => e.toMap()).toList(),

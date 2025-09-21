@@ -106,7 +106,7 @@ class RecipesTab extends StatelessWidget {
                 // FPJ Recipe
                 _buildStandardRecipeCard(
                   context: context,
-                  method: RecipeMethod.FPJ,
+                  method: RecipeMethod.fpj,
                   title: '🌱 Fermented Plant Juice (FPJ)',
                   description: 'For general plant growth and development',
                   color: NatureColors.lightGreen,
@@ -115,7 +115,7 @@ class RecipesTab extends StatelessWidget {
                 // FFJ Recipe
                 _buildStandardRecipeCard(
                   context: context,
-                  method: RecipeMethod.FFJ,
+                  method: RecipeMethod.ffj,
                   title: '🍌 Fermented Fruit Juice (FFJ)',
                   description: 'For flowering and fruit development',
                   color: NatureColors.accentGreen,
@@ -175,7 +175,7 @@ class RecipesTab extends StatelessWidget {
           borderRadius: BorderRadius.circular(8),
         ),
         child: Icon(
-          method == RecipeMethod.FPJ ? Icons.eco : Icons.local_florist,
+          method == RecipeMethod.fpj ? Icons.eco : Icons.local_florist,
           color: NatureColors.pureWhite,
           size: 20,
         ),
@@ -208,7 +208,7 @@ class RecipesTab extends StatelessWidget {
               ),
               const SizedBox(width: 4),
               Text(
-                method == RecipeMethod.FPJ ? '7 days' : '7-10 days',
+                method == RecipeMethod.fpj ? '7 days' : '7-10 days',
                 style: TextStyle(
                   fontSize: 12,
                   color: Colors.grey[600],
@@ -246,7 +246,7 @@ class RecipesTab extends StatelessWidget {
       context: context,
       builder: (context) => AlertDialog(
         title: Text(
-          method == RecipeMethod.FPJ 
+          method == RecipeMethod.fpj 
             ? '🌱 Fermented Plant Juice (FPJ)' 
             : '🍌 Fermented Fruit Juice (FFJ)',
         ),
@@ -256,7 +256,7 @@ class RecipesTab extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                method == RecipeMethod.FPJ 
+                method == RecipeMethod.fpj 
                   ? 'For general plant growth and development'
                   : 'For flowering and fruit development',
                 style: const TextStyle(fontWeight: FontWeight.w500),
@@ -269,7 +269,7 @@ class RecipesTab extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               
-              if (method == RecipeMethod.FPJ) ...[
+              if (method == RecipeMethod.fpj) ...[
                 const Text('• 2 kg plant materials (kangkong, banana trunk, alugbati, sweet potato, bamboo shoot)'),
                 const Text('• 1 kg molasses or brown sugar'),
                 const Text('• Clean paper or cloth (cover)'),
@@ -289,7 +289,7 @@ class RecipesTab extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               
-              if (method == RecipeMethod.FPJ) ...[
+              if (method == RecipeMethod.fpj) ...[
                 const Text('1. Cut 2 kg of plants rich in growth hormone'),
                 const Text('2. Mix with 1 kg molasses/brown sugar'),
                 const Text('3. Cover with paper/cloth and place in cool/dark place'),

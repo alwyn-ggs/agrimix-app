@@ -160,8 +160,8 @@ class AdminFermentationProvider extends ChangeNotifier {
 
   // Chart data for method breakdown
   Map<String, int> getMethodBreakdown() {
-    final ffjCount = _allLogs.where((log) => log.method == FermentationMethod.FFJ).length;
-    final fpjCount = _allLogs.where((log) => log.method == FermentationMethod.FPJ).length;
+    final ffjCount = _allLogs.where((log) => log.method == FermentationMethod.ffj).length;
+    final fpjCount = _allLogs.where((log) => log.method == FermentationMethod.fpj).length;
     
     return {
       'FFJ': ffjCount,
@@ -177,8 +177,8 @@ class AdminFermentationProvider extends ChangeNotifier {
       return {'FFJ': 0.0, 'FPJ': 0.0};
     }
 
-    final ffjLogs = completedLogs.where((log) => log.method == FermentationMethod.FFJ).toList();
-    final fpjLogs = completedLogs.where((log) => log.method == FermentationMethod.FPJ).toList();
+    final ffjLogs = completedLogs.where((log) => log.method == FermentationMethod.ffj).toList();
+    final fpjLogs = completedLogs.where((log) => log.method == FermentationMethod.fpj).toList();
 
     double ffjAvg = 0.0;
     double fpjAvg = 0.0;
@@ -231,8 +231,8 @@ class AdminFermentationProvider extends ChangeNotifier {
       'active': getLogsByStatus(FermentationStatus.active).length,
       'completed': getLogsByStatus(FermentationStatus.done).length,
       'cancelled': getLogsByStatus(FermentationStatus.cancelled).length,
-      'ffj': getLogsByMethod(FermentationMethod.FFJ).length,
-      'fpj': getLogsByMethod(FermentationMethod.FPJ).length,
+      'ffj': getLogsByMethod(FermentationMethod.ffj).length,
+      'fpj': getLogsByMethod(FermentationMethod.fpj).length,
     };
   }
 

@@ -43,7 +43,7 @@ class _RecipeFormState extends State<_RecipeForm> {
   final TextEditingController _name = TextEditingController();
   final TextEditingController _description = TextEditingController();
   final TextEditingController _crop = TextEditingController();
-  RecipeMethod _method = RecipeMethod.FFJ;
+  RecipeMethod _method = RecipeMethod.ffj;
   RecipeVisibility _visibility = RecipeVisibility.private;
   final List<File> _images = [];
   List<String> _imageUrls = [];
@@ -196,10 +196,10 @@ class _RecipeFormState extends State<_RecipeForm> {
                       ),
                     ),
                     items: const [
-                      DropdownMenuItem(value: RecipeMethod.FFJ, child: Text('FFJ')),
-                      DropdownMenuItem(value: RecipeMethod.FPJ, child: Text('FPJ')),
+                      DropdownMenuItem(value: RecipeMethod.ffj, child: Text('FFJ')),
+                      DropdownMenuItem(value: RecipeMethod.fpj, child: Text('FPJ')),
                     ],
-                    onChanged: (v) => setState(() => _method = v ?? RecipeMethod.FFJ),
+                    onChanged: (v) => setState(() => _method = v ?? RecipeMethod.ffj),
                   ),
                 ),
               ],

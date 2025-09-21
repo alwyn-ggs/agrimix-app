@@ -16,7 +16,6 @@ class FermentationTab extends StatefulWidget {
 class _FermentationTabState extends State<FermentationTab> with TickerProviderStateMixin {
   late TabController _tabController;
   String _searchQuery = '';
-  FermentationStatus? _statusFilter;
   FermentationMethod? _methodFilter;
 
   @override
@@ -442,13 +441,13 @@ class _FermentationTabState extends State<FermentationTab> with TickerProviderSt
               ),
               RadioListTile<FermentationMethod?>(
                 title: const Text('FFJ'),
-                value: FermentationMethod.FFJ,
+                value: FermentationMethod.ffj,
                 groupValue: _methodFilter,
                 onChanged: (value) => setDialogState(() => _methodFilter = value),
               ),
               RadioListTile<FermentationMethod?>(
                 title: const Text('FPJ'),
-                value: FermentationMethod.FPJ,
+                value: FermentationMethod.fpj,
                 groupValue: _methodFilter,
                 onChanged: (value) => setDialogState(() => _methodFilter = value),
               ),

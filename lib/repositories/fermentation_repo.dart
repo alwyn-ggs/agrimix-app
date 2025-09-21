@@ -61,7 +61,7 @@ class FermentationRepo {
         where.add(QueryFilter(field: 'status', value: status.name));
       }
       if (method != null) {
-        where.add(QueryFilter(field: 'method', value: method == FermentationMethod.FPJ ? 'FPJ' : 'FFJ'));
+        where.add(QueryFilter(field: 'method', value: method == FermentationMethod.fpj ? 'fpj' : 'ffj'));
       }
 
       final docs = await _fs.getDocuments(
@@ -91,7 +91,7 @@ class FermentationRepo {
         where.add(QueryFilter(field: 'status', value: status.name));
       }
       if (method != null) {
-        where.add(QueryFilter(field: 'method', value: method == FermentationMethod.FPJ ? 'FPJ' : 'FFJ'));
+        where.add(QueryFilter(field: 'method', value: method == FermentationMethod.fpj ? 'fpj' : 'ffj'));
       }
 
       return _fs.watchDocuments(

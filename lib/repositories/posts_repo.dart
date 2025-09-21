@@ -312,8 +312,8 @@ class PostsRepo {
       final posts = await getPosts(ownerUid: userId, limit: 1000);
       final stats = <String, int>{
         'total': posts.length,
-        'totalLikes': posts.fold(0, (sum, post) => sum + post.likes),
-        'totalSaved': posts.fold(0, (sum, post) => sum + post.savedBy.length),
+        'totalLikes': posts.fold(0, (total, post) => total + post.likes),
+        'totalSaved': posts.fold(0, (total, post) => total + post.savedBy.length),
       };
       return stats;
     } catch (e) {

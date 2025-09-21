@@ -135,7 +135,7 @@ class FermentationGuideService {
     }
     
     // Normalize weights to maintain total
-    final totalCalculated = weights.values.fold(0.0, (sum, weight) => sum + weight);
+    final totalCalculated = weights.values.fold(0.0, (total, weight) => total + weight);
     if (totalCalculated > 0) {
       final factor = materialWeight / totalCalculated;
       for (final key in weights.keys) {
@@ -156,7 +156,7 @@ class FermentationGuideService {
     double totalWeight
   ) {
     final characteristics = methodCharacteristics[method]!;
-    final materialType = characteristics['materialType'];
+    final materialType = characteristics['materialType'] as String;
     
     return [
       // Preparation Phase
@@ -202,7 +202,7 @@ class FermentationGuideService {
         phase: 'Material Preparation',
         order: 3,
         title: 'Select and Clean Materials',
-        description: 'Choose the best quality materials for fermentation',
+        description: 'Choose the best quality $materialType for fermentation',
         details: method == RecipeMethod.FFJ ? [
           'Select ripe, sweet fruits (banana, papaya, mango, etc.)',
           'Choose fresh, clean flowers if available',
