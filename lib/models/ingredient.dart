@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'nutrient_profile.dart';
 
 class Ingredient {
   final String id;
@@ -7,6 +8,7 @@ class Ingredient {
   final String? description;
   final List<String> recommendedFor; // crops list
   final List<String> precautions;
+  final NutrientProfile? nutrientProfile; // Nutritional and plant benefit data
   final DateTime createdAt;
 
   const Ingredient({
@@ -16,6 +18,7 @@ class Ingredient {
     this.description,
     required this.recommendedFor,
     required this.precautions,
+    this.nutrientProfile,
     required this.createdAt,
   });
 
@@ -29,6 +32,9 @@ class Ingredient {
         description: map['description'],
         recommendedFor: List<String>.from(map['recommendedFor'] ?? const <String>[]),
         precautions: List<String>.from(map['precautions'] ?? const <String>[]),
+        nutrientProfile: map['nutrientProfile'] != null 
+            ? NutrientProfile.fromMap(Map<String, dynamic>.from(map['nutrientProfile']))
+            : null,
         createdAt: map['createdAt'] is Timestamp
             ? (map['createdAt'] as Timestamp).toDate()
             : DateTime.now(),
@@ -45,6 +51,7 @@ class Ingredient {
         'description': description,
         'recommendedFor': recommendedFor,
         'precautions': precautions,
+        'nutrientProfile': nutrientProfile?.toMap(),
         'createdAt': Timestamp.fromDate(createdAt),
       };
 
@@ -54,6 +61,7 @@ class Ingredient {
     String? description,
     List<String>? recommendedFor,
     List<String>? precautions,
+    NutrientProfile? nutrientProfile,
     DateTime? createdAt,
   }) => Ingredient(
         id: id,
@@ -62,6 +70,7 @@ class Ingredient {
         description: description ?? this.description,
         recommendedFor: recommendedFor ?? this.recommendedFor,
         precautions: precautions ?? this.precautions,
+        nutrientProfile: nutrientProfile ?? this.nutrientProfile,
         createdAt: createdAt ?? this.createdAt,
       );
 
@@ -76,11 +85,12 @@ class Ingredient {
           description == other.description &&
           _listEquals(recommendedFor, other.recommendedFor) &&
           _listEquals(precautions, other.precautions) &&
+          nutrientProfile == other.nutrientProfile &&
           createdAt == other.createdAt;
 
   @override
   int get hashCode => Object.hash(
-      id, name, category, description, Object.hashAll(recommendedFor), Object.hashAll(precautions), createdAt);
+      id, name, category, description, Object.hashAll(recommendedFor), Object.hashAll(precautions), nutrientProfile, createdAt);
 
   static bool _listEquals(List a, List b) {
     if (identical(a, b)) return true;

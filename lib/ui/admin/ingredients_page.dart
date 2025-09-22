@@ -4,6 +4,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../../services/storage_service.dart';
+import '../../models/nutrient_profile.dart';
+import 'nutrient_profile_form.dart';
 
 class IngredientsPage extends StatefulWidget {
   const IngredientsPage({super.key});
@@ -20,17 +22,11 @@ class _IngredientsPageState extends State<IngredientsPage> {
 
   // Controllers for input fields
   final TextEditingController nameController = TextEditingController();
-  final TextEditingController typeController = TextEditingController();
-  final TextEditingController originController = TextEditingController();
-  final TextEditingController supplierController = TextEditingController();
-  final TextEditingController phController = TextEditingController();
-  final TextEditingController sugarController = TextEditingController();
-  final TextEditingController roleController = TextEditingController();
-  final TextEditingController dosageController = TextEditingController();
-  final TextEditingController shelfController = TextEditingController();
-  final TextEditingController storageController = TextEditingController();
-  final TextEditingController microbeController = TextEditingController();
-  final TextEditingController stockController = TextEditingController();
+  final TextEditingController categoryController = TextEditingController();
+  final TextEditingController descriptionController = TextEditingController();
+  
+  // Nutrient profile
+  NutrientProfile? _nutrientProfile;
 
   File? _selectedImage;
   String? _uploadedImageUrl;
@@ -110,25 +106,23 @@ class _IngredientsPageState extends State<IngredientsPage> {
     final uploadedUrl = await uploadSelectedImage(onStateChange: onStateChange);
     final extraUrls = await uploadExtraImages();
 
+    // Store the uploaded image URL for immediate display
+    if (uploadedUrl != null) {
+      _uploadedImageUrl = uploadedUrl;
+    }
+
     await ingredients.add({
       'name': nameController.text,
-      'type': typeController.text,
-      'origin': originController.text,
-      'supplier': supplierController.text,
-      'ph_level': phController.text,
-      'sugar_content': sugarController.text,
-      'primary_role': roleController.text,
-      'recommended_dosage': dosageController.text,
-      'shelf_life': shelfController.text,
-      'storage_condition': storageController.text,
-      'preferred_microbe': microbeController.text,
-      'stock_quantity': stockController.text,
+      'category': categoryController.text, // FFJ or FPJ
+      'description': descriptionController.text,
+      'nutrientProfile': _nutrientProfile?.toMap(), // Include nutrient profile
       'imageUrl': uploadedUrl ?? '',
       'extraImages': extraUrls,
-      'created_at': FieldValue.serverTimestamp(),
+      'createdAt': FieldValue.serverTimestamp(),
     });
 
-    clearForm();
+    // Don't clear the form immediately - let user see the result
+    // clearForm();
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Ingredient added successfully!')),
     );
@@ -137,20 +131,12 @@ class _IngredientsPageState extends State<IngredientsPage> {
   // Clear inputs
   void clearForm() {
     nameController.clear();
-    typeController.clear();
-    originController.clear();
-    supplierController.clear();
-    phController.clear();
-    sugarController.clear();
-    roleController.clear();
-    dosageController.clear();
-    shelfController.clear();
-    storageController.clear();
-    microbeController.clear();
-    stockController.clear();
+    categoryController.clear();
+    descriptionController.clear();
     _selectedImage = null;
     _uploadedImageUrl = null;
     _extraImages.clear();
+    _nutrientProfile = null;
     _uploadedExtraImageUrls.clear();
   }
 
@@ -163,29 +149,100 @@ class _IngredientsPageState extends State<IngredientsPage> {
         builder: (context, setStateDialog) {
           return AlertDialog(
             title: const Text('Add Ingredient'),
-            content: SingleChildScrollView(
+            content: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: MediaQuery.of(context).size.width * 0.9,
+                maxHeight: MediaQuery.of(context).size.height * 0.8,
+              ),
+              child: SingleChildScrollView(
               child: Form(
                 key: _formKey,
                 child: Column(
                   children: [
                     buildTextField(nameController, 'Ingredient Name'),
-                    buildTextField(typeController, 'Type'),
-                    buildTextField(originController, 'Origin'),
-                    buildTextField(supplierController, 'Supplier'),
-                    buildTextField(phController, 'pH Level'),
-                    buildTextField(sugarController, 'Sugar Content (°Brix)'),
-                    buildTextField(roleController, 'Primary Role'),
-                    buildTextField(dosageController, 'Recommended Dosage'),
-                    buildTextField(shelfController, 'Shelf Life'),
-                    buildTextField(storageController, 'Storage Condition'),
-                    buildTextField(microbeController, 'Preferred Microbe'),
-                    buildTextField(stockController, 'Stock Quantity'),
+                    buildCategoryDropdown(),
+                    buildTextField(descriptionController, 'Description'),
+                    
+                    const SizedBox(height: 16),
+                    
+                    // Nutrient Profile Section
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey.shade300),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(Icons.science, color: Colors.blue),
+                              const SizedBox(width: 8),
+                              const Text(
+                                'Nutrient Profile',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const Spacer(),
+                              if (_nutrientProfile != null)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: Colors.green.shade100,
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: const Text(
+                                    'Configured',
+                                    style: TextStyle(
+                                      color: Colors.green,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            _nutrientProfile == null 
+                                ? 'No nutrient profile configured'
+                                : 'Nutrient profile is configured for ${categoryController.text.toUpperCase()}',
+                            style: TextStyle(
+                              color: Colors.grey.shade600,
+                              fontSize: 14,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton.icon(
+                              onPressed: () => _openNutrientProfileForm(),
+                              icon: const Icon(Icons.add),
+                              label: Text(_nutrientProfile == null ? 'Add Nutrient Profile' : 'Edit Nutrient Profile'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.blue,
+                                foregroundColor: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                     const SizedBox(height: 12),
 
+                    // Show selected image, uploaded image, or placeholder
                     _selectedImage != null
                         ? Stack(
                             children: [
-                              Image.file(_selectedImage!, height: 120),
+                              Image.file(_selectedImage!, 
+                                height: 120, 
+                                width: double.infinity,
+                                fit: BoxFit.cover,
+                              ),
                               if (_isUploadingImage)
                                 Container(
                                   height: 120,
@@ -198,43 +255,84 @@ class _IngredientsPageState extends State<IngredientsPage> {
                                 ),
                             ],
                           )
-                        : (_uploadedImageUrl != null &&
-                                _uploadedImageUrl!.isNotEmpty)
-                            ? Image.network(_uploadedImageUrl!, height: 120)
-                            : const Text("No image selected"),
+                        : (_uploadedImageUrl != null && _uploadedImageUrl!.isNotEmpty)
+                            ? Image.network(
+                                _uploadedImageUrl!, 
+                                height: 120,
+                                width: double.infinity,
+                                fit: BoxFit.cover,
+                                loadingBuilder: (context, child, loadingProgress) {
+                                  if (loadingProgress == null) return child;
+                                  return const Center(
+                                    child: CircularProgressIndicator(),
+                                  );
+                                },
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Container(
+                                    height: 120,
+                                    color: Colors.grey[300],
+                                    child: const Icon(
+                                      Icons.broken_image,
+                                      size: 50,
+                                      color: Colors.grey,
+                                    ),
+                                  );
+                                },
+                              )
+                            : Container(
+                                height: 120,
+                                color: Colors.grey[200],
+                                child: const Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.add_photo_alternate,
+                                      size: 40,
+                                      color: Colors.grey,
+                                    ),
+                                    SizedBox(height: 8),
+                                    Text(
+                                      "No image selected",
+                                      style: TextStyle(color: Colors.grey),
+                                    ),
+                                  ],
+                                ),
+                              ),
                     const SizedBox(height: 10),
 
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        OutlinedButton.icon(
-                          onPressed: _isUploadingImage ? null : () async {
-                            await pickImage(ImageSource.gallery);
-                            setStateDialog(() {});
-                          },
-                          icon: const Icon(Icons.photo),
-                          label: const Text("Gallery"),
-                        ),
-                        OutlinedButton.icon(
-                          onPressed: _isUploadingImage ? null : () async {
-                            await pickImage(ImageSource.camera);
-                            setStateDialog(() {});
-                          },
-                          icon: const Icon(Icons.camera_alt),
-                          label: const Text("Camera"),
-                        ),
-                      ],
+                    // Responsive button layout to prevent overflow
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        final isWideScreen = constraints.maxWidth > 400;
+                        return isWideScreen
+                            ? Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                children: _buildImageButtons(setStateDialog),
+                              )
+                            : Wrap(
+                                alignment: WrapAlignment.center,
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: _buildImageButtons(setStateDialog),
+                              );
+                      },
                     ),
                     const SizedBox(height: 15),
 
                     // Add extra images button
-                    OutlinedButton.icon(
-                      onPressed: _isUploadingImage ? null : () async {
-                        await pickExtraImages();
-                        setStateDialog(() {});
-                      },
-                      icon: const Icon(Icons.add_photo_alternate),
-                      label: const Text("Add Extra Images"),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: _isUploadingImage ? null : () async {
+                          await pickExtraImages();
+                          setStateDialog(() {});
+                        },
+                        icon: const Icon(Icons.add_photo_alternate, size: 18),
+                        label: const Text("Add Extra Images", style: TextStyle(fontSize: 12)),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        ),
+                      ),
                     ),
 
                     // Preview extra images
@@ -250,6 +348,7 @@ class _IngredientsPageState extends State<IngredientsPage> {
                   ],
                 ),
               ),
+              ),
             ),
             actions: [
               TextButton(
@@ -259,6 +358,7 @@ class _IngredientsPageState extends State<IngredientsPage> {
               ElevatedButton(
                 onPressed: _isUploadingImage ? null : () async {
                   await addIngredient(onStateChange: () => setStateDialog(() {}));
+                  clearForm(); // Clear form after successful save
                   Navigator.pop(context);
                 },
                 child: _isUploadingImage 
@@ -299,6 +399,117 @@ class _IngredientsPageState extends State<IngredientsPage> {
     );
   }
 
+  // Build category dropdown
+  Widget buildCategoryDropdown() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6.0),
+      child: DropdownButtonFormField<String>(
+        value: categoryController.text.isEmpty ? null : categoryController.text,
+        decoration: const InputDecoration(
+          labelText: 'Category',
+          border: OutlineInputBorder(),
+        ),
+        isExpanded: true, // Prevent overflow by expanding dropdown
+        items: const [
+          DropdownMenuItem(
+            value: 'FFJ', 
+            child: Text(
+              'FFJ (Fermented Fruit Juice)',
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+            ),
+          ),
+          DropdownMenuItem(
+            value: 'FPJ', 
+            child: Text(
+              'FPJ (Fermented Plant Juice)',
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+            ),
+          ),
+        ],
+        onChanged: (value) {
+          categoryController.text = value ?? '';
+        },
+        validator: (value) =>
+            value == null || value.isEmpty ? 'Please select a category' : null,
+      ),
+    );
+  }
+
+  // Build image buttons for responsive layout
+  List<Widget> _buildImageButtons(void Function(void Function()) setStateDialog) {
+    return [
+      OutlinedButton.icon(
+        onPressed: _isUploadingImage ? null : () async {
+          await pickImage(ImageSource.gallery);
+          setStateDialog(() {});
+        },
+        icon: const Icon(Icons.photo, size: 18),
+        label: const Text("Gallery", style: TextStyle(fontSize: 12)),
+        style: OutlinedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        ),
+      ),
+      OutlinedButton.icon(
+        onPressed: _isUploadingImage ? null : () async {
+          await pickImage(ImageSource.camera);
+          setStateDialog(() {});
+        },
+        icon: const Icon(Icons.camera_alt, size: 18),
+        label: const Text("Camera", style: TextStyle(fontSize: 12)),
+        style: OutlinedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        ),
+      ),
+      if (_selectedImage != null || _uploadedImageUrl != null)
+        OutlinedButton.icon(
+          onPressed: _isUploadingImage ? null : () {
+            setState(() {
+              _selectedImage = null;
+              _uploadedImageUrl = null;
+            });
+            setStateDialog(() {});
+          },
+          icon: const Icon(Icons.clear, size: 18),
+          label: const Text("Clear", style: TextStyle(fontSize: 12)),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: Colors.red,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          ),
+        ),
+    ];
+  }
+
+  // Open nutrient profile form
+  void _openNutrientProfileForm() {
+    if (categoryController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select ingredient category (FFJ or FPJ) first'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => NutrientProfileForm(
+          initialProfile: _nutrientProfile,
+          ingredientType: categoryController.text,
+          title: 'Nutrient Profile for ${nameController.text}',
+          onSave: (profile) {
+            setState(() {
+              _nutrientProfile = profile;
+            });
+          },
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -311,7 +522,7 @@ class _IngredientsPageState extends State<IngredientsPage> {
         child: const Icon(Icons.add),
       ),
       body: StreamBuilder<QuerySnapshot>(
-        stream: ingredients.orderBy('created_at', descending: true).snapshots(),
+        stream: ingredients.orderBy('createdAt', descending: true).snapshots(),
         builder: (context, snapshot) {
           if (snapshot.hasError) {
             return const Center(child: Text('Something went wrong'));
@@ -345,18 +556,19 @@ class _IngredientsPageState extends State<IngredientsPage> {
 
           return GridView.builder(
             padding: const EdgeInsets.all(12),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2, // ✅ Two cards per row
+            gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+              maxCrossAxisExtent: 200, // Maximum width for each card
               crossAxisSpacing: 12,
               mainAxisSpacing: 12,
-              childAspectRatio: 0.72, // ✅ Show ~6 items before scrolling
+              childAspectRatio: 0.75, // ✅ Slightly more vertical space to prevent overflow
             ),
             itemCount: data.length,
             itemBuilder: (context, index) {
               final ingredient = data[index];
-              final imageUrl = ingredient['imageUrl'] ?? '';
+              final ingredientData = (ingredient.data() as Map<String, dynamic>?) ?? {};
+              final imageUrl = ingredientData['imageUrl'] ?? '';
               final extraImages =
-                  List<String>.from(ingredient['extraImages'] ?? []);
+                  List<String>.from(ingredientData['extraImages'] ?? []);
 
               return Card(
                 elevation: 4,
@@ -365,6 +577,7 @@ class _IngredientsPageState extends State<IngredientsPage> {
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     // ✅ Ingredient Main Image (Smaller but still clear)
                     ClipRRect(
@@ -376,16 +589,27 @@ class _IngredientsPageState extends State<IngredientsPage> {
                               imageUrl,
                               fit: BoxFit.cover,
                               width: double.infinity,
-                              height: 110, // ✅ Smaller image for compact UI
+                              height: 100, // ✅ Reduced height to prevent overflow
                               loadingBuilder:
                                   (context, child, loadingProgress) {
                                 if (loadingProgress == null) return child;
                                 return const Center(
                                     child: CircularProgressIndicator());
                               },
+                              errorBuilder: (context, error, stackTrace) {
+                                return Container(
+                                  height: 100,
+                                  color: Colors.grey[300],
+                                  child: const Icon(
+                                    Icons.broken_image,
+                                    size: 50,
+                                    color: Colors.grey,
+                                  ),
+                                );
+                              },
                             )
                           : Container(
-                              height: 110,
+                              height: 100,
                               color: Colors.grey[300],
                               child: const Icon(
                                 Icons.image_not_supported,
@@ -395,18 +619,49 @@ class _IngredientsPageState extends State<IngredientsPage> {
                             ),
                     ),
 
-                    // ✅ Ingredient Name
-                    Padding(
-                      padding: const EdgeInsets.all(6.0),
-                      child: Text(
-                        ingredient['name'] ?? "Unknown Ingredient",
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
+                    // ✅ Ingredient Name and Category
+                    SizedBox(
+                      height: 55, // Reduced height to prevent overflow
+                      child: Padding(
+                        padding: const EdgeInsets.all(6.0),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                          Text(
+                            ingredientData['name'] ?? "Unknown Ingredient",
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 4),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: (ingredientData['category'] ?? '') == 'FFJ' 
+                                  ? Colors.orange.shade100 
+                                  : Colors.green.shade100,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(
+                              ingredientData['category'] ?? 'Unknown',
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                color: (ingredientData['category'] ?? '') == 'FFJ' 
+                                    ? Colors.orange.shade800 
+                                    : Colors.green.shade800,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ],
                         ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
 
@@ -432,7 +687,7 @@ class _IngredientsPageState extends State<IngredientsPage> {
                                 MaterialPageRoute(
                                   builder: (_) => ExtraImagesPage(
                                     images: extraImages,
-                                    ingredientName: ingredient['name'],
+                                    ingredientName: ingredientData['name'],
                                   ),
                                 ),
                               );
@@ -450,7 +705,7 @@ class _IngredientsPageState extends State<IngredientsPage> {
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 title: Text(
-                                  ingredient['name'],
+                                  ingredientData['name'] ?? 'Unknown Ingredient',
                                   style: const TextStyle(
                                       fontWeight: FontWeight.bold),
                                 ),
@@ -459,27 +714,20 @@ class _IngredientsPageState extends State<IngredientsPage> {
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
-                                      _buildInfoRow("Type", ingredient['type']),
-                                      _buildInfoRow(
-                                          "Origin", ingredient['origin']),
-                                      _buildInfoRow(
-                                          "Supplier", ingredient['supplier']),
-                                      _buildInfoRow(
-                                          "pH Level", ingredient['ph_level']),
-                                      _buildInfoRow("Sugar Content",
-                                          ingredient['sugar_content']),
-                                      _buildInfoRow("Primary Role",
-                                          ingredient['primary_role']),
-                                      _buildInfoRow("Dosage",
-                                          ingredient['recommended_dosage']),
-                                      _buildInfoRow("Shelf Life",
-                                          ingredient['shelf_life']),
-                                      _buildInfoRow("Storage",
-                                          ingredient['storage_condition']),
-                                      _buildInfoRow("Preferred Microbe",
-                                          ingredient['preferred_microbe']),
-                                      _buildInfoRow("Stock",
-                                          ingredient['stock_quantity']),
+                                      _buildInfoRow("Category", ingredientData['category']),
+                                      _buildInfoRow("Description", ingredientData['description']),
+                                      if (ingredientData['nutrientProfile'] != null) ...[
+                                        const SizedBox(height: 16),
+                                        const Text(
+                                          "Nutrient Profile:",
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 16,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 8),
+                                        _buildNutrientInfo(ingredientData['nutrientProfile'], ingredientData['category']),
+                                      ],
                                     ],
                                   ),
                                 ),
@@ -513,6 +761,48 @@ class _IngredientsPageState extends State<IngredientsPage> {
       child: Text(
         "$label: ${value ?? 'N/A'}",
         style: const TextStyle(fontSize: 13),
+      ),
+    );
+  }
+
+  // ✅ Helper widget for nutrient info
+  Widget _buildNutrientInfo(Map<String, dynamic>? nutrientProfile, String? category) {
+    if (nutrientProfile == null) return const SizedBox.shrink();
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (category == 'FFJ') ...[
+          _buildNutrientRow("Potassium (K)", nutrientProfile['potassium']?.toString() ?? '0'),
+          _buildNutrientRow("Phosphorus (P)", nutrientProfile['phosphorus']?.toString() ?? '0'),
+          _buildNutrientRow("Natural Plant Hormones", nutrientProfile['auxins']?.toString() ?? '0'),
+        ] else if (category == 'FPJ') ...[
+          _buildNutrientRow("Nitrogen (N)", nutrientProfile['nitrogen']?.toString() ?? '0'),
+          _buildNutrientRow("Potassium (K)", nutrientProfile['potassium']?.toString() ?? '0'),
+          _buildNutrientRow("Magnesium (Mg)", nutrientProfile['magnesium']?.toString() ?? '0'),
+        ],
+        const SizedBox(height: 8),
+        const Text(
+          "Plant Benefits:",
+          style: TextStyle(fontWeight: FontWeight.w600),
+        ),
+        _buildNutrientRow("Flowering", "${(nutrientProfile['floweringPromotion'] * 100)?.toStringAsFixed(1) ?? '0'}%"),
+        _buildNutrientRow("Fruiting", "${(nutrientProfile['fruitingPromotion'] * 100)?.toStringAsFixed(1) ?? '0'}%"),
+        _buildNutrientRow("Root Development", "${(nutrientProfile['rootDevelopment'] * 100)?.toStringAsFixed(1) ?? '0'}%"),
+        _buildNutrientRow("Leaf Growth", "${(nutrientProfile['leafGrowth'] * 100)?.toStringAsFixed(1) ?? '0'}%"),
+      ],
+    );
+  }
+
+  Widget _buildNutrientRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 2),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: const TextStyle(fontSize: 12)),
+          Text(value, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
+        ],
       ),
     );
   }

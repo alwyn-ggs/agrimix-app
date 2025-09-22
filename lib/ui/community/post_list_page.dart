@@ -317,24 +317,46 @@ class PostCard extends StatelessWidget {
                       ],
                     ),
                   ),
-                  PopupMenuButton<String>(
-                    onSelected: (value) {
-                      if (value == 'report') {
-                        _showReportDialog(context);
-                      }
-                    },
-                    itemBuilder: (context) => [
-                      const PopupMenuItem(
-                        value: 'report',
-                        child: Row(
-                          children: [
-                            Icon(Icons.flag_outlined, size: 16),
-                            SizedBox(width: 8),
-                            Text('Report'),
+                  Consumer<AuthProvider>(
+                    builder: (context, authProvider, child) {
+                      final currentUser = authProvider.currentUser;
+                      final isOwner = currentUser != null && post.ownerUid == currentUser.uid;
+                      
+                      return PopupMenuButton<String>(
+                        onSelected: (value) {
+                          if (value == 'report') {
+                            _showReportDialog(context);
+                          } else if (value == 'delete') {
+                            _showDeleteDialog(context, post.id);
+                          }
+                        },
+                        itemBuilder: (context) => [
+                          if (isOwner) ...[
+                            const PopupMenuItem(
+                              value: 'delete',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.delete_outline, size: 16, color: Colors.red),
+                                  SizedBox(width: 8),
+                                  Text('Delete', style: TextStyle(color: Colors.red)),
+                                ],
+                              ),
+                            ),
+                            const PopupMenuDivider(),
                           ],
-                        ),
-                      ),
-                    ],
+                          const PopupMenuItem(
+                            value: 'report',
+                            child: Row(
+                              children: [
+                                Icon(Icons.flag_outlined, size: 16),
+                                SizedBox(width: 8),
+                                Text('Report'),
+                              ],
+                            ),
+                          ),
+                        ],
+                      );
+                    },
                   ),
                 ],
               ),
@@ -520,6 +542,58 @@ class PostCard extends StatelessWidget {
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('Cancel'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDeleteDialog(BuildContext context, String postId) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Post'),
+        content: const Text('Are you sure you want to delete this post? This action cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context); // Close dialog first
+              
+              try {
+                final provider = context.read<CommunityProvider>();
+                final currentUser = context.read<AuthProvider>().currentUser;
+                
+                if (currentUser != null) {
+                  await provider.deletePost(postId, currentUser.uid);
+                  
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Post deleted successfully'),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  }
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Failed to delete post: ${e.toString()}'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
+            },
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.red,
+            ),
+            child: const Text('Delete'),
           ),
         ],
       ),

@@ -124,8 +124,15 @@ class PostsRepo {
           throw Exception('Post not found');
         }
 
-        final currentLikes = (postDoc.data()!['likes'] ?? 0) as int;
-        transaction.update(postRef, {'likes': currentLikes + 1});
+        final currentLikedBy = List<String>.from(postDoc.data()!['likedBy'] ?? []);
+        if (!currentLikedBy.contains(userId)) {
+          currentLikedBy.add(userId);
+          final currentLikes = (postDoc.data()!['likes'] ?? 0) as int;
+          transaction.update(postRef, {
+            'likes': currentLikes + 1,
+            'likedBy': currentLikedBy,
+          });
+        }
       });
     } catch (e) {
       throw Exception('Failed to like post: $e');
@@ -142,9 +149,14 @@ class PostsRepo {
           throw Exception('Post not found');
         }
 
-        final currentLikes = (postDoc.data()!['likes'] ?? 0) as int;
-        if (currentLikes > 0) {
-          transaction.update(postRef, {'likes': currentLikes - 1});
+        final currentLikedBy = List<String>.from(postDoc.data()!['likedBy'] ?? []);
+        if (currentLikedBy.contains(userId)) {
+          currentLikedBy.remove(userId);
+          final currentLikes = (postDoc.data()!['likes'] ?? 0) as int;
+          transaction.update(postRef, {
+            'likes': currentLikes > 0 ? currentLikes - 1 : 0,
+            'likedBy': currentLikedBy,
+          });
         }
       });
     } catch (e) {

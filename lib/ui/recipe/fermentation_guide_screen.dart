@@ -221,7 +221,7 @@ class _FermentationGuideScreenState extends State<FermentationGuideScreen>
                   _buildInfoRow('Fermentation Time', '${_guide.fermentationDays} days'),
                   _buildInfoRow('Ideal Temperature', _guide.idealTemperature),
                   _buildInfoRow('Total Weight', '${_guide.totalWeight} kg'),
-                  _buildInfoRow('Material Ratio', '2:1 (materials:sugar)'),
+                  _buildInfoRow('Material Ratio', '1:1 (materials:sugar)'),
                 ],
               ),
             ),

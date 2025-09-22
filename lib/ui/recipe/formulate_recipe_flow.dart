@@ -10,6 +10,7 @@ import '../../router.dart';
 import '../../theme/theme.dart';
 import '../../services/fermentation_guide_service.dart';
 import 'fermentation_guide_screen.dart';
+import 'recipe_analytics_widget.dart';
 
 class FormulateRecipeFlow extends StatefulWidget {
   const FormulateRecipeFlow({super.key});
@@ -44,9 +45,14 @@ class _FormulateRecipeFlowState extends State<FormulateRecipeFlow> {
     return _cropOptions;
   }
   
-  // Batch size options
+  // Batch size options with coverage area information (adjusted for local gardening)
   final List<double> _batchSizes = [1.5, 3.0, 6.0, 9.0];
-  final List<String> _batchSizeLabels = ['Small (1.5kg)', 'Medium (3kg)', 'Large (6kg)', 'Extra Large (9kg)'];
+  final List<String> _batchSizeLabels = [
+    'Small (1.5kg)',
+    'Medium (3kg)', 
+    'Large (6kg)',
+    'Extra Large (9kg)'
+  ];
   double _selectedBatchSize = 3.0;
 
   @override
@@ -130,6 +136,34 @@ class _FormulateRecipeFlowState extends State<FormulateRecipeFlow> {
                     );
                   }),
                 ),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.blue.shade200),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.info_outline, color: Colors.blue.shade700, size: 16),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Coverage:\n'
+                          '• Small (1.5kg) - 5-8 sqm - Small backyard\n'
+                          '• Medium (3kg) - 10-15 sqm - Medium backyard\n'
+                          '• Large (6kg) - 20-30 sqm - Large backyard\n'
+                          '• Extra Large (9kg) - 30-50 sqm - Small farm\n',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.blue.shade700,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
                 const SizedBox(height: 16),
                 // Crop target dropdown
                 DropdownButtonFormField<String>(
@@ -154,6 +188,16 @@ class _FormulateRecipeFlowState extends State<FormulateRecipeFlow> {
         );
       case 1:
         final all = recipeProvider.allIngredients;
+        final selectedIngredients = _resolveSelectedIngredients(context);
+        final recipeIngredients = selectedIngredients.map((ingredient) => 
+          RecipeIngredient(
+            ingredientId: ingredient.id,
+            name: ingredient.name,
+            amount: 1.0, // Default amount for analytics
+            unit: 'kg',
+          )
+        ).toList();
+        
         return Padding(
           key: const ValueKey('step1'),
           padding: const EdgeInsets.all(16),
@@ -166,12 +210,36 @@ class _FormulateRecipeFlowState extends State<FormulateRecipeFlow> {
                   selectedIds: _selectedIds,
                   onSelectionChanged: (selectedIds) => setState(() => _selectedIds = selectedIds),
                 ),
+                const SizedBox(height: 16),
+                
+                // Analytics Widget
+                if (selectedIngredients.isNotEmpty)
+                  RecipeAnalyticsWidget(
+                    ingredients: recipeIngredients,
+                    cropTarget: _selectedCrop ?? 'General',
+                    onIngredientsUpdated: (updatedIngredients) {
+                      // Update the selected ingredients based on analytics suggestions
+                      final newSelectedIds = updatedIngredients.map((ri) => ri.ingredientId).toSet();
+                      setState(() => _selectedIds = newSelectedIds);
+                    },
+                  ),
+                
                 const SizedBox(height: 100), // padding for bottom bar
               ],
             ),
           ),
         );
       case 2:
+        final selectedIngredients = _resolveSelectedIngredients(context);
+        final recipeIngredients = selectedIngredients.map((ingredient) => 
+          RecipeIngredient(
+            ingredientId: ingredient.id,
+            name: ingredient.name,
+            amount: 1.0, // Default amount for analytics
+            unit: 'kg',
+          )
+        ).toList();
+        
         return Padding(
           key: const ValueKey('step2'),
           padding: const EdgeInsets.all(16),
@@ -180,9 +248,23 @@ class _FormulateRecipeFlowState extends State<FormulateRecipeFlow> {
               children: [
                 _RatiosAndSteps(
                   method: _method,
-                  selected: _resolveSelectedIngredients(context),
+                  selected: selectedIngredients,
                   batchSize: _selectedBatchSize,
                 ),
+                const SizedBox(height: 16),
+                
+                // Final Analytics Review
+                if (selectedIngredients.isNotEmpty)
+                  RecipeAnalyticsWidget(
+                    ingredients: recipeIngredients,
+                    cropTarget: _selectedCrop ?? 'General',
+                    onIngredientsUpdated: (updatedIngredients) {
+                      // Update the selected ingredients based on analytics suggestions
+                      final newSelectedIds = updatedIngredients.map((ri) => ri.ingredientId).toSet();
+                      setState(() => _selectedIds = newSelectedIds);
+                    },
+                  ),
+                
                 const SizedBox(height: 100), // padding for bottom bar
               ],
             ),
@@ -371,8 +453,9 @@ class _FormulateRecipeFlowState extends State<FormulateRecipeFlow> {
       // Fallback: evenly distribute material weight among selected ingredients and add sugar
       const String unit = 'kg';
       final double total = _selectedBatchSize;
-      final double materialWeight = total * (2.0 / 3.0);
-      final double sugarWeight = total - materialWeight;
+      // Both FFJ and FPJ use 1:1 ratio: total represents material weight, sugar is equal weight
+      final double materialWeight = total; // Total represents material weight
+      final double sugarWeight = total; // Equal weight to material
       final double perIngredient = materialWeight / ingredients.length;
       base = [
         for (final ing in ingredients)
@@ -449,11 +532,9 @@ class _FormulateRecipeFlowState extends State<FormulateRecipeFlow> {
     final double total = _selectedBatchSize; // Use selected batch size
     if (ingredients.isEmpty) return const <RecipeIngredient>[];
 
-    // Method-specific ratios based on fermentation science
-    final double sugarParts = method == RecipeMethod.ffj ? 1.0 : 1.0;
-    final double materialParts = method == RecipeMethod.ffj ? 2.0 : 2.0; // More material for better fermentation
-    final double materialWeight = total * (materialParts / (materialParts + sugarParts));
-    final double sugarWeight = total - materialWeight;
+    // Both FFJ and FPJ use 1:1 ratio: total represents material weight, sugar is equal weight
+    final double materialWeight = total; // Total represents material weight
+    final double sugarWeight = total; // Equal weight to material
 
     // Distribute material weight based on ingredient characteristics
     final Map<String, double> ingredientWeights = _calculateIngredientWeights(ingredients, method, materialWeight);
@@ -559,8 +640,9 @@ class _RatiosAndSteps extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final totalWeight = batchSize; // Use selected batch size
-    final materialWeight = totalWeight * (2.0 / 3.0); // 2/3 for materials
-    final sugarWeight = totalWeight * (1.0 / 3.0); // 1/3 for sugar
+    // Both FFJ and FPJ use 1:1 ratio (batch size = material weight, sugar = equal weight)
+    final double materialWeight = totalWeight; // Batch size represents material weight
+    final double sugarWeight = totalWeight; // Equal weight to material
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -595,15 +677,17 @@ class _RatiosAndSteps extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                'Total Batch Size: ${totalWeight.toStringAsFixed(1)} kg',
+                method == RecipeMethod.fpj 
+                    ? 'Plant Material: ${totalWeight.toStringAsFixed(1)} kg (Total: ${(totalWeight * 2).toStringAsFixed(1)} kg)'
+                    : 'Fruit Material: ${totalWeight.toStringAsFixed(1)} kg (Total: ${(totalWeight * 2).toStringAsFixed(1)} kg)',
                 style: const TextStyle(color: Colors.black87),
               ),
               Text(
-                'Plant Materials: ${materialWeight.toStringAsFixed(1)} kg (${(materialWeight/totalWeight*100).toStringAsFixed(0)}%)',
+                '${method == RecipeMethod.fpj ? 'Plant' : 'Fruit'} Materials: ${materialWeight.toStringAsFixed(1)} kg (50%)',
                 style: const TextStyle(color: Colors.black87),
               ),
               Text(
-                'Brown Sugar: ${sugarWeight.toStringAsFixed(1)} kg (${(sugarWeight/totalWeight*100).toStringAsFixed(0)}%)',
+                'Brown Sugar: ${sugarWeight.toStringAsFixed(1)} kg (50%)',
                 style: const TextStyle(color: Colors.black87),
               ),
             ],
@@ -791,42 +875,93 @@ class _IngredientSelectionWidgetState extends State<_IngredientSelectionWidget> 
   }
 
   void _updateCategories() {
-    final categories = widget.allIngredients
-        .map((ing) => ing.category)
-        .toSet()
+    // Only show categories that have ingredients AND match the selected method
+    final categoryCounts = <String, int>{};
+    
+    // First filter ingredients by method
+    List<Ingredient> methodFilteredIngredients = widget.allIngredients;
+    if (widget.method == RecipeMethod.ffj) {
+      methodFilteredIngredients = widget.allIngredients.where((i) => 
+        i.category.toUpperCase() == 'FFJ' ||
+        i.category.toLowerCase().contains('fruit') ||
+        i.category.toLowerCase().contains('flower') ||
+        i.name.toLowerCase().contains('fruit') ||
+        i.name.toLowerCase().contains('banana') ||
+        i.name.toLowerCase().contains('papaya') ||
+        i.name.toLowerCase().contains('mango') ||
+        i.name.toLowerCase().contains('citrus') ||
+        i.name.toLowerCase().contains('apple')
+      ).toList();
+    } else if (widget.method == RecipeMethod.fpj) {
+      methodFilteredIngredients = widget.allIngredients.where((i) => 
+        i.category.toUpperCase() == 'FPJ' ||
+        i.category.toLowerCase().contains('plant') ||
+        i.category.toLowerCase().contains('leaf') ||
+        i.category.toLowerCase().contains('weed') ||
+        i.name.toLowerCase().contains('young') ||
+        i.name.toLowerCase().contains('leaf') ||
+        i.name.toLowerCase().contains('tip') ||
+        i.name.toLowerCase().contains('moringa') ||
+        i.name.toLowerCase().contains('malunggay') ||
+        i.name.toLowerCase().contains('kangkong')
+      ).toList();
+    }
+    
+    // Count categories from method-filtered ingredients
+    for (final ingredient in methodFilteredIngredients) {
+      categoryCounts[ingredient.category] = (categoryCounts[ingredient.category] ?? 0) + 1;
+    }
+    
+    // Filter out categories with no ingredients
+    final categories = categoryCounts.entries
+        .where((entry) => entry.value > 0)
+        .map((entry) => entry.key)
         .toList();
     categories.sort();
+    
     setState(() {
       _categories = ['All', ...categories];
+      // Reset to 'All' if current selection is no longer valid
+      if (!_categories.contains(_selectedCategory)) {
+        _selectedCategory = 'All';
+      }
     });
   }
 
   List<Ingredient> get _filteredIngredients {
     List<Ingredient> list = widget.allIngredients;
 
-    // Filter by method recommendation
+    // Strict filtering by method - only show ingredients that match the selected method
     if (widget.method == RecipeMethod.ffj) {
-      final fruits = list.where((i) => 
+      // For FFJ, only show ingredients with category 'FFJ' or fruit-related ingredients
+      list = list.where((i) => 
+        i.category.toUpperCase() == 'FFJ' ||
         i.category.toLowerCase().contains('fruit') ||
         i.category.toLowerCase().contains('flower') ||
         i.name.toLowerCase().contains('fruit') ||
         i.name.toLowerCase().contains('banana') ||
-        i.name.toLowerCase().contains('papaya')
+        i.name.toLowerCase().contains('papaya') ||
+        i.name.toLowerCase().contains('mango') ||
+        i.name.toLowerCase().contains('citrus') ||
+        i.name.toLowerCase().contains('apple')
       ).toList();
-      if (fruits.isNotEmpty) list = fruits;
-    } else {
-      final plants = list.where((i) => 
+    } else if (widget.method == RecipeMethod.fpj) {
+      // For FPJ, only show ingredients with category 'FPJ' or plant-related ingredients
+      list = list.where((i) => 
+        i.category.toUpperCase() == 'FPJ' ||
         i.category.toLowerCase().contains('plant') ||
         i.category.toLowerCase().contains('leaf') ||
         i.category.toLowerCase().contains('weed') ||
         i.name.toLowerCase().contains('young') ||
         i.name.toLowerCase().contains('leaf') ||
-        i.name.toLowerCase().contains('tip')
+        i.name.toLowerCase().contains('tip') ||
+        i.name.toLowerCase().contains('moringa') ||
+        i.name.toLowerCase().contains('malunggay') ||
+        i.name.toLowerCase().contains('kangkong')
       ).toList();
-      if (plants.isNotEmpty) list = plants;
     }
 
-    // Filter by category
+    // Filter by category (if user selects a specific category within the method)
     if (_selectedCategory != 'All') {
       list = list.where((ing) => ing.category == _selectedCategory).toList();
     }

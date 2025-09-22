@@ -5,14 +5,14 @@ class FermentationGuideService {
   // Baseline ratios for FFJ and FPJ
   static const Map<RecipeMethod, Map<String, double>> baselineRatios = {
     RecipeMethod.ffj: {
-      'material': 2.0,  // 2 parts fruit material
-      'sugar': 1.0,     // 1 part brown sugar
-      'total': 3.0,     // Total parts
+      'material': 1.0,  // 1 part fruit material (equal weight)
+      'sugar': 1.0,     // 1 part brown sugar (equal weight)
+      'total': 2.0,     // Total parts (but batch size represents material weight only)
     },
     RecipeMethod.fpj: {
-      'material': 2.0,  // 2 parts plant material
-      'sugar': 1.0,     // 1 part brown sugar
-      'total': 3.0,     // Total parts
+      'material': 1.0,  // 1 part plant material (equal weight)
+      'sugar': 1.0,     // 1 part brown sugar (equal weight)
+      'total': 2.0,     // Total parts (but batch size represents material weight only)
     },
   };
 
@@ -26,10 +26,12 @@ class FermentationGuideService {
       'idealTemperature': '20-25°C',
       'materialType': 'fruits and flowers',
       'benefits': [
-        'Promotes flowering and fruiting',
-        'Rich in natural sugars and enzymes',
-        'Enhances fruit sweetness and size',
-        'Boosts plant immunity',
+        'Promotes healthy growth of lowland vegetables',
+        'Rich in natural sugars and enzymes for better crop development',
+        'Enhances vegetable quality and yield',
+        'Boosts plant immunity against diseases',
+        'Improves soil fertility for vegetable crops',
+        'Increases nutrient uptake in leafy vegetables',
       ],
     },
     RecipeMethod.fpj: {
@@ -40,10 +42,12 @@ class FermentationGuideService {
       'idealTemperature': '20-25°C',
       'materialType': 'young plant shoots and leaves',
       'benefits': [
-        'Promotes vigorous plant growth',
-        'Rich in growth hormones and nutrients',
-        'Enhances root development',
-        'Improves plant structure',
+        'Promotes vigorous growth of lowland vegetables',
+        'Rich in growth hormones and nutrients for vegetable crops',
+        'Enhances root development in leafy vegetables',
+        'Improves plant structure and stem strength',
+        'Boosts chlorophyll production in green vegetables',
+        'Increases resistance to pests and diseases in vegetables',
       ],
     },
   };
@@ -92,9 +96,9 @@ class FermentationGuideService {
     RecipeMethod method, 
     double totalWeight
   ) {
-    final ratios = baselineRatios[method]!;
-    final materialWeight = totalWeight * (ratios['material']! / ratios['total']!);
-    final sugarWeight = totalWeight * (ratios['sugar']! / ratios['total']!);
+    // Both FFJ and FPJ use 1:1 ratio: totalWeight represents material weight, sugar is equal weight
+    final double materialWeight = totalWeight;
+    final double sugarWeight = totalWeight; // Equal weight
     
     final weights = <String, double>{};
     
@@ -139,7 +143,7 @@ class FermentationGuideService {
     if (totalCalculated > 0) {
       final factor = materialWeight / totalCalculated;
       for (final key in weights.keys) {
-        weights[key] = (weights[key]! * factor).clamp(0.1, materialWeight * 0.8);
+        weights[key] = (weights[key]! * factor).clamp(0.1, materialWeight);
       }
     }
     
@@ -155,128 +159,123 @@ class FermentationGuideService {
     List<Ingredient> ingredients, 
     double totalWeight
   ) {
-    final characteristics = methodCharacteristics[method]!;
-    final materialType = characteristics['materialType'] as String;
-    
+    if (method == RecipeMethod.fpj) {
+      return _generateFPJSteps(ingredients, totalWeight);
+    } else {
+      return _generateFFJSteps(ingredients, totalWeight);
+    }
+  }
+
+  /// Generate FPJ steps following the correct procedure
+  static List<GuideStep> _generateFPJSteps(List<Ingredient> ingredients, double totalWeight) {
     return [
+      // Material Collection Phase
+      const GuideStep(
+        phase: 'Material Collection',
+        order: 1,
+        title: 'Gather Plant Material at Dawn',
+        description: 'Collect plant materials early in the morning while dew is still present',
+        details: [
+          'Collect materials right at dawn while dew is still on them',
+          'Focus on new growth and young plant shoots',
+          'Choose healthy, disease-free plant materials',
+          'Use fast-growing plants (moringa, kamote tops, kangkong, etc.)',
+          'Avoid materials that have been exposed to pesticides',
+        ],
+        tips: [
+          'Dew contains beneficial microorganisms',
+          'Early morning collection preserves essential substances',
+          'New growth has higher nutrient content',
+        ],
+      ),
+      
+      // Weighing Phase
+      const GuideStep(
+        phase: 'Weighing',
+        order: 2,
+        title: 'Weigh Plant Material and Sugar',
+        description: 'Measure equal parts of plant material and brown sugar',
+        details: [
+          'Weigh the collected plant material',
+          'Weigh equal parts brown sugar (1:1 ratio)',
+          'Use a clean, accurate scale',
+          'Record the weights for reference',
+        ],
+        tips: [
+          'Equal weight ratio ensures proper fermentation',
+          'Brown sugar provides food for beneficial microorganisms',
+        ],
+      ),
+      
       // Preparation Phase
       const GuideStep(
         phase: 'Preparation',
-        order: 1,
-        title: 'Gather Materials and Tools',
-        description: 'Collect all necessary materials and prepare your workspace',
-        details: [
-          'Clean glass jars or food-grade plastic containers (2-3 liters capacity)',
-          'Clean cutting board and knife',
-          'Measuring scale',
-          'Clean cloth or paper for covering',
-          'Rubber bands or string',
-          'Strainer or clean cloth for filtering',
-          'Clean storage bottles',
-        ],
-        tips: [
-          'Use glass containers for better fermentation',
-          'Ensure all tools are clean to prevent contamination',
-        ],
-      ),
-      
-      const GuideStep(
-        phase: 'Preparation',
-        order: 2,
-        title: 'Prepare Workspace',
-        description: 'Set up a clean, well-ventilated area for fermentation',
-        details: [
-          'Choose a cool, dark place (20-25°C)',
-          'Avoid direct sunlight',
-          'Ensure good air circulation',
-          'Clean the work surface thoroughly',
-        ],
-        tips: [
-          'Temperature is crucial for proper fermentation',
-          'Avoid areas with strong odors that might affect the process',
-        ],
-      ),
-      
-      // Material Preparation Phase
-      GuideStep(
-        phase: 'Material Preparation',
         order: 3,
-        title: 'Select and Clean Materials',
-        description: 'Choose the best quality $materialType for fermentation',
-        details: method == RecipeMethod.ffj ? [
-          'Select ripe, sweet fruits (banana, papaya, mango, etc.)',
-          'Choose fresh, clean flowers if available',
-          'Remove any damaged or rotten parts',
-          'Wash thoroughly with clean water',
-          'Dry completely before processing',
-        ] : [
-          'Select young, tender plant shoots and leaves (2-3 months old)',
-          'Choose fast-growing plants (moringa, kamote tops, kangkong, etc.)',
-          'Remove any diseased or damaged parts',
-          'Wash thoroughly with clean water',
-          'Dry completely before processing',
-        ],
-        tips: [
-          'Quality of materials directly affects the final product',
-          'Use only healthy, disease-free materials',
-        ],
-      ),
-      
-      GuideStep(
-        phase: 'Material Preparation',
-        order: 4,
-        title: 'Cut Materials',
-        description: 'Cut materials into appropriate sizes for fermentation',
-        details: method == RecipeMethod.ffj ? [
-          'Cut fruits into small pieces (1-2 cm)',
-          'Remove seeds and hard parts',
-          'Cut flowers into smaller pieces',
-          'Ensure uniform size for even fermentation',
-        ] : [
-          'Cut plant materials into small pieces (2-3 cm)',
+        title: 'Cut Up Plant Material',
+        description: 'Cut plant materials into appropriate sizes',
+        details: [
+          'Cut plant materials into small pieces',
           'Remove thick stems and hard parts',
           'Use only tender shoots and leaves',
-          'Ensure uniform size for even fermentation',
+          'Work quickly to preserve essential substances',
         ],
         tips: [
-          'Smaller pieces ferment faster and more evenly',
-          'Remove any parts that might cause bitterness',
+          'Smaller pieces allow better sugar penetration',
+          'Work quickly to prevent loss of beneficial microbes',
         ],
       ),
       
       // Mixing Phase
       const GuideStep(
         phase: 'Mixing',
-        order: 5,
-        title: 'Layer Materials and Sugar',
-        description: 'Create proper layers for optimal fermentation',
+        order: 4,
+        title: 'Add Materials and Sugar to Container',
+        description: 'Combine plant materials with brown sugar quickly',
         details: [
-          'Place a layer of cut materials at the bottom',
-          'Add a layer of brown sugar on top',
-          'Repeat layering: materials, then sugar',
-          'End with a layer of brown sugar on top',
-          'Total ratio: 2 parts materials to 1 part sugar',
+          'Add plant material to large mixing container',
+          'Add the brown sugar immediately',
+          'Work quickly to not lose essential substances and microbes',
+          'Essential substances are released when plants are chopped',
         ],
         tips: [
-          'Layering ensures even distribution of sugar',
-          'The sugar layer on top helps prevent mold',
+          'Speed is important to preserve beneficial microorganisms',
+          'Use a container large enough for mixing',
         ],
       ),
       
       const GuideStep(
         phase: 'Mixing',
-        order: 6,
-        title: 'Mix Thoroughly',
-        description: 'Mix all ingredients well to start fermentation',
+        order: 5,
+        title: 'Mix and Stir Thoroughly',
+        description: 'Mix all ingredients ensuring complete sugar coverage',
         details: [
-          'Mix all layers together thoroughly',
-          'Ensure sugar is evenly distributed',
-          'Press down gently to remove air pockets',
-          'Leave some space at the top (about 2-3 cm)',
+          'Mix it all and stir (okay to be rough but not trying to smash it)',
+          'Make sure every inch of plant surface area is covered in sugar',
+          'It will start to feel wet as sugar draws out moisture',
+          'Ensure even distribution throughout the mixture',
         ],
         tips: [
-          'Good mixing is essential for proper fermentation',
-          'Don\'t pack too tightly - some air circulation is needed',
+          'Complete sugar coverage prevents spoilage',
+          'The mixture should feel wet and sticky',
+        ],
+      ),
+      
+      // Fermentation Setup
+      const GuideStep(
+        phase: 'Fermentation Setup',
+        order: 6,
+        title: 'Put in Jar with Porous Lid',
+        description: 'Transfer mixture to fermentation jar with proper covering',
+        details: [
+          'Put mixture in jar (ideally about 3/4 full)',
+          'Use a porous lid on top (not airtight)',
+          'End with a cap of brown sugar covering everything entirely',
+          'Ensure sugar covers every visible inch of the mixture',
+        ],
+        tips: [
+          '3/4 full allows space for fermentation gases',
+          'Porous lid allows air circulation while preventing contamination',
+          'Sugar cap acts as a protective barrier',
         ],
       ),
       
@@ -284,104 +283,223 @@ class FermentationGuideService {
       const GuideStep(
         phase: 'Fermentation',
         order: 7,
-        title: 'Cover and Store',
-        description: 'Cover the container properly for fermentation',
+        title: 'Monitor Fermentation Process',
+        description: 'Watch for fermentation completion based on temperature',
         details: [
-          'Cover with clean cloth or paper (not airtight)',
-          'Secure with rubber band or string',
-          'Label with date and contents',
-          'Place in cool, dark location (20-25°C)',
+          'Depending on temperature, this will take 3-10 days',
+          'Shorter time in hotter temperatures',
+          'Longer time in cooler temperatures',
+          'Watch for liquid separation from solid parts',
         ],
         tips: [
-          'Covering prevents contamination while allowing air circulation',
-          'Labeling helps track fermentation progress',
-        ],
-      ),
-      
-      const GuideStep(
-        phase: 'Fermentation',
-        order: 8,
-        title: 'Daily Mixing (First 3 Days)',
-        description: 'Mix daily to promote even fermentation',
-        details: [
-          'Mix 2-3 times daily for the first 3 days',
-          'Use clean spoon or hands',
-          'Press down gently after mixing',
-          'Observe for signs of fermentation (bubbles, aroma)',
-        ],
-        tips: [
-          'Regular mixing prevents mold formation',
-          'Stop mixing after 3 days to allow natural fermentation',
-        ],
-      ),
-      
-      const GuideStep(
-        phase: 'Fermentation',
-        order: 9,
-        title: 'Monitor Fermentation',
-        description: 'Watch for proper fermentation signs',
-        details: [
-          'Check daily for natural mold formation on top',
-          'Look for sweet, fermented aroma',
-          'Observe bubbling or liquid formation',
-          'Fermentation typically takes 7-10 days',
-        ],
-        tips: [
-          'White mold is normal and beneficial',
-          'Black or green mold indicates contamination - discard',
+          'Temperature directly affects fermentation speed',
+          'Liquid separation indicates fermentation is complete',
         ],
       ),
       
       // Harvesting Phase
       const GuideStep(
         phase: 'Harvesting',
-        order: 10,
+        order: 8,
         title: 'Strain the Fermented Juice',
-        description: 'Extract the fermented liquid',
+        description: 'Separate liquid FPJ from solid materials',
         details: [
-          'When fermentation is complete (7-10 days)',
-          'Strain through clean cloth or fine strainer',
-          'Press gently to extract maximum juice',
-          'Discard the solid materials',
+          'When done, there will be a liquid part and solid part',
+          'Use strainer and pour all contents through strainer into second jar',
+          'The liquid part is what you want (FPJ)',
+          'Strainer catches all solids, leaving just FPJ in your jar',
+          'May take a while to strain - can leave for hours or even a day',
         ],
         tips: [
-          'Don\'t squeeze too hard to avoid bitter taste',
-          'The liquid should be clear and sweet-smelling',
+          'Be patient with straining - let gravity do the work',
+          'The liquid FPJ is the valuable end product',
         ],
       ),
       
+      // Storage Phase
+      const GuideStep(
+        phase: 'Storage',
+        order: 9,
+        title: 'Store Final FPJ',
+        description: 'Properly store the fermented plant juice',
+        details: [
+          'Keep final FPJ with breathable lid',
+          'Store in cool, dark, dry place',
+          'Label with date and contents',
+          'Can be stored for several months',
+        ],
+        tips: [
+          'Breathable lid prevents pressure buildup',
+          'Cool, dark storage preserves quality',
+        ],
+      ),
+    ];
+  }
+
+  /// Generate FFJ steps following the correct procedure
+  static List<GuideStep> _generateFFJSteps(List<Ingredient> ingredients, double totalWeight) {
+    return [
+      // Material Preparation Phase
+      const GuideStep(
+        phase: 'Material Preparation',
+        order: 1,
+        title: 'Prepare the Fruit',
+        description: 'Select and prepare fruits for fermentation',
+        details: [
+          'Prepare the fruit, either picked or fallen',
+          'Use grapes only for grapes and citrus only for citrus',
+          'These fruits are not good when used on other crops due to their cold and sour characteristics',
+          'Choose ripe, sweet fruits for best results',
+          'Remove any damaged or rotten parts',
+        ],
+        tips: [
+          'Grapes and citrus have specific characteristics that affect other crops',
+          'Use only healthy, disease-free fruits',
+        ],
+      ),
+      
+      // Weighing Phase
+      const GuideStep(
+        phase: 'Weighing',
+        order: 2,
+        title: 'Weigh Fruit and Sugar',
+        description: 'Measure equal parts of fruit and brown sugar',
+        details: [
+          'Weigh the prepared fruit',
+          'Weigh equal parts brown sugar (1:1 ratio)',
+          'Use a clean, accurate scale',
+          'Record the weights for reference',
+        ],
+        tips: [
+          'Equal weight ratio ensures proper fermentation',
+          'Brown sugar provides food for beneficial microorganisms',
+        ],
+      ),
+      
+      // Preparation Phase
+      const GuideStep(
+        phase: 'Preparation',
+        order: 3,
+        title: 'Dice Up the Fruit Small',
+        description: 'Cut fruits into small pieces for better fermentation',
+        details: [
+          'Dice up the fruit small',
+          'Remove seeds and hard parts',
+          'Ensure uniform size for even fermentation',
+          'Work quickly to preserve essential substances',
+        ],
+        tips: [
+          'Smaller pieces allow better sugar penetration',
+          'Work quickly to prevent loss of beneficial microbes',
+        ],
+      ),
+      
+      // Mixing Phase
+      const GuideStep(
+        phase: 'Mixing',
+        order: 4,
+        title: 'Add Fruit and Sugar to Container',
+        description: 'Combine fruit with brown sugar quickly',
+        details: [
+          'Add the fruit material to large mixing container',
+          'Add the brown sugar immediately',
+          'Work quickly to not lose essential substances and microbes',
+          'Essential substances are released when fruit is chopped',
+        ],
+        tips: [
+          'Speed is important to preserve beneficial microorganisms',
+          'Use a container large enough for mixing',
+        ],
+      ),
+      
+      const GuideStep(
+        phase: 'Mixing',
+        order: 5,
+        title: 'Mix and Stir Thoroughly',
+        description: 'Mix all ingredients ensuring complete sugar coverage',
+        details: [
+          'Mix it all and stir (okay to be rough but not trying to smash it)',
+          'Make sure every inch of fruit surface area is covered in sugar',
+          'It will start to feel wet as sugar draws out moisture',
+          'Ensure even distribution throughout the mixture',
+        ],
+        tips: [
+          'Complete sugar coverage prevents spoilage',
+          'The mixture should feel wet and sticky',
+        ],
+      ),
+      
+      // Fermentation Setup
+      const GuideStep(
+        phase: 'Fermentation Setup',
+        order: 6,
+        title: 'Put in Jar with Porous Lid',
+        description: 'Transfer mixture to fermentation jar with proper covering',
+        details: [
+          'Put mixture in jar (ideally about 3/4 full)',
+          'Use a porous lid on top (not airtight)',
+          'End with a cap of brown sugar covering everything entirely',
+          'Ensure sugar covers every visible inch of the mixture',
+        ],
+        tips: [
+          '3/4 full allows space for fermentation gases',
+          'Porous lid allows air circulation while preventing contamination',
+          'Sugar cap acts as a protective barrier',
+        ],
+      ),
+      
+      // Fermentation Phase
+      const GuideStep(
+        phase: 'Fermentation',
+        order: 7,
+        title: 'Monitor Fermentation Process',
+        description: 'Watch for fermentation completion based on temperature',
+        details: [
+          'Depending on temperature, this will take 3-10 days',
+          'Shorter time in hotter temperatures',
+          'Longer time in cooler temperatures',
+          'Watch for liquid separation from solid parts',
+        ],
+        tips: [
+          'Temperature directly affects fermentation speed',
+          'Liquid separation indicates fermentation is complete',
+        ],
+      ),
+      
+      // Harvesting Phase
       const GuideStep(
         phase: 'Harvesting',
-        order: 11,
-        title: 'Store the Final Product',
-        description: 'Properly store the fermented juice',
+        order: 8,
+        title: 'Strain the Fermented Juice',
+        description: 'Separate liquid FFJ from solid materials',
         details: [
-          'Pour into clean, dry bottles',
-          'Leave some space at the top',
-          'Store in refrigerator for up to 6 months',
-          'Label with date and contents',
+          'When done, there will be a liquid part and solid part',
+          'Use strainer and pour all contents through strainer into second jar',
+          'The liquid part is what you want (FFJ)',
+          'Strainer catches all solids, leaving just FFJ in your jar',
+          'May take a while to strain - can leave for hours or even a day',
         ],
         tips: [
-          'Refrigeration extends shelf life',
-          'Use clean bottles to prevent contamination',
+          'Be patient with straining - let gravity do the work',
+          'The liquid FFJ is the valuable end product',
         ],
       ),
       
-      // Usage Phase
+      // Storage Phase
       const GuideStep(
-        phase: 'Usage',
-        order: 12,
-        title: 'Application Guidelines',
-        description: 'How to use the fermented juice effectively',
+        phase: 'Storage',
+        order: 9,
+        title: 'Store Final FFJ',
+        description: 'Properly store the fermented fruit juice',
         details: [
-          'Dilute 1-2 tablespoons in 1 liter of water',
-          'Apply as foliar spray in early morning or late afternoon',
-          'Avoid application during hot midday sun',
-          'Use every 7-14 days for best results',
+          'Keep final FFJ with breathable lid',
+          'Store in cool, dark, dry place',
+          'Label with date and contents',
+          'Can be stored for several months',
         ],
         tips: [
-          'Start with lower concentration and increase gradually',
-          'Test on a few plants first to check for any adverse effects',
+          'Breathable lid prevents pressure buildup',
+          'Cool, dark storage preserves quality',
         ],
       ),
     ];

@@ -164,59 +164,129 @@ class CommunityProvider extends ChangeNotifier {
   // Post actions
   Future<void> likePost(String postId, String userId) async {
     try {
-      await _postsRepo.likePost(postId, userId);
-      // Update local state
+      // Update local state first for immediate UI feedback
       final index = posts.indexWhere((p) => p.id == postId);
       if (index != -1) {
-        posts[index] = posts[index].copyWith(likes: posts[index].likes + 1);
-        notifyListeners();
+        final currentLikedBy = List<String>.from(posts[index].likedBy);
+        if (!currentLikedBy.contains(userId)) {
+          currentLikedBy.add(userId);
+          posts[index] = posts[index].copyWith(
+            likes: posts[index].likes + 1,
+            likedBy: currentLikedBy,
+          );
+          notifyListeners();
+        }
       }
+      
+      // Then update in database
+      await _postsRepo.likePost(postId, userId);
     } catch (e) {
       debugPrint('Error liking post: $e');
+      // Revert local changes if database update fails
+      final index = posts.indexWhere((p) => p.id == postId);
+      if (index != -1) {
+        final currentLikedBy = List<String>.from(posts[index].likedBy);
+        if (currentLikedBy.contains(userId)) {
+          currentLikedBy.remove(userId);
+          posts[index] = posts[index].copyWith(
+            likes: posts[index].likes > 0 ? posts[index].likes - 1 : 0,
+            likedBy: currentLikedBy,
+          );
+          notifyListeners();
+        }
+      }
     }
   }
 
   Future<void> unlikePost(String postId, String userId) async {
     try {
-      await _postsRepo.unlikePost(postId, userId);
-      // Update local state
+      // Update local state first for immediate UI feedback
       final index = posts.indexWhere((p) => p.id == postId);
       if (index != -1) {
-        posts[index] = posts[index].copyWith(likes: posts[index].likes - 1);
-        notifyListeners();
+        final currentLikedBy = List<String>.from(posts[index].likedBy);
+        if (currentLikedBy.contains(userId)) {
+          currentLikedBy.remove(userId);
+          posts[index] = posts[index].copyWith(
+            likes: posts[index].likes > 0 ? posts[index].likes - 1 : 0,
+            likedBy: currentLikedBy,
+          );
+          notifyListeners();
+        }
       }
+      
+      // Then update in database
+      await _postsRepo.unlikePost(postId, userId);
     } catch (e) {
       debugPrint('Error unliking post: $e');
+      // Revert local changes if database update fails
+      final index = posts.indexWhere((p) => p.id == postId);
+      if (index != -1) {
+        final currentLikedBy = List<String>.from(posts[index].likedBy);
+        if (!currentLikedBy.contains(userId)) {
+          currentLikedBy.add(userId);
+          posts[index] = posts[index].copyWith(
+            likes: posts[index].likes + 1,
+            likedBy: currentLikedBy,
+          );
+          notifyListeners();
+        }
+      }
     }
   }
 
   Future<void> savePost(String postId, String userId) async {
     try {
-      await _postsRepo.savePost(postId, userId);
-      // Update local state
+      // Update local state first for immediate UI feedback
       final index = posts.indexWhere((p) => p.id == postId);
       if (index != -1) {
-        final newSavedBy = List<String>.from(posts[index].savedBy)..add(userId);
+        final newSavedBy = List<String>.from(posts[index].savedBy);
+        if (!newSavedBy.contains(userId)) {
+          newSavedBy.add(userId);
+          posts[index] = posts[index].copyWith(savedBy: newSavedBy);
+          notifyListeners();
+        }
+      }
+      
+      // Then update in database
+      await _postsRepo.savePost(postId, userId);
+    } catch (e) {
+      debugPrint('Error saving post: $e');
+      // Revert local changes if database update fails
+      final index = posts.indexWhere((p) => p.id == postId);
+      if (index != -1) {
+        final newSavedBy = List<String>.from(posts[index].savedBy);
+        newSavedBy.remove(userId);
         posts[index] = posts[index].copyWith(savedBy: newSavedBy);
         notifyListeners();
       }
-    } catch (e) {
-      debugPrint('Error saving post: $e');
     }
   }
 
   Future<void> unsavePost(String postId, String userId) async {
     try {
-      await _postsRepo.unsavePost(postId, userId);
-      // Update local state
+      // Update local state first for immediate UI feedback
       final index = posts.indexWhere((p) => p.id == postId);
       if (index != -1) {
-        final newSavedBy = List<String>.from(posts[index].savedBy)..remove(userId);
+        final newSavedBy = List<String>.from(posts[index].savedBy);
+        if (newSavedBy.contains(userId)) {
+          newSavedBy.remove(userId);
+          posts[index] = posts[index].copyWith(savedBy: newSavedBy);
+          notifyListeners();
+        }
+      }
+      
+      // Then update in database
+      await _postsRepo.unsavePost(postId, userId);
+    } catch (e) {
+      debugPrint('Error unsaving post: $e');
+      // Revert local changes if database update fails
+      final index = posts.indexWhere((p) => p.id == postId);
+      if (index != -1) {
+        final newSavedBy = List<String>.from(posts[index].savedBy);
+        newSavedBy.add(userId);
         posts[index] = posts[index].copyWith(savedBy: newSavedBy);
         notifyListeners();
       }
-    } catch (e) {
-      debugPrint('Error unsaving post: $e');
     }
   }
 
@@ -271,7 +341,13 @@ class CommunityProvider extends ChangeNotifier {
       );
       
       await _commentsRepo.createComment(comment);
-      // Comments will be updated via the stream
+      
+      // Add comment to local state immediately for instant UI update
+      comments.add(comment);
+      notifyListeners();
+      
+      // Also reload comments to ensure consistency
+      await loadComments(postId);
     } catch (e) {
       debugPrint('Error adding comment: $e');
     }
@@ -320,9 +396,12 @@ class CommunityProvider extends ChangeNotifier {
 
   // Utility methods
   bool isPostLiked(String postId, String userId) {
-    // This would need to be tracked in the Post model or a separate likes collection
-    // For now, we'll return false
-    return false;
+    try {
+      final post = posts.firstWhere((p) => p.id == postId);
+      return post.likedBy.contains(userId);
+    } catch (e) {
+      return false;
+    }
   }
 
   bool isPostSaved(String postId, String userId) {
@@ -334,6 +413,7 @@ class CommunityProvider extends ChangeNotifier {
       images: [],
       tags: [],
       likes: 0,
+      likedBy: [],
       savedBy: [],
       createdAt: DateTime.now(),
     ));

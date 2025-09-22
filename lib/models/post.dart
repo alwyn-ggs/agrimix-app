@@ -8,6 +8,7 @@ class Post {
   final List<String> images;
   final List<String> tags;
   final int likes;
+  final List<String> likedBy;
   final List<String> savedBy;
   final DateTime createdAt;
   final String? recipeId;
@@ -21,6 +22,7 @@ class Post {
     required this.images,
     required this.tags,
     required this.likes,
+    required this.likedBy,
     required this.savedBy,
     required this.createdAt,
     this.recipeId,
@@ -38,6 +40,7 @@ class Post {
         images: _convertToStringList(map['images']),
         tags: _convertToStringList(map['tags']),
         likes: (map['likes'] ?? 0) as int,
+        likedBy: _convertToStringList(map['likedBy']),
         savedBy: _convertToStringList(map['savedBy']),
         createdAt: map['createdAt'] is Timestamp
             ? (map['createdAt'] as Timestamp).toDate()
@@ -58,6 +61,7 @@ class Post {
         'images': images,
         'tags': tags,
         'likes': likes,
+        'likedBy': likedBy,
         'savedBy': savedBy,
         'createdAt': Timestamp.fromDate(createdAt),
         if (recipeId != null) 'recipeId': recipeId,
@@ -71,6 +75,7 @@ class Post {
     List<String>? images,
     List<String>? tags,
     int? likes,
+    List<String>? likedBy,
     List<String>? savedBy,
     DateTime? createdAt,
     String? recipeId,
@@ -83,6 +88,7 @@ class Post {
         images: images ?? this.images,
         tags: tags ?? this.tags,
         likes: likes ?? this.likes,
+        likedBy: likedBy ?? this.likedBy,
         savedBy: savedBy ?? this.savedBy,
         createdAt: createdAt ?? this.createdAt,
         recipeId: recipeId ?? this.recipeId,
@@ -101,6 +107,7 @@ class Post {
           _listEquals(images, other.images) &&
           _listEquals(tags, other.tags) &&
           likes == other.likes &&
+          _listEquals(likedBy, other.likedBy) &&
           _listEquals(savedBy, other.savedBy) &&
           createdAt == other.createdAt &&
           recipeId == other.recipeId &&
@@ -108,7 +115,7 @@ class Post {
 
   @override
   int get hashCode => Object.hash(
-      id, ownerUid, title, body, Object.hashAll(images), Object.hashAll(tags), likes, Object.hashAll(savedBy), createdAt, recipeId, recipeName);
+      id, ownerUid, title, body, Object.hashAll(images), Object.hashAll(tags), likes, Object.hashAll(likedBy), Object.hashAll(savedBy), createdAt, recipeId, recipeName);
 
   static bool _listEquals(List a, List b) {
     if (identical(a, b)) return true;
