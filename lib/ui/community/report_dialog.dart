@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/moderation_provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../models/violation.dart';
 import '../../theme/theme.dart';
 
@@ -226,6 +227,17 @@ class _ReportDialogState extends State<ReportDialog> {
     });
 
     try {
+      final auth = context.read<AuthProvider>();
+      final reporterUid = auth.currentUser?.uid;
+      if (reporterUid == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('You need to be signed in to report.'),
+            backgroundColor: NatureColors.warning,
+          ),
+        );
+        return;
+      }
       final reason = _selectedReason == 'Other' 
           ? _reasonController.text.trim()
           : _selectedReason;
@@ -234,7 +246,7 @@ class _ReportDialogState extends State<ReportDialog> {
         targetType: widget.targetType,
         targetId: widget.targetId,
         reason: reason,
-        reporterUid: 'current_user_id', // In real app, get from auth provider
+        reporterUid: reporterUid,
         penalizedUserUid: widget.penalizedUserUid,
       );
 

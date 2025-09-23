@@ -5,6 +5,7 @@ import '../../providers/moderation_provider.dart';
 import '../../models/post.dart';
 import '../../models/comment.dart';
 import '../../theme/theme.dart';
+import '../../models/violation.dart';
 
 class CommunityModerationPage extends StatefulWidget {
   const CommunityModerationPage({super.key, required int initialTabIndex});
@@ -555,7 +556,7 @@ class _CommunityModerationPageState extends State<CommunityModerationPage> with 
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Reported ${violation.targetType}',
+                    'Reported ${_getTargetTypeString(violation.targetType).toUpperCase()}',
                     style: const TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
@@ -565,11 +566,11 @@ class _CommunityModerationPageState extends State<CommunityModerationPage> with 
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: _getStatusColor(violation.status),
+                    color: _getStatusColor(_getDisplayStatus(violation)),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    violation.status.toUpperCase(),
+                    _getDisplayStatus(violation).toUpperCase(),
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 10,
@@ -634,6 +635,57 @@ class _CommunityModerationPageState extends State<CommunityModerationPage> with 
         return Colors.grey;
       default:
         return Colors.orange;
+    }
+  }
+
+  String _getStatusString(dynamic status) {
+    // Support either enum ViolationStatus or string
+    try {
+      if (status is ViolationStatus) {
+        // Fallback for older Dart/Flutter without .name
+        switch (status) {
+          case ViolationStatus.open:
+            return 'open';
+          case ViolationStatus.resolved:
+            return 'resolved';
+          case ViolationStatus.dismissed:
+            return 'dismissed';
+        }
+      }
+    } catch (_) {}
+    return status?.toString().split('.').last.toLowerCase() ?? 'open';
+  }
+
+  String _getTargetTypeString(dynamic targetType) {
+    // Support either enum ViolationTargetType or string
+    try {
+      if (targetType is ViolationTargetType) {
+        switch (targetType) {
+          case ViolationTargetType.post:
+            return 'post';
+          case ViolationTargetType.recipe:
+            return 'recipe';
+          case ViolationTargetType.user:
+            return 'user';
+          case ViolationTargetType.comment:
+            return 'comment';
+        }
+      }
+    } catch (_) {}
+    return targetType?.toString().split('.').last.toLowerCase() ?? 'post';
+  }
+
+  String _getDisplayStatus(dynamic violation) {
+    // Some code paths may store status as enum or string; default to 'open'
+    final raw = _getStatusString(violation.status);
+    // Normalize unexpected values
+    switch (raw) {
+      case 'resolved':
+      case 'dismissed':
+      case 'open':
+        return raw;
+      default:
+        return 'open';
     }
   }
 

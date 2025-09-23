@@ -124,12 +124,7 @@ service cloud.firestore {
       allow read: if isAdmin();
 
       // Any signed-in user can create a report
-      allow create: if isSignedIn()
-        && (request.resource.data.targetType is string)
-        && (request.resource.data.targetId is string)
-        && (request.resource.data.reason is string)
-        && (request.resource.data.status is string)
-        && (request.resource.data.createdAt is timestamp);
+      allow create: if isSignedIn();
 
       // Only admins can update or delete reports
       allow update, delete: if isAdmin();
