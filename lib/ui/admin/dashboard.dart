@@ -53,7 +53,7 @@ class _DashboardState extends State<Dashboard> {
     ),
   ];
 
-  @override
+ @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
     return PopScope(

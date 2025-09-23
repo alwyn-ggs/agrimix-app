@@ -5,12 +5,9 @@ import '../../providers/moderation_provider.dart';
 import '../../models/post.dart';
 import '../../models/comment.dart';
 import '../../theme/theme.dart';
-import '../community/post_detail_page.dart';
 
 class CommunityModerationPage extends StatefulWidget {
-  final int initialTabIndex;
-
-  const CommunityModerationPage({super.key, this.initialTabIndex = 0});
+  const CommunityModerationPage({super.key, required int initialTabIndex});
 
   @override
   State<CommunityModerationPage> createState() => _CommunityModerationPageState();
@@ -22,7 +19,7 @@ class _CommunityModerationPageState extends State<CommunityModerationPage> with 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this, initialIndex: widget.initialTabIndex.clamp(0, 1));
+    _tabController = TabController(length: 2, vsync: this);
     // Load data when the page initializes
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadData();
@@ -658,12 +655,7 @@ class _CommunityModerationPageState extends State<CommunityModerationPage> with 
   void _handlePostAction(String action, Post post) {
     switch (action) {
       case 'view':
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => PostDetailPage(post: post),
-          ),
-        );
+        // Navigate to post detail
         break;
       case 'delete':
         _showDeleteConfirmation(post.id, 'post');
@@ -693,7 +685,7 @@ class _CommunityModerationPageState extends State<CommunityModerationPage> with 
     }
   }
 
-  void _showReportDialog(String contentId, String contentType) {
+  void showReportDialog(String contentId, String contentType) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
