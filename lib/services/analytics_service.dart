@@ -219,52 +219,6 @@ class AnalyticsService {
   List<NutrientDeficiency> _analyzeDeficiencies(NutrientProfile current, NutrientProfile ideal) {
     final deficiencies = <NutrientDeficiency>[];
     
-    // Check plant benefit deficiencies
-    if (current.floweringPromotion < ideal.floweringPromotion * 0.7) {
-      deficiencies.add(NutrientDeficiency(
-        type: NutrientDeficiencyType.flowering,
-        description: 'Low flowering promotion - add ingredients that promote blooming',
-        severity: (ideal.floweringPromotion - current.floweringPromotion) / ideal.floweringPromotion,
-        priority: 3,
-      ));
-    }
-    
-    if (current.fruitingPromotion < ideal.fruitingPromotion * 0.7) {
-      deficiencies.add(NutrientDeficiency(
-        type: NutrientDeficiencyType.fruiting,
-        description: 'Low fruiting promotion - add ingredients that promote fruit development',
-        severity: (ideal.fruitingPromotion - current.fruitingPromotion) / ideal.fruitingPromotion,
-        priority: 3,
-      ));
-    }
-    
-    if (current.rootDevelopment < ideal.rootDevelopment * 0.7) {
-      deficiencies.add(NutrientDeficiency(
-        type: NutrientDeficiencyType.rootDevelopment,
-        description: 'Low root development - add ingredients that promote root growth',
-        severity: (ideal.rootDevelopment - current.rootDevelopment) / ideal.rootDevelopment,
-        priority: 2,
-      ));
-    }
-    
-    if (current.leafGrowth < ideal.leafGrowth * 0.7) {
-      deficiencies.add(NutrientDeficiency(
-        type: NutrientDeficiencyType.leafGrowth,
-        description: 'Low leaf growth - add ingredients that promote leaf development',
-        severity: (ideal.leafGrowth - current.leafGrowth) / ideal.leafGrowth,
-        priority: 2,
-      ));
-    }
-    
-    if (current.diseaseResistance < ideal.diseaseResistance * 0.7) {
-      deficiencies.add(NutrientDeficiency(
-        type: NutrientDeficiencyType.diseaseResistance,
-        description: 'Low disease resistance - add ingredients that improve plant immunity',
-        severity: (ideal.diseaseResistance - current.diseaseResistance) / ideal.diseaseResistance,
-        priority: 2,
-      ));
-    }
-    
     // Check macronutrient deficiencies
     if (current.nitrogen < ideal.nitrogen * 0.7) {
       deficiencies.add(NutrientDeficiency(
@@ -366,10 +320,9 @@ class AnalyticsService {
     
     // Calculate scores for different aspects
     final npkScore = _calculateNPKScore(profile, ideal);
-    final benefitScore = _calculateBenefitScore(profile, ideal);
     
-    // Weighted average (NPK 60%, benefits 40%)
-    return (npkScore * 0.6) + (benefitScore * 0.4);
+    // NPK-only scoring
+    return npkScore;
   }
 
   /// Calculate NPK score (0-100)
@@ -382,7 +335,7 @@ class AnalyticsService {
   }
 
   /// Calculate plant benefit score (0-100)
-  double _calculateBenefitScore(NutrientProfile current, NutrientProfile ideal) {
+  double calculateBenefitScore(NutrientProfile current, NutrientProfile ideal) {
     final floweringScore = (current.floweringPromotion / ideal.floweringPromotion).clamp(0.0, 1.0) * 100;
     final fruitingScore = (current.fruitingPromotion / ideal.fruitingPromotion).clamp(0.0, 1.0) * 100;
     final rootScore = (current.rootDevelopment / ideal.rootDevelopment).clamp(0.0, 1.0) * 100;

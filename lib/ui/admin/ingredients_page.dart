@@ -579,44 +579,94 @@ class _IngredientsPageState extends State<IngredientsPage> {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // ✅ Ingredient Main Image (Smaller but still clear)
-                    ClipRRect(
-                      borderRadius: const BorderRadius.vertical(
-                        top: Radius.circular(12),
-                      ),
-                      child: imageUrl.isNotEmpty
-                          ? Image.network(
-                              imageUrl,
-                              fit: BoxFit.cover,
-                              width: double.infinity,
-                              height: 100, // ✅ Reduced height to prevent overflow
-                              loadingBuilder:
-                                  (context, child, loadingProgress) {
-                                if (loadingProgress == null) return child;
-                                return const Center(
-                                    child: CircularProgressIndicator());
-                              },
-                              errorBuilder: (context, error, stackTrace) {
-                                return Container(
+                    // ✅ Ingredient Main Image with actions overlay
+                    Stack(
+                      children: [
+                        ClipRRect(
+                          borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(12),
+                          ),
+                          child: imageUrl.isNotEmpty
+                              ? Image.network(
+                                  imageUrl,
+                                  fit: BoxFit.cover,
+                                  width: double.infinity,
+                                  height: 100, // ✅ Reduced height to prevent overflow
+                                  loadingBuilder:
+                                      (context, child, loadingProgress) {
+                                    if (loadingProgress == null) return child;
+                                    return const Center(
+                                        child: CircularProgressIndicator());
+                                  },
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return Container(
+                                      height: 100,
+                                      color: Colors.grey[300],
+                                      child: const Icon(
+                                        Icons.broken_image,
+                                        size: 50,
+                                        color: Colors.grey,
+                                      ),
+                                    );
+                                  },
+                                )
+                              : Container(
                                   height: 100,
                                   color: Colors.grey[300],
                                   child: const Icon(
-                                    Icons.broken_image,
+                                    Icons.image_not_supported,
                                     size: 50,
                                     color: Colors.grey,
                                   ),
+                                ),
+                        ),
+                        Positioned(
+                          right: 0,
+                          top: 0,
+                          child: PopupMenuButton<String>(
+                            icon: const Icon(Icons.more_vert, color: Colors.white),
+                            onSelected: (value) {
+                              if (value == 'edit') {
+                                _showEditIngredientDialog(
+                                  context,
+                                  ingredient.id,
+                                  ingredientData,
                                 );
-                              },
-                            )
-                          : Container(
-                              height: 100,
-                              color: Colors.grey[300],
-                              child: const Icon(
-                                Icons.image_not_supported,
-                                size: 50,
-                                color: Colors.grey,
+                              } else if (value == 'delete') {
+                                _confirmDeleteIngredient(
+                                  context,
+                                  ingredient.id,
+                                  ingredientData['name'] ?? 'this ingredient',
+                                );
+                              }
+                            },
+                            itemBuilder: (context) => const [
+                              PopupMenuItem(
+                                value: 'edit',
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.edit, size: 16),
+                                    SizedBox(width: 6),
+                                    Text('Edit'),
+                                  ],
+                                ),
                               ),
-                            ),
+                              PopupMenuItem(
+                                value: 'delete',
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.delete_outline, size: 16, color: Colors.red),
+                                    SizedBox(width: 6),
+                                    Text('Delete', style: TextStyle(color: Colors.red)),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
 
                     // ✅ Ingredient Name and Category
@@ -773,9 +823,9 @@ class _IngredientsPageState extends State<IngredientsPage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (category == 'FFJ') ...[
+          _buildNutrientRow("Nitrogen (N)", nutrientProfile['nitrogen']?.toString() ?? '0'),
           _buildNutrientRow("Potassium (K)", nutrientProfile['potassium']?.toString() ?? '0'),
           _buildNutrientRow("Phosphorus (P)", nutrientProfile['phosphorus']?.toString() ?? '0'),
-          _buildNutrientRow("Natural Plant Hormones", nutrientProfile['auxins']?.toString() ?? '0'),
         ] else if (category == 'FPJ') ...[
           _buildNutrientRow("Nitrogen (N)", nutrientProfile['nitrogen']?.toString() ?? '0'),
           _buildNutrientRow("Potassium (K)", nutrientProfile['potassium']?.toString() ?? '0'),
@@ -802,6 +852,248 @@ class _IngredientsPageState extends State<IngredientsPage> {
         children: [
           Text(label, style: const TextStyle(fontSize: 12)),
           Text(value, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
+        ],
+      ),
+    );
+  }
+}
+
+// =====================
+// Edit & Delete handlers
+// =====================
+
+extension on _IngredientsPageState {
+  void _showEditIngredientDialog(BuildContext context, String id, Map<String, dynamic> data) {
+    final nameCtrl = TextEditingController(text: data['name'] ?? '');
+    final categoryCtrl = TextEditingController(text: data['category'] ?? '');
+    final descCtrl = TextEditingController(text: data['description'] ?? '');
+    NutrientProfile? nutrient = data['nutrientProfile'] != null
+        ? NutrientProfile.fromMap(Map<String, dynamic>.from(data['nutrientProfile']))
+        : null;
+    File? localSelectedImage;
+    String existingImageUrl = (data['imageUrl'] ?? '') as String;
+    bool isUploading = false;
+
+    Future<void> openNutrientForm(StateSetter setStateDialog) async {
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => NutrientProfileForm(
+            initialProfile: nutrient,
+            ingredientType: categoryCtrl.text,
+            title: 'Nutrient Profile for ${nameCtrl.text}',
+            onSave: (profile) {
+              setStateDialog(() {
+                nutrient = profile;
+              });
+            },
+          ),
+        ),
+      );
+    }
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setStateDialog) {
+          Future<void> pickNewImage() async {
+            try {
+              final picker = ImagePicker();
+              final pickedFile = await picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
+              if (pickedFile != null) {
+                setStateDialog(() {
+                  localSelectedImage = File(pickedFile.path);
+                });
+              }
+            } catch (e) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Failed to pick image: $e')),
+              );
+            }
+          }
+
+          Future<void> saveChanges() async {
+            try {
+              setStateDialog(() { isUploading = true; });
+
+              String? imageUrlToSave = existingImageUrl;
+              if (localSelectedImage != null) {
+                final storageService = Provider.of<StorageService>(context, listen: false);
+                imageUrlToSave = await storageService.uploadImage(localSelectedImage!);
+              }
+
+              await ingredients.doc(id).update({
+                'name': nameCtrl.text,
+                'category': categoryCtrl.text,
+                'description': descCtrl.text,
+                'nutrientProfile': nutrient?.toMap(),
+                'imageUrl': imageUrlToSave,
+              });
+
+              if (context.mounted) {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Ingredient updated successfully')),
+                );
+              }
+            } catch (e) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Failed to update: $e')),
+              );
+            } finally {
+              setStateDialog(() { isUploading = false; });
+            }
+          }
+
+          return AlertDialog(
+            title: const Text('Edit Ingredient'),
+            content: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: MediaQuery.of(context).size.width * 0.9,
+                maxHeight: MediaQuery.of(context).size.height * 0.8,
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 6.0),
+                      child: TextFormField(
+                        controller: nameCtrl,
+                        decoration: const InputDecoration(
+                          labelText: 'Ingredient Name',
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 6.0),
+                      child: DropdownButtonFormField<String>(
+                        value: categoryCtrl.text.isEmpty ? null : categoryCtrl.text,
+                        decoration: const InputDecoration(
+                          labelText: 'Category',
+                          border: OutlineInputBorder(),
+                        ),
+                        isExpanded: true,
+                        items: const [
+                          DropdownMenuItem(value: 'FFJ', child: Text('FFJ (Fermented Fruit Juice)')),
+                          DropdownMenuItem(value: 'FPJ', child: Text('FPJ (Fermented Plant Juice)')),
+                        ],
+                        onChanged: (v) => setStateDialog(() { categoryCtrl.text = v ?? ''; }),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 6.0),
+                      child: TextFormField(
+                        controller: descCtrl,
+                        maxLines: 3,
+                        decoration: const InputDecoration(
+                          labelText: 'Description',
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey.shade300),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(Icons.science, color: Colors.blue),
+                              const SizedBox(width: 8),
+                              const Text('Nutrient Profile', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                              const Spacer(),
+                              if (nutrient != null)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: Colors.green.shade100,
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: const Text('Configured', style: TextStyle(color: Colors.green, fontSize: 12, fontWeight: FontWeight.bold)),
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton.icon(
+                              onPressed: () => openNutrientForm(setStateDialog),
+                              icon: const Icon(Icons.add),
+                              label: Text(nutrient == null ? 'Add Nutrient Profile' : 'Edit Nutrient Profile'),
+                              style: ElevatedButton.styleFrom(backgroundColor: Colors.blue, foregroundColor: Colors.white),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: isUploading ? null : pickNewImage,
+                        icon: const Icon(Icons.photo, size: 18),
+                        label: Text(localSelectedImage == null ? 'Change Image' : 'Image Selected'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: isUploading ? null : saveChanges,
+                child: isUploading
+                    ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                    : const Text('Save'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  void _confirmDeleteIngredient(BuildContext context, String id, String name) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Ingredient'),
+        content: Text('Are you sure you want to delete "$name"? This action cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              try {
+                await ingredients.doc(id).delete();
+                if (context.mounted) {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Ingredient deleted')),
+                  );
+                }
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Failed to delete: $e')),
+                );
+              }
+            },
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
         ],
       ),
     );

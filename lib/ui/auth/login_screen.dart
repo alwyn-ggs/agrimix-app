@@ -231,9 +231,13 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ? null
                                 : () async {
                                     if (!_formKey.currentState!.validate()) return;
-                                    await context
-                                        .read<AuthProvider>()
-                                        .signIn(_email.text.trim(), _password.text.trim());
+                                  await context
+                                      .read<AuthProvider>()
+                                      .signIn(
+                                        _email.text.trim(),
+                                        _password.text.trim(),
+                                        rememberMe: _rememberMe,
+                                      );
                                     // Navigation will be handled by the router based on user role
                                   },
                             style: FilledButton.styleFrom(

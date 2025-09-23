@@ -39,13 +39,19 @@ service cloud.firestore {
         && (request.resource.data.approved is bool);
       allow read: if isSignedIn() && (request.auth.uid == userId || isAdmin());
       // Self can update profile fields but not role/approved
-      allow update: if isSignedIn() && request.auth.uid == userId
-        && request.resource.data.diff(resource.data).changedKeys().hasOnly(['name','photoUrl'])
-        && request.resource.data.role == resource.data.role
-        && request.resource.data.approved == resource.data.approved
-      || (isAdmin()
-        && request.resource.data.role is string && isValidRole(request.resource.data.role)
-        && request.resource.data.approved is bool);
+      allow update: if (
+          isSignedIn() && request.auth.uid == userId &&
+          request.resource.data.role == resource.data.role &&
+          request.resource.data.approved == resource.data.approved &&
+          // Allow changing only these fields for self
+          request.resource.data.diff(resource.data).changedKeys().hasOnly([
+            'name','photoUrl','fcmTokens','lastTokenUpdate'
+          ])
+        ) || (
+          isAdmin() &&
+          request.resource.data.role is string && isValidRole(request.resource.data.role) &&
+          request.resource.data.approved is bool
+        );
       allow delete: if isAdmin();
     }
 

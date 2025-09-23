@@ -47,13 +47,7 @@ class _NutrientProfileFormState extends State<NutrientProfileForm> {
   late TextEditingController _organicAcidsController;
   late TextEditingController _sugarsController;
   
-  // Controllers for plant benefits (0-100%)
-  late TextEditingController _floweringController;
-  late TextEditingController _fruitingController;
-  late TextEditingController _rootDevelopmentController;
-  late TextEditingController _leafGrowthController;
-  late TextEditingController _diseaseResistanceController;
-  late TextEditingController _pestResistanceController;
+
 
   @override
   void initState() {
@@ -88,13 +82,6 @@ class _NutrientProfileFormState extends State<NutrientProfileForm> {
     _organicAcidsController = TextEditingController(text: profile.organicAcids.toString());
     _sugarsController = TextEditingController(text: profile.sugars.toString());
     
-    // Plant benefits
-    _floweringController = TextEditingController(text: (profile.floweringPromotion * 100).toString());
-    _fruitingController = TextEditingController(text: (profile.fruitingPromotion * 100).toString());
-    _rootDevelopmentController = TextEditingController(text: (profile.rootDevelopment * 100).toString());
-    _leafGrowthController = TextEditingController(text: (profile.leafGrowth * 100).toString());
-    _diseaseResistanceController = TextEditingController(text: (profile.diseaseResistance * 100).toString());
-    _pestResistanceController = TextEditingController(text: (profile.pestResistance * 100).toString());
   }
 
   @override
@@ -117,12 +104,6 @@ class _NutrientProfileFormState extends State<NutrientProfileForm> {
     _enzymesController.dispose();
     _organicAcidsController.dispose();
     _sugarsController.dispose();
-    _floweringController.dispose();
-    _fruitingController.dispose();
-    _rootDevelopmentController.dispose();
-    _leafGrowthController.dispose();
-    _diseaseResistanceController.dispose();
-    _pestResistanceController.dispose();
     super.dispose();
   }
 
@@ -144,28 +125,22 @@ class _NutrientProfileFormState extends State<NutrientProfileForm> {
               // Show different nutrients based on ingredient type
               if (widget.ingredientType.toUpperCase() == 'FFJ') ...[
                 _buildSectionHeader('FFJ Nutrients', Icons.science),
-                _buildNutrientRow('Potassium (K)', _potassiumController, 'For fruit development and disease resistance'),
-                _buildNutrientRow('Phosphorus (P)', _phosphorusController, 'For root development and flowering'),
-                _buildNutrientRow('Natural Plant Hormones', _auxinsController, 'Growth hormones for plant development'),
+                _buildNutrientRow('Nitrogen (N) (g/kg)', _nitrogenController, 'For leaf growth and green color'),
+                _buildNutrientRow('Potassium (K) (g/kg)', _potassiumController, 'For fruit development and disease resistance'),
+                _buildNutrientRow('Phosphorus (P) (g/kg)', _phosphorusController, 'For root development and flowering'),
               ] else if (widget.ingredientType.toUpperCase() == 'FPJ') ...[
                 _buildSectionHeader('FPJ Nutrients', Icons.eco),
-                _buildNutrientRow('Nitrogen (N)', _nitrogenController, 'For leaf growth and green color'),
-                _buildNutrientRow('Potassium (K)', _potassiumController, 'For fruit development and disease resistance'),
-                _buildNutrientRow('Magnesium (Mg)', _magnesiumController, 'For chlorophyll production'),
+                _buildNutrientRow('Nitrogen (N) (g/kg)', _nitrogenController, 'For leaf growth and green color'),
+                _buildNutrientRow('Potassium (K) (g/kg)', _potassiumController, 'For fruit development and disease resistance'),
+                _buildNutrientRow('Magnesium (Mg) (g/kg)', _magnesiumController, 'For chlorophyll production'),
               ],
               
+              const SizedBox(height: 8),
+              Text(
+                'Enter nutrient values per 1 kg (g/kg). Decimals allowed (e.g., 0.22, 3.58).',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey),
+              ),
               const SizedBox(height: 24),
-              
-              // Plant Benefits Section (always show)
-              _buildSectionHeader('Plant Benefits (%)', Icons.agriculture),
-              _buildPercentageRow('Flowering Promotion', _floweringController, 'How much this promotes flowering'),
-              _buildPercentageRow('Fruiting Promotion', _fruitingController, 'How much this promotes fruiting'),
-              _buildPercentageRow('Root Development', _rootDevelopmentController, 'How much this promotes root growth'),
-              _buildPercentageRow('Leaf Growth', _leafGrowthController, 'How much this promotes leaf development'),
-              _buildPercentageRow('Disease Resistance', _diseaseResistanceController, 'How much this improves disease resistance'),
-              _buildPercentageRow('Pest Resistance', _pestResistanceController, 'How much this improves pest resistance'),
-              
-              const SizedBox(height: 32),
               
               // Save Button
               SizedBox(
@@ -265,7 +240,7 @@ class _NutrientProfileFormState extends State<NutrientProfileForm> {
     );
   }
 
-  Widget _buildPercentageRow(String label, TextEditingController controller, String description) {
+  Widget buildPercentageRow(String label, TextEditingController controller, String description) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
@@ -359,13 +334,6 @@ class _NutrientProfileFormState extends State<NutrientProfileForm> {
         organicAcids: double.parse(_organicAcidsController.text),
         sugars: double.parse(_sugarsController.text),
         
-        // Plant benefits (convert from percentage to decimal)
-        floweringPromotion: double.parse(_floweringController.text) / 100,
-        fruitingPromotion: double.parse(_fruitingController.text) / 100,
-        rootDevelopment: double.parse(_rootDevelopmentController.text) / 100,
-        leafGrowth: double.parse(_leafGrowthController.text) / 100,
-        diseaseResistance: double.parse(_diseaseResistanceController.text) / 100,
-        pestResistance: double.parse(_pestResistanceController.text) / 100,
       );
 
       widget.onSave(profile);

@@ -29,7 +29,17 @@ class _DashboardState extends State<Dashboard> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    final auth = context.watch<AuthProvider>();
+    return PopScope(
+      canPop: true,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) {
+          if (!auth.rememberMe && auth.isLoggedIn) {
+            context.read<AuthProvider>().signOut();
+          }
+        }
+      },
+      child: Scaffold(
       backgroundColor: NatureColors.natureBackground,
       body: SafeArea(
         child: Column(
@@ -57,7 +67,7 @@ class _DashboardState extends State<Dashboard> {
         ],
         ),
       ),
-    );
+    ));
   }
 
   Widget _buildTopBar() {
