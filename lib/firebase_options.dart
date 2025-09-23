@@ -2,7 +2,7 @@
 // ignore_for_file: type=lint
 import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
 import 'package:flutter/foundation.dart'
-    show defaultTargetPlatform, kIsWeb, TargetPlatform;
+    show defaultTargetPlatform, TargetPlatform;
 
 /// Default [FirebaseOptions] for use with your Firebase apps.
 ///
@@ -16,18 +16,11 @@ import 'package:flutter/foundation.dart'
 /// ```
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
-    if (kIsWeb) {
-      return web;
-    }
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
         return android;
       case TargetPlatform.iOS:
         return ios;
-      case TargetPlatform.macOS:
-        return macos;
-      case TargetPlatform.windows:
-        return windows;
       case TargetPlatform.linux:
         throw UnsupportedError(
           'DefaultFirebaseOptions have not been configured for linux - '
@@ -39,15 +32,6 @@ class DefaultFirebaseOptions {
         );
     }
   }
-
-  static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyA0PEKnXL3JzkXa5DGWMPXdc43A9Kc8K4c',
-    appId: '1:279987657851:web:2d30187e49cc21a9ac16de',
-    messagingSenderId: '279987657851',
-    projectId: 'agriplication',
-    authDomain: 'agriplication.firebaseapp.com',
-    storageBucket: 'agriplication.firebasestorage.app',
-  );
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyABtUsk6FKcoMT3fyDJJwZ6Ad81Ifefl-M',
@@ -64,23 +48,5 @@ class DefaultFirebaseOptions {
     projectId: 'storageapp-9a33b',
     storageBucket: 'storageapp-9a33b.firebasestorage.app',
     iosBundleId: 'com.example.agrimix',
-  );
-
-  static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyCBBlkcYpD9Ie-AwSHlgcHhVVKjzgFsd9M',
-    appId: '1:279987657851:ios:d5c56c6c8226a0d9ac16de',
-    messagingSenderId: '279987657851',
-    projectId: 'agriplication',
-    storageBucket: 'agriplication.firebasestorage.app',
-    iosBundleId: 'com.example.agrimix',
-  );
-
-  static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: 'AIzaSyA0PEKnXL3JzkXa5DGWMPXdc43A9Kc8K4c',
-    appId: '1:279987657851:web:2e28b381d3d25f3aac16de',
-    messagingSenderId: '279987657851',
-    projectId: 'agriplication',
-    authDomain: 'agriplication.firebaseapp.com',
-    storageBucket: 'agriplication.firebasestorage.app',
   );
 }

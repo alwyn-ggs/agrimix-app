@@ -39,7 +39,7 @@ class _DashboardState extends State<Dashboard> {
     AdminMenuItem(
       icon: Icons.groups_outlined,
       title: 'Community',
-      page: const CommunityModerationPage(),
+      page: const CommunityModerationPage(initialTabIndex: 0),
     ),
     AdminMenuItem(
       icon: Icons.bubble_chart_outlined,

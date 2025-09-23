@@ -96,7 +96,43 @@ service cloud.firestore {
     match /posts/{postId} {
       allow read: if isSignedIn();
       allow create: if isFarmer() && request.resource.data.ownerUid == request.auth.uid;
+      // Allow reaction-only updates (likes/saved) by any signed-in user
+      allow update: if isSignedIn()
+        && request.resource.data.diff(resource.data).changedKeys().hasOnly(['likes','likedBy','savedBy'])
+        && (request.resource.data.likes is int)
+        && (request.resource.data.likedBy is list)
+        && (request.resource.data.savedBy is list);
+      // All other updates and deletes restricted to owner or admin
       allow update, delete: if (isFarmer() && resource.data.ownerUid == request.auth.uid) || isAdmin();
+    }
+
+    // Comments: public read; author can create/update/delete; admins manage
+    match /comments/{commentId} {
+      allow read: if true;
+      allow create: if isSignedIn()
+        && request.resource.data.authorId == request.auth.uid
+        && (request.resource.data.postId is string)
+        && (request.resource.data.text is string)
+        && (request.resource.data.createdAt is timestamp);
+      allow update: if isSignedIn() && (request.auth.uid == resource.data.authorId || isAdmin());
+      allow delete: if isSignedIn() && (request.auth.uid == resource.data.authorId || isAdmin());
+    }
+
+    // Violations/Reports: users can create; admins can read and manage
+    match /violations/{violationId} {
+      // Admins can read all reports
+      allow read: if isAdmin();
+
+      // Any signed-in user can create a report
+      allow create: if isSignedIn()
+        && (request.resource.data.targetType is string)
+        && (request.resource.data.targetId is string)
+        && (request.resource.data.reason is string)
+        && (request.resource.data.status is string)
+        && (request.resource.data.createdAt is timestamp);
+
+      // Only admins can update or delete reports
+      allow update, delete: if isAdmin();
     }
 
     // Fermentation logs: farmers CRUD own; admins can read all

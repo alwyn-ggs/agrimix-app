@@ -327,15 +327,20 @@ class CommunityProvider extends ChangeNotifier {
   }
 
   Stream<List<Comment>> watchComments(String postId) {
-    return _commentsRepo.watchCommentsForPost(postId);
+    return _commentsRepo.watchCommentsForPost(postId).map((list) {
+      // Ensure stable ascending order by createdAt client-side
+      list.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+      return list;
+    });
   }
 
-  Future<void> addComment(String postId, String userId, String text) async {
+  Future<void> addComment(String postId, String userId, String text, {String? authorName}) async {
     try {
       final comment = Comment(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         postId: postId,
         authorId: userId,
+        authorName: authorName,
         text: text,
         createdAt: DateTime.now(),
       );
@@ -372,6 +377,16 @@ class CommunityProvider extends ChangeNotifier {
         targetId: postId,
         reason: reason,
         status: ViolationStatus.open,
+        reporterUid: reporterId,
+        // Try to attach the post owner's UID so admins know who may be penalized
+        penalizedUserUid: () {
+          try {
+            final post = posts.firstWhere((p) => p.id == postId);
+            return post.ownerUid;
+          } catch (_) {
+            return null;
+          }
+        }(),
         createdAt: DateTime.now(),
       );
       

@@ -17,6 +17,7 @@ class PostDetailPage extends StatefulWidget {
 
 class _PostDetailPageState extends State<PostDetailPage> {
   final TextEditingController _commentController = TextEditingController();
+  bool _isSendingComment = false;
 
   @override
   void initState() {
@@ -73,7 +74,10 @@ class _PostDetailPageState extends State<PostDetailPage> {
                 CircleAvatar(
                   backgroundColor: NatureColors.primaryGreen,
                   child: Text(
-                    widget.post.ownerUid.isNotEmpty ? widget.post.ownerUid[0].toUpperCase() : 'U',
+                    (widget.post.ownerName?.isNotEmpty == true
+                            ? widget.post.ownerName![0]
+                            : (widget.post.ownerUid.isNotEmpty ? widget.post.ownerUid[0] : 'U'))
+                        .toUpperCase(),
                     style: const TextStyle(
                       color: NatureColors.pureWhite,
                       fontWeight: FontWeight.bold,
@@ -86,7 +90,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        widget.post.ownerUid,
+                        widget.post.ownerName?.isNotEmpty == true ? widget.post.ownerName! : widget.post.ownerUid,
                         style: const TextStyle(
                           fontWeight: FontWeight.w600,
                           color: NatureColors.darkGray,
@@ -161,27 +165,34 @@ class _PostDetailPageState extends State<PostDetailPage> {
                   builder: (context, provider, child) {
                     final currentUser = context.read<AuthProvider>().currentUser;
                     final isLiked = provider.isPostLiked(widget.post.id, currentUser?.uid ?? '');
-                    
-                    return IconButton(
-                      icon: Icon(
-                        isLiked ? Icons.favorite : Icons.favorite_border,
-                        color: isLiked ? Colors.red : NatureColors.mediumGray,
-                      ),
-                      onPressed: () {
-                        if (currentUser != null) {
-                          if (isLiked) {
-                            provider.unlikePost(widget.post.id, currentUser.uid);
-                          } else {
-                            provider.likePost(widget.post.id, currentUser.uid);
-                          }
-                        }
-                      },
+                    final post = provider.posts.firstWhere(
+                      (p) => p.id == widget.post.id,
+                      orElse: () => widget.post,
+                    );
+                    return Row(
+                      children: [
+                        IconButton(
+                          icon: Icon(
+                            isLiked ? Icons.favorite : Icons.favorite_border,
+                            color: isLiked ? Colors.red : NatureColors.mediumGray,
+                          ),
+                          onPressed: currentUser == null
+                              ? null
+                              : () {
+                                  if (isLiked) {
+                                    // prevent duplicate like
+                                    return;
+                                  }
+                                  provider.likePost(widget.post.id, currentUser.uid);
+                                },
+                        ),
+                        Text(
+                          '${post.likes}',
+                          style: const TextStyle(color: NatureColors.mediumGray),
+                        ),
+                      ],
                     );
                   },
-                ),
-                Text(
-                  '${widget.post.likes}',
-                  style: const TextStyle(color: NatureColors.mediumGray),
                 ),
                 const SizedBox(width: 16),
                 Consumer<CommunityProvider>(
@@ -215,18 +226,33 @@ class _PostDetailPageState extends State<PostDetailPage> {
   }
 
   Widget _buildCommentsSection() {
-    return Consumer<CommunityProvider>(
-      builder: (context, provider, child) {
-        if (provider.isLoadingComments) {
-          return const Center(
-            child: Padding(
-              padding: EdgeInsets.all(32),
-              child: CircularProgressIndicator(),
+    final provider = context.read<CommunityProvider>();
+    return StreamBuilder<List<Comment>>(
+      stream: provider.watchComments(widget.post.id),
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return const Padding(
+            padding: EdgeInsets.all(32),
+            child: Center(
+              child: Text(
+                'Failed to load comments',
+                style: TextStyle(color: NatureColors.mediumGray, fontSize: 16),
+              ),
             ),
           );
         }
 
-        if (provider.comments.isEmpty) {
+        if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
+          return const Padding(
+            padding: EdgeInsets.all(32),
+            child: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        final comments = snapshot.data ?? const <Comment>[];
+        final hasData = comments.isNotEmpty;
+
+        if (!hasData) {
           return const Padding(
             padding: EdgeInsets.all(32),
             child: Center(
@@ -248,7 +274,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
               child: Row(
                 children: [
                   Text(
-                    'Comments (${provider.comments.length})',
+                    'Comments (${comments.length})',
                     style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
@@ -262,9 +288,9 @@ class _PostDetailPageState extends State<PostDetailPage> {
             ListView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              itemCount: provider.comments.length,
+              itemCount: comments.length,
               itemBuilder: (context, index) {
-                final comment = provider.comments[index];
+                final comment = comments[index];
                 return _buildCommentItem(comment);
               },
             ),
@@ -290,7 +316,10 @@ class _PostDetailPageState extends State<PostDetailPage> {
                   radius: 16,
                   backgroundColor: NatureColors.lightGreen,
                   child: Text(
-                    comment.authorId.isNotEmpty ? comment.authorId[0].toUpperCase() : 'U',
+                    (comment.authorName?.isNotEmpty == true
+                            ? comment.authorName![0]
+                            : (comment.authorId.isNotEmpty ? comment.authorId[0] : 'U'))
+                        .toUpperCase(),
                     style: const TextStyle(
                       color: NatureColors.pureWhite,
                       fontSize: 12,
@@ -304,7 +333,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        comment.authorId,
+                        comment.authorName?.isNotEmpty == true ? comment.authorName! : comment.authorId,
                         style: const TextStyle(
                           fontWeight: FontWeight.w600,
                           color: NatureColors.darkGray,
@@ -371,28 +400,54 @@ class _PostDetailPageState extends State<PostDetailPage> {
             ),
           ),
           const SizedBox(width: 8),
-          IconButton(
-            onPressed: () {
-              if (_commentController.text.trim().isNotEmpty) {
-                _addComment(_commentController.text.trim());
-              }
-            },
-            icon: const Icon(Icons.send),
-            style: IconButton.styleFrom(
-              backgroundColor: NatureColors.primaryGreen,
-              foregroundColor: NatureColors.pureWhite,
-            ),
-          ),
+          _isSendingComment
+              ? const SizedBox(
+                  width: 40,
+                  height: 40,
+                  child: Padding(
+                    padding: EdgeInsets.all(8),
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                )
+              : IconButton(
+                  onPressed: () {
+                    if (_commentController.text.trim().isNotEmpty) {
+                      _addComment(_commentController.text.trim());
+                    }
+                  },
+                  icon: const Icon(Icons.send),
+                  style: IconButton.styleFrom(
+                    backgroundColor: NatureColors.primaryGreen,
+                    foregroundColor: NatureColors.pureWhite,
+                  ),
+                ),
         ],
       ),
     );
   }
 
-  void _addComment(String text) {
-    final currentUser = context.read<AuthProvider>().currentUser;
+  Future<void> _addComment(String text) async {
+    final auth = context.read<AuthProvider>();
+    final currentUser = auth.currentUser;
     if (currentUser != null) {
-      context.read<CommunityProvider>().addComment(widget.post.id, currentUser.uid, text);
-      _commentController.clear();
+      setState(() { _isSendingComment = true; });
+      try {
+        await context.read<CommunityProvider>().addComment(
+          widget.post.id,
+          currentUser.uid,
+          text,
+          authorName: auth.currentAppUser?.name,
+        );
+        _commentController.clear();
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to send comment: $e')),
+          );
+        }
+      } finally {
+        if (mounted) setState(() { _isSendingComment = false; });
+      }
     }
   }
 

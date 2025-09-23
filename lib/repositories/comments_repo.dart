@@ -66,7 +66,8 @@ class CommentsRepo {
         Comment.collectionPath,
         limit: limit,
         where: [QueryFilter(field: 'postId', value: postId)],
-        orderBy: [const QueryOrder(field: 'createdAt', descending: false)],
+        // Avoid potential composite index requirement during first setup
+        // orderBy removed to maximize compatibility; optional to re-add later
       ).map((docs) => docs.map((doc) => Comment.fromMap(doc.id, doc.data()!)).toList());
     } catch (e) {
       throw Exception('Failed to watch comments for post: $e');

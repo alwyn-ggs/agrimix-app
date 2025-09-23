@@ -5,9 +5,12 @@ import '../../providers/moderation_provider.dart';
 import '../../models/post.dart';
 import '../../models/comment.dart';
 import '../../theme/theme.dart';
+import '../community/post_detail_page.dart';
 
 class CommunityModerationPage extends StatefulWidget {
-  const CommunityModerationPage({super.key});
+  final int initialTabIndex;
+
+  const CommunityModerationPage({super.key, this.initialTabIndex = 0});
 
   @override
   State<CommunityModerationPage> createState() => _CommunityModerationPageState();
@@ -19,7 +22,7 @@ class _CommunityModerationPageState extends State<CommunityModerationPage> with 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 2, vsync: this, initialIndex: widget.initialTabIndex.clamp(0, 1));
     // Load data when the page initializes
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadData();
@@ -68,6 +71,7 @@ class _CommunityModerationPageState extends State<CommunityModerationPage> with 
           unselectedLabelColor: NatureColors.lightGray,
           indicatorColor: NatureColors.pureWhite,
           isScrollable: true,
+          labelPadding: const EdgeInsets.symmetric(horizontal: 24),
           tabs: const [
             Tab(
               child: Row(
@@ -76,16 +80,6 @@ class _CommunityModerationPageState extends State<CommunityModerationPage> with 
                   Icon(Icons.article_outlined, size: 16),
                   SizedBox(width: 4),
                   Text('Posts'),
-                ],
-              ),
-            ),
-            Tab(
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.comment_outlined, size: 16),
-                  SizedBox(width: 4),
-                  Text('Comments'),
                 ],
               ),
             ),
@@ -106,7 +100,6 @@ class _CommunityModerationPageState extends State<CommunityModerationPage> with 
         controller: _tabController,
         children: [
           _buildPostsTab(),
-          _buildCommentsTab(),
           _buildReportsTab(),
         ],
       ),
@@ -164,7 +157,7 @@ class _CommunityModerationPageState extends State<CommunityModerationPage> with 
     );
   }
 
-  Widget _buildCommentsTab() {
+  Widget buildCommentsTab() {
     return Consumer<CommunityProvider>(
       builder: (context, communityProvider, child) {
         if (communityProvider.isLoadingComments) {
@@ -285,7 +278,9 @@ class _CommunityModerationPageState extends State<CommunityModerationPage> with 
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'User ${post.ownerUid.substring(0, 8)}...', // Using ownerUid as fallback
+                        (post.ownerName != null && post.ownerName!.trim().isNotEmpty)
+                            ? post.ownerName!
+                            : 'User ${post.ownerUid.isNotEmpty ? post.ownerUid.substring(0, post.ownerUid.length.clamp(0, 8)) : 'unknown'}...',
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
@@ -311,16 +306,6 @@ class _CommunityModerationPageState extends State<CommunityModerationPage> with 
                           Icon(Icons.visibility),
                           SizedBox(width: 8),
                           Text('View Details'),
-                        ],
-                      ),
-                    ),
-                    const PopupMenuItem(
-                      value: 'report',
-                      child: Row(
-                        children: [
-                          Icon(Icons.report),
-                          SizedBox(width: 8),
-                          Text('Report'),
                         ],
                       ),
                     ),
@@ -353,39 +338,135 @@ class _CommunityModerationPageState extends State<CommunityModerationPage> with 
             ),
             if (post.images.isNotEmpty) ...[
               const SizedBox(height: 12),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: Image.network(
-                  post.images.first,
-                  width: double.infinity,
-                  height: 200,
-                  fit: BoxFit.cover,
-                ),
+              Stack(
+                children: [
+                  SizedBox(
+                    height: 200,
+                    width: double.infinity,
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: post.images.length,
+                      itemBuilder: (context, idx) {
+                        final url = post.images[idx];
+                        return Container(
+                          margin: EdgeInsets.only(right: idx == post.images.length - 1 ? 0 : 8),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: Image.network(
+                              url,
+                              width: MediaQuery.of(context).size.width * 0.8,
+                              height: 200,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) => Container(
+                                width: MediaQuery.of(context).size.width * 0.8,
+                                height: 200,
+                                color: NatureColors.lightGray,
+                                alignment: Alignment.center,
+                                child: const Icon(Icons.broken_image, color: Colors.white),
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  Positioned(
+                    right: 8,
+                    top: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.black54,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        '${post.images.length} images',
+                        style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
             const SizedBox(height: 12),
-            Row(
-              children: [
-                Icon(
-                  Icons.favorite,
-                  color: post.likes > 0 ? Colors.red : NatureColors.lightGray,
-                  size: 16,
-                ),
-                const SizedBox(width: 4),
-                Flexible(
-                  child: Text('${post.likes}'),
-                ),
-                const SizedBox(width: 16),
-                const Icon(
-                  Icons.comment,
-                  color: NatureColors.lightGray,
-                  size: 16,
-                ),
-                const SizedBox(width: 4),
-                const Flexible(
-                  child: Text('0'), // Comment count will be calculated separately
-                ),
-              ],
+            // Likes and live comment count
+            StreamBuilder<List<Comment>>(
+              stream: context.read<CommunityProvider>().watchComments(post.id),
+              builder: (context, snapshot) {
+                final count = snapshot.data?.length ?? 0;
+                return Row(
+                  children: [
+                    Icon(
+                      Icons.favorite,
+                      color: post.likes > 0 ? Colors.red : NatureColors.lightGray,
+                      size: 16,
+                    ),
+                    const SizedBox(width: 4),
+                    Text('${post.likes}'),
+                    const SizedBox(width: 16),
+                    const Icon(
+                      Icons.comment,
+                      color: NatureColors.lightGray,
+                      size: 16,
+                    ),
+                    const SizedBox(width: 4),
+                    Text('$count'),
+                  ],
+                );
+              },
+            ),
+            const SizedBox(height: 12),
+            // Expandable list of all comments for this post (no commenters chips)
+            StreamBuilder<List<Comment>>(
+              stream: context.read<CommunityProvider>().watchComments(post.id),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                  return const SizedBox.shrink();
+                }
+                final comments = snapshot.data!;
+                return ExpansionTile(
+                  tilePadding: EdgeInsets.zero,
+                  title: Text('Comments (${comments.length})',
+                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                  ),
+                  childrenPadding: const EdgeInsets.only(top: 8),
+                  children: [
+                    ListView.builder(
+                      itemCount: comments.length,
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemBuilder: (context, index) {
+                        final c = comments[index];
+                        final name = (c.authorName != null && c.authorName!.trim().isNotEmpty)
+                            ? c.authorName!.trim()
+                            : (c.authorId.isNotEmpty
+                                ? 'User ${c.authorId.substring(0, c.authorId.length.clamp(0, 8))}...'
+                                : 'Unknown');
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const CircleAvatar(radius: 12, child: Icon(Icons.person, size: 14)),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(name, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                                    const SizedBox(height: 2),
+                                    Text(c.text, style: const TextStyle(fontSize: 13)),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                );
+              },
             ),
           ],
         ),
@@ -413,7 +494,9 @@ class _CommunityModerationPageState extends State<CommunityModerationPage> with 
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'User ${comment.authorId.substring(0, 8)}...', // Using authorId as fallback
+                        (comment.authorName != null && comment.authorName!.trim().isNotEmpty)
+                            ? comment.authorName!
+                            : 'User ${comment.authorId.isNotEmpty ? comment.authorId.substring(0, comment.authorId.length.clamp(0, 8)) : 'unknown'}...',
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 14,
@@ -432,16 +515,6 @@ class _CommunityModerationPageState extends State<CommunityModerationPage> with 
                 PopupMenuButton<String>(
                   onSelected: (value) => _handleCommentAction(value, comment),
                   itemBuilder: (context) => [
-                    const PopupMenuItem(
-                      value: 'report',
-                      child: Row(
-                        children: [
-                          Icon(Icons.report),
-                          SizedBox(width: 8),
-                          Text('Report'),
-                        ],
-                      ),
-                    ),
                     const PopupMenuItem(
                       value: 'delete',
                       child: Row(
@@ -585,10 +658,12 @@ class _CommunityModerationPageState extends State<CommunityModerationPage> with 
   void _handlePostAction(String action, Post post) {
     switch (action) {
       case 'view':
-        // Navigate to post detail
-        break;
-      case 'report':
-        _showReportDialog(post.id, 'post');
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => PostDetailPage(post: post),
+          ),
+        );
         break;
       case 'delete':
         _showDeleteConfirmation(post.id, 'post');
@@ -598,9 +673,6 @@ class _CommunityModerationPageState extends State<CommunityModerationPage> with 
 
   void _handleCommentAction(String action, Comment comment) {
     switch (action) {
-      case 'report':
-        _showReportDialog(comment.id, 'comment');
-        break;
       case 'delete':
         _showDeleteConfirmation(comment.id, 'comment');
         break;

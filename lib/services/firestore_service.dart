@@ -105,7 +105,7 @@ class FirestoreService {
         query = query.limit(limit);
       }
 
-      return query.snapshots().map((snapshot) => snapshot.docs);
+      return query.snapshots(includeMetadataChanges: true).map((snapshot) => snapshot.docs);
     } catch (e) {
       throw Exception('Failed to watch documents: $e');
     }

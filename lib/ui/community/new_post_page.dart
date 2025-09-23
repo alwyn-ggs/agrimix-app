@@ -607,6 +607,7 @@ class _NewPostPageState extends State<NewPostPage> {
       final postData = {
         'id': DateTime.now().millisecondsSinceEpoch.toString(),
         'ownerUid': currentUser.uid,
+        'ownerName': context.read<AuthProvider>().currentAppUser?.name,
         'title': _titleController.text.trim(),
         'body': _bodyController.text.trim(),
         'images': imageUrls,
@@ -624,6 +625,7 @@ class _NewPostPageState extends State<NewPostPage> {
       final post = Post(
         id: postData['id'] as String,
         ownerUid: postData['ownerUid'] as String,
+        ownerName: postData['ownerName'] as String?,
         title: postData['title'] as String,
         body: postData['body'] as String,
         images: _convertToStringList(postData['images']),

@@ -6,7 +6,8 @@ import '../../theme/theme.dart';
 import '../../models/post.dart';
 import 'post_detail_page.dart';
 import 'new_post_page.dart';
-import 'saved_posts_page.dart';
+import '../admin/community_moderation_page.dart';
+ 
 
 class PostListPage extends StatefulWidget {
   const PostListPage({super.key});
@@ -49,18 +50,6 @@ class _PostListPageState extends State<PostListPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: NatureColors.natureBackground,
-      appBar: AppBar(
-        title: const Text('Community'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.bookmark_outlined),
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const SavedPostsPage()),
-            ),
-          ),
-        ],
-      ),
       body: Column(
         children: [
           _buildSearchAndFilters(),
@@ -288,7 +277,10 @@ class PostCard extends StatelessWidget {
                   CircleAvatar(
                     backgroundColor: NatureColors.primaryGreen,
                     child: Text(
-                      post.ownerUid.isNotEmpty ? post.ownerUid[0].toUpperCase() : 'U',
+                      (post.ownerName?.isNotEmpty == true
+                          ? post.ownerName![0]
+                          : (post.ownerUid.isNotEmpty ? post.ownerUid[0] : 'U'))
+                          .toUpperCase(),
                       style: const TextStyle(
                         color: NatureColors.pureWhite,
                         fontWeight: FontWeight.bold,
@@ -301,7 +293,7 @@ class PostCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          post.ownerUid, // In real app, you'd show the user's name
+                          post.ownerName?.isNotEmpty == true ? post.ownerName! : post.ownerUid,
                           style: const TextStyle(
                             fontWeight: FontWeight.w600,
                             color: NatureColors.darkGray,
@@ -427,27 +419,31 @@ class PostCard extends StatelessWidget {
                     builder: (context, provider, child) {
                       final currentUser = context.read<AuthProvider>().currentUser;
                       final isLiked = provider.isPostLiked(post.id, currentUser?.uid ?? '');
-                      
-                      return IconButton(
-                        icon: Icon(
-                          isLiked ? Icons.favorite : Icons.favorite_border,
-                          color: isLiked ? Colors.red : NatureColors.mediumGray,
-                        ),
-                        onPressed: () {
-                          if (currentUser != null) {
-                            if (isLiked) {
-                              provider.unlikePost(post.id, currentUser.uid);
-                            } else {
-                              provider.likePost(post.id, currentUser.uid);
-                            }
-                          }
-                        },
+                      final latest = provider.posts.firstWhere((p) => p.id == post.id, orElse: () => post);
+                      return Row(
+                        children: [
+                          IconButton(
+                            icon: Icon(
+                              isLiked ? Icons.favorite : Icons.favorite_border,
+                              color: isLiked ? Colors.red : NatureColors.mediumGray,
+                            ),
+                            onPressed: currentUser == null
+                                ? null
+                                : () {
+                                    if (isLiked) {
+                                      // prevent duplicate like
+                                      return;
+                                    }
+                                    provider.likePost(post.id, currentUser.uid);
+                                  },
+                          ),
+                          Text(
+                            '${latest.likes}',
+                            style: const TextStyle(color: NatureColors.mediumGray),
+                          ),
+                        ],
                       );
                     },
-                  ),
-                  Text(
-                    '${post.likes}',
-                    style: const TextStyle(color: NatureColors.mediumGray),
                   ),
                   const SizedBox(width: 16),
                   Consumer<CommunityProvider>(
@@ -531,6 +527,13 @@ class PostCard extends StatelessWidget {
                     Navigator.pop(context);
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text('Post reported successfully')),
+                    );
+                    // Redirect to admin Reports tab (if admin; others will see empty or restricted)
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const CommunityModerationPage(initialTabIndex: 1),
+                      ),
                     );
                   }
                 }

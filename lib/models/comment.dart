@@ -4,6 +4,7 @@ class Comment {
   final String id;
   final String postId;
   final String authorId;
+  final String? authorName;
   final String text;
   final DateTime createdAt;
   final DateTime? updatedAt;
@@ -12,6 +13,7 @@ class Comment {
     required this.id,
     required this.postId,
     required this.authorId,
+    this.authorName,
     required this.text,
     required this.createdAt,
     this.updatedAt,
@@ -24,6 +26,7 @@ class Comment {
         id: id,
         postId: map['postId'] ?? '',
         authorId: map['authorId'] ?? '',
+        authorName: map['authorName'] as String?,
         text: map['text'] ?? '',
         createdAt: map['createdAt'] is Timestamp
             ? (map['createdAt'] as Timestamp).toDate()
@@ -41,6 +44,7 @@ class Comment {
   Map<String, dynamic> toMap() => {
         'postId': postId,
         'authorId': authorId,
+        if (authorName != null) 'authorName': authorName,
         'text': text,
         'createdAt': Timestamp.fromDate(createdAt),
         'updatedAt': updatedAt != null ? Timestamp.fromDate(updatedAt!) : null,
@@ -49,6 +53,7 @@ class Comment {
   Comment copyWith({
     String? postId,
     String? authorId,
+    String? authorName,
     String? text,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -56,6 +61,7 @@ class Comment {
         id: id,
         postId: postId ?? this.postId,
         authorId: authorId ?? this.authorId,
+        authorName: authorName ?? this.authorName,
         text: text ?? this.text,
         createdAt: createdAt ?? this.createdAt,
         updatedAt: updatedAt ?? this.updatedAt,
@@ -69,10 +75,11 @@ class Comment {
           id == other.id &&
           postId == other.postId &&
           authorId == other.authorId &&
+          authorName == other.authorName &&
           text == other.text &&
           createdAt == other.createdAt &&
           updatedAt == other.updatedAt;
 
   @override
-  int get hashCode => Object.hash(id, postId, authorId, text, createdAt, updatedAt);
+  int get hashCode => Object.hash(id, postId, authorId, authorName, text, createdAt, updatedAt);
 }

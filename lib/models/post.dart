@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class Post {
   final String id;
   final String ownerUid;
+  final String? ownerName;
   final String title;
   final String body;
   final List<String> images;
@@ -17,6 +18,7 @@ class Post {
   const Post({
     required this.id,
     required this.ownerUid,
+    this.ownerName,
     required this.title,
     required this.body,
     required this.images,
@@ -35,6 +37,7 @@ class Post {
   factory Post.fromMap(String id, Map<String, dynamic> map) => Post(
         id: id,
         ownerUid: map['ownerUid'] ?? map['authorId'] ?? '',
+        ownerName: map['ownerName'] as String?,
         title: map['title'] ?? '',
         body: map['body'] ?? map['content'] ?? '',
         images: _convertToStringList(map['images']),
@@ -56,6 +59,7 @@ class Post {
 
   Map<String, dynamic> toMap() => {
         'ownerUid': ownerUid,
+        if (ownerName != null) 'ownerName': ownerName,
         'title': title,
         'body': body,
         'images': images,
@@ -70,6 +74,7 @@ class Post {
 
   Post copyWith({
     String? ownerUid,
+    String? ownerName,
     String? title,
     String? body,
     List<String>? images,
@@ -83,6 +88,7 @@ class Post {
   }) => Post(
         id: id,
         ownerUid: ownerUid ?? this.ownerUid,
+        ownerName: ownerName ?? this.ownerName,
         title: title ?? this.title,
         body: body ?? this.body,
         images: images ?? this.images,
@@ -102,6 +108,7 @@ class Post {
           runtimeType == other.runtimeType &&
           id == other.id &&
           ownerUid == other.ownerUid &&
+          ownerName == other.ownerName &&
           title == other.title &&
           body == other.body &&
           _listEquals(images, other.images) &&
@@ -115,7 +122,7 @@ class Post {
 
   @override
   int get hashCode => Object.hash(
-      id, ownerUid, title, body, Object.hashAll(images), Object.hashAll(tags), likes, Object.hashAll(likedBy), Object.hashAll(savedBy), createdAt, recipeId, recipeName);
+      id, ownerUid, ownerName, title, body, Object.hashAll(images), Object.hashAll(tags), likes, Object.hashAll(likedBy), Object.hashAll(savedBy), createdAt, recipeId, recipeName);
 
   static bool _listEquals(List a, List b) {
     if (identical(a, b)) return true;

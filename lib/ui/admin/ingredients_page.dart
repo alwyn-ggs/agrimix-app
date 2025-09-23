@@ -180,27 +180,36 @@ class _IngredientsPageState extends State<IngredientsPage> {
                             children: [
                               const Icon(Icons.science, color: Colors.blue),
                               const SizedBox(width: 8),
-                              const Text(
-                                'Nutrient Profile',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
+                              const Expanded(
+                                child: Text(
+                                  'Nutrient Profile',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ),
-                              const Spacer(),
+                              const SizedBox(width: 8),
                               if (_nutrientProfile != null)
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                  decoration: BoxDecoration(
-                                    color: Colors.green.shade100,
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: const Text(
-                                    'Configured',
-                                    style: TextStyle(
-                                      color: Colors.green,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.bold,
+                                Flexible(
+                                  fit: FlexFit.loose,
+                                  child: FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: Colors.green.shade100,
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: const Text(
+                                        'Configured',
+                                        style: TextStyle(
+                                          color: Colors.green,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -1008,16 +1017,28 @@ extension on _IngredientsPageState {
                             children: [
                               const Icon(Icons.science, color: Colors.blue),
                               const SizedBox(width: 8),
-                              const Text('Nutrient Profile', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                              const Spacer(),
+                              const Expanded(
+                                child: Text(
+                                  'Nutrient Profile',
+                                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
                               if (nutrient != null)
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                  decoration: BoxDecoration(
-                                    color: Colors.green.shade100,
-                                    borderRadius: BorderRadius.circular(12),
+                                Flexible(
+                                  fit: FlexFit.loose,
+                                  child: FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: Colors.green.shade100,
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: const Text('Configured', style: TextStyle(color: Colors.green, fontSize: 12, fontWeight: FontWeight.bold)),
+                                    ),
                                   ),
-                                  child: const Text('Configured', style: TextStyle(color: Colors.green, fontSize: 12, fontWeight: FontWeight.bold)),
                                 ),
                             ],
                           ),
