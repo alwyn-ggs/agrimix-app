@@ -6,7 +6,7 @@ import '../../theme/theme.dart';
 import '../../models/post.dart';
 import 'post_detail_page.dart';
 import 'new_post_page.dart';
-import '../admin/community_moderation_page.dart';
+ 
  
 
 class PostListPage extends StatefulWidget {
@@ -528,13 +528,7 @@ class PostCard extends StatelessWidget {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text('Post reported successfully')),
                     );
-                    // Redirect to admin Reports tab (if admin; others will see empty or restricted)
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const CommunityModerationPage(initialTabIndex: 1),
-                      ),
-                    );
+                    // Stay on page; only admins see reports in admin panel
                   }
                 }
               },
