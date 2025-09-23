@@ -161,6 +161,30 @@ class ModerationProvider extends ChangeNotifier {
   Future<void> warnUser(String violationId, String adminId, {required String warningMessage}) async {
     try {
       final violation = _violations.firstWhere((v) => v.id == violationId);
+      // Resolve penalized user if missing
+      String? targetUserId = violation.penalizedUserUid;
+      if (targetUserId == null || targetUserId.isEmpty) {
+        try {
+          switch (violation.targetType) {
+            case ViolationTargetType.post:
+              final post = await _postsRepo.getPost(violation.targetId);
+              targetUserId = post?.ownerUid;
+              break;
+            case ViolationTargetType.comment:
+              final comment = await _commentsRepo.getComment(violation.targetId);
+              targetUserId = comment?.authorId;
+              break;
+            case ViolationTargetType.recipe:
+              // TODO: implement recipe owner lookup if needed
+              break;
+            case ViolationTargetType.user:
+              targetUserId = violation.targetId;
+              break;
+          }
+        } catch (e) {
+          AppLogger.error('Failed to resolve penalized user for violation $violationId: $e', e);
+        }
+      }
       final updatedViolation = violation.copyWith(
         status: ViolationStatus.resolved,
         adminId: adminId,
@@ -172,12 +196,14 @@ class ModerationProvider extends ChangeNotifier {
       await _violationsRepo.updateViolation(updatedViolation);
 
       // Send notification to user
-      if (violation.penalizedUserUid != null) {
+      if (targetUserId != null && targetUserId.isNotEmpty) {
         await _notificationService.sendWarningNotification(
-          userId: violation.penalizedUserUid!,
+          userId: targetUserId,
           warningMessage: warningMessage,
           violationId: violationId,
         );
+      } else {
+        AppLogger.error('No penalized user found for violation $violationId. Warning not delivered.');
       }
 
       // Admin action completed

@@ -2,18 +2,23 @@ import 'package:flutter/foundation.dart';
 import '../repositories/announcements_repo.dart';
 import '../models/announcement.dart';
 import '../services/fcm_push_service.dart';
+import '../services/notification_service.dart';
 
 class AnnouncementProvider extends ChangeNotifier {
   final AnnouncementsRepo _repo;
   final FCMPushService _pushService;
+  NotificationService? _notificationService; // optional injection
   List<Announcement> items = [];
   bool _isLoading = false;
   String? _error;
 
-  AnnouncementProvider(this._repo, this._pushService) {
-    _repo.watchAnnouncements().listen((v) { 
-      items = v; 
-      notifyListeners(); 
+  AnnouncementProvider(this._repo, this._pushService, [this._notificationService]) {
+    // Initial load to populate immediately
+    _loadAllAnnouncements();
+    // Live updates
+    _repo.watchAnnouncements().listen((v) {
+      items = v;
+      notifyListeners();
     });
   }
 
@@ -25,7 +30,7 @@ class AnnouncementProvider extends ChangeNotifier {
     required String title,
     required String body,
     required String createdBy,
-    bool pinned = false,
+    bool pinned = true, // force pinned by default
     List<String> cropTargets = const [],
     bool sendPush = false,
   }) async {
@@ -38,29 +43,34 @@ class AnnouncementProvider extends ChangeNotifier {
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         title: title,
         body: body,
-        pinned: pinned,
+        pinned: true, // ensure pinned regardless of UI
         createdAt: DateTime.now(),
         createdBy: createdBy,
-        cropTargets: cropTargets,
+        cropTargets: const [], // remove targeting
         pushSent: false,
       );
 
       await _repo.createAnnouncement(announcement);
 
-      // Send push notification if requested
-      if (sendPush) {
-        final pushSuccess = await _pushService.sendAnnouncementPush(
-          title: title,
-          body: body,
-          announcementId: announcement.id,
-          cropTargets: cropTargets.isNotEmpty ? cropTargets : null,
-        );
+      // Ensure list updates immediately even if stream is delayed
+      // ignore: unawaited_futures
+      _loadAllAnnouncements();
 
-        // Update announcement with push status
-        if (pushSuccess) {
-          await _repo.updateAnnouncement(announcement.copyWith(pushSent: true));
+      // Also fanout to in-app notifications (bell) without blocking the UI
+      try {
+        final notifs = _notificationService;
+        if (notifs != null) {
+          // Fire-and-forget
+          // ignore: unawaited_futures
+          notifs.sendAnnouncementToAllUsers(
+            title: title,
+            body: body,
+            announcementId: announcement.id,
+          );
         }
-      }
+      } catch (_) {}
+
+      // Push notifications disabled per request; rely on in-app notifications bell
 
       _isLoading = false;
       notifyListeners();
@@ -70,6 +80,16 @@ class AnnouncementProvider extends ChangeNotifier {
       _error = e.toString();
       notifyListeners();
       return false;
+    }
+  }
+
+  Future<void> _loadAllAnnouncements() async {
+    try {
+      final all = await _repo.getAllAnnouncements();
+      items = all;
+      notifyListeners();
+    } catch (_) {
+      // ignore load errors; stream will update if available
     }
   }
 

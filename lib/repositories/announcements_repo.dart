@@ -50,10 +50,8 @@ class AnnouncementsRepo {
       final docs = await _fs.getDocuments(
         Announcement.collectionPath,
         limit: limit,
-        orderBy: [
-          const QueryOrder(field: 'pinned', descending: true), // Pinned first
-          const QueryOrder(field: 'createdAt', descending: true),
-        ],
+        // Use single orderBy to avoid composite index requirement
+        orderBy: [const QueryOrder(field: 'createdAt', descending: true)],
       );
 
       return docs.map((doc) => Announcement.fromMap(doc.id, doc.data()!)).toList();
@@ -68,10 +66,8 @@ class AnnouncementsRepo {
       return _fs.watchDocuments(
         Announcement.collectionPath,
         limit: limit,
-        orderBy: [
-          const QueryOrder(field: 'pinned', descending: true), // Pinned first
-          const QueryOrder(field: 'createdAt', descending: true),
-        ],
+        // Use single orderBy to avoid composite index requirement during streaming
+        orderBy: [const QueryOrder(field: 'createdAt', descending: true)],
       ).map((docs) => docs.map((doc) => Announcement.fromMap(doc.id, doc.data()!)).toList());
     } catch (e) {
       throw Exception('Failed to watch announcements: $e');

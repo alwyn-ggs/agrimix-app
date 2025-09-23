@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../theme/theme.dart';
 import '../../providers/auth_provider.dart';
+import '../common/notifications_page.dart';
 import 'tabs/home_tab.dart';
 import 'tabs/recipes_tab.dart';
 import 'tabs/fermentation_tab.dart';
@@ -113,31 +115,62 @@ class _DashboardState extends State<Dashboard> {
           Row(
             children: [
               // Notifications
-              IconButton(
-                onPressed: () {
-                  
-                },
-                icon: Stack(
-                  children: [
-                    const Icon(
-                      Icons.notifications_outlined,
-                      color: NatureColors.pureWhite,
-                      size: 28,
-                    ),
-                    Positioned(
-                      right: 0,
-                      top: 0,
-                      child: Container(
-                        width: 8,
-                        height: 8,
-                        decoration: const BoxDecoration(
-                          color: Colors.red,
-                          shape: BoxShape.circle,
+              Builder(
+                builder: (context) {
+                  final userId = context.watch<AuthProvider>().currentUser?.uid;
+                  return IconButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const NotificationsPage()),
+                      );
+                    },
+                    icon: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        const Icon(
+                          Icons.notifications_outlined,
+                          color: NatureColors.pureWhite,
+                          size: 28,
                         ),
-                      ),
+                        if (userId != null)
+                          StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                            stream: FirebaseFirestore.instance
+                                .collection('users')
+                                .doc(userId)
+                                .collection('notifications')
+                                .where('read', isEqualTo: false)
+                                .snapshots(),
+                            builder: (context, snapshot) {
+                              final count = snapshot.data?.docs.length ?? 0;
+                              if (count <= 0) return const SizedBox.shrink();
+                              return Positioned(
+                                right: -2,
+                                top: -2,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: Colors.red,
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  constraints: const BoxConstraints(minWidth: 18, minHeight: 16),
+                                  child: Text(
+                                    count > 99 ? '99+' : '$count',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                      ],
                     ),
-                  ],
-                ),
+                  );
+                },
               ),
               const SizedBox(width: 8),
               // Profile Menu

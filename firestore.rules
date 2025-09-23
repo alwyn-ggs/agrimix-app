@@ -53,6 +53,23 @@ service cloud.firestore {
           request.resource.data.approved is bool
         );
       allow delete: if isAdmin();
+
+      // User notifications subcollection
+      match /notifications/{notificationId} {
+        // The owner can read their notifications
+        allow read: if isSignedIn() && request.auth.uid == userId;
+
+        // Admins can create notifications for any user (e.g., warnings, system messages)
+        // Users can also create (for testing/dev), but generally only admins will create
+        allow create: if (isAdmin()) || (isSignedIn() && request.auth.uid == userId);
+
+        // The owner can update only the 'read' field
+        allow update: if isSignedIn() && request.auth.uid == userId &&
+          request.resource.data.diff(resource.data).changedKeys().hasOnly(['read']);
+
+        // Owner or admin can delete notifications
+        allow delete: if isAdmin() || (isSignedIn() && request.auth.uid == userId);
+      }
     }
 
     // Announcements: public read; admins manage

@@ -240,6 +240,71 @@ class NotificationService {
     }
   }
 
+  /// Send announcement notifications to all users
+  Future<void> sendAnnouncementToAllUsers({
+    required String title,
+    required String body,
+    required String announcementId,
+  }) async {
+    try {
+      final usersSnap = await _db.collection('users').get();
+      final batch = _db.batch();
+      for (final userDoc in usersSnap.docs) {
+        final data = userDoc.data();
+        final role = (data['role'] as String?)?.toLowerCase();
+        // Skip admins: Admins should not receive admin announcements in their bell
+        if (role == 'admin') {
+          continue;
+        }
+        final notifRef = _db
+            .collection('users')
+            .doc(userDoc.id)
+            .collection('notifications')
+            .doc();
+        batch.set(notifRef, {
+          'title': 'Administration',
+          'body': body,
+          'type': 'announcement',
+          'data': {
+            'announcementId': announcementId,
+            'action': 'announcement',
+            'originalTitle': title,
+          },
+          'read': false,
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+      }
+      await batch.commit();
+
+      // Mark announcement as delivered to notifications to avoid duplicate fanouts
+      try {
+        await _db.collection('announcements').doc(announcementId).update({'pushSent': true});
+      } catch (_) {}
+    } catch (e) {
+      AppLogger.error('Failed to send announcement notifications: $e', e);
+    }
+  }
+
+  /// Clear all notifications for a user
+  Future<void> clearAllNotifications(String userId) async {
+    try {
+      final snapshot = await _db
+          .collection('users')
+          .doc(userId)
+          .collection('notifications')
+          .get();
+
+      final batch = _db.batch();
+      for (final doc in snapshot.docs) {
+        batch.delete(doc.reference);
+      }
+      await batch.commit();
+    } catch (e) {
+      AppLogger.error('Failed to clear notifications: $e', e);
+      rethrow;
+    }
+  }
+
   /// Mark notification as read
   Future<void> markNotificationAsRead(String userId, String notificationId) async {
     try {
@@ -251,6 +316,35 @@ class NotificationService {
           .update({'read': true});
     } catch (e) {
       AppLogger.error('Failed to mark notification as read: $e', e);
+    }
+  }
+
+  /// Mark notification as unread
+  Future<void> markNotificationAsUnread(String userId, String notificationId) async {
+    try {
+      await _db
+          .collection('users')
+          .doc(userId)
+          .collection('notifications')
+          .doc(notificationId)
+          .update({'read': false});
+    } catch (e) {
+      AppLogger.error('Failed to mark notification as unread: $e', e);
+    }
+  }
+
+  /// Delete a single notification
+  Future<void> deleteNotification(String userId, String notificationId) async {
+    try {
+      await _db
+          .collection('users')
+          .doc(userId)
+          .collection('notifications')
+          .doc(notificationId)
+          .delete();
+    } catch (e) {
+      AppLogger.error('Failed to delete notification: $e', e);
+      rethrow;
     }
   }
 

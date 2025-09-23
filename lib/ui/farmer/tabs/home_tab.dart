@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import '../../../theme/theme.dart';
 import '../../../router.dart';
 import '../../../providers/auth_provider.dart';
-import '../../../providers/announcement_provider.dart';
 import '../../../models/announcement.dart';
 
 class HomeTab extends StatelessWidget {
@@ -130,102 +129,7 @@ class HomeTab extends StatelessWidget {
           ),
           const SizedBox(height: 24),
           
-          // Announcements Section
-          const Text(
-            'Latest Announcements',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: NatureColors.textDark,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Consumer<AnnouncementProvider>(
-            builder: (context, announcementProvider, child) {
-              if (announcementProvider.items.isEmpty) {
-                return Container(
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    color: NatureColors.lightGray.withAlpha((0.3 * 255).round()),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: NatureColors.lightGray.withAlpha((0.5 * 255).round())),
-                  ),
-                  child: const Center(
-                    child: Column(
-                      children: [
-                        Icon(
-                          Icons.campaign_outlined,
-                          size: 48,
-                          color: NatureColors.mediumGray,
-                        ),
-                        SizedBox(height: 12),
-                        Text(
-                          'No announcements yet',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: NatureColors.mediumGray,
-                          ),
-                        ),
-                        SizedBox(height: 4),
-                        Text(
-                          'Check back later for updates',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: NatureColors.mediumGray,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              }
-              
-              return Column(
-                children: [
-                  // Pinned announcements first
-                  ...announcementProvider.items
-                      .where((announcement) => announcement.pinned)
-                      .take(2)
-                      .map((announcement) => _buildAnnouncementCard(
-                            context,
-                            announcement,
-                            isPinned: true,
-                          )),
-                  
-                  // Regular announcements
-                  ...announcementProvider.items
-                      .where((announcement) => !announcement.pinned)
-                      .take(3)
-                      .map((announcement) => _buildAnnouncementCard(
-                            context,
-                            announcement,
-                            isPinned: false,
-                          )),
-                  
-                  // View all button if there are more announcements
-                  if (announcementProvider.items.length > 5)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 12),
-                      child: SizedBox(
-                        width: double.infinity,
-                        child: OutlinedButton.icon(
-                          onPressed: () => _showAllAnnouncements(context, announcementProvider.items),
-                          icon: const Icon(Icons.list_alt),
-                          label: const Text('View All Announcements'),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: NatureColors.primaryGreen,
-                            side: const BorderSide(color: NatureColors.primaryGreen),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
-              );
-            },
-          ),
+          // Announcements moved to notifications bell
           const SizedBox(height: 24),
           
           // My Recipes Quick Access
@@ -493,7 +397,7 @@ class HomeTab extends StatelessWidget {
     );
   }
 
-  void _showAllAnnouncements(BuildContext context, List<Announcement> announcements) {
+  void showAllAnnouncements(BuildContext context, List<Announcement> announcements) {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => Scaffold(

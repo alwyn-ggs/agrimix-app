@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../theme/theme.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../providers/auth_provider.dart';
 import 'users_page.dart';
 import 'recipes_page.dart';
@@ -8,6 +9,7 @@ import 'ingredients_page.dart';
 import 'community_moderation_page.dart';
 import 'fermentation_monitor_page.dart';
 import 'announcements_page.dart';
+import '../common/notifications_page.dart';
 
 class Dashboard extends StatefulWidget {
   const Dashboard({super.key});
@@ -374,32 +376,64 @@ class _DashboardState extends State<Dashboard> {
           Row(
             children: [
               // Notifications
-              IconButton(
-                onPressed: () {
-                  
-                },
-                icon: Stack(
-                  children: [
-                    const Icon(
-                      Icons.notifications_outlined,
-                      color: NatureColors.pureWhite, // Changed from darkGray for better visibility
-                      size: 24, // Reduced from 28 for mobile
-                    ),
-                    Positioned(
-                      right: 0,
-                      top: 0,
-                      child: Container(
-                        width: 8,
-                        height: 8,
-                        decoration: const BoxDecoration(
-                          color: Colors.red,
-                          shape: BoxShape.circle,
+              Builder(
+                builder: (context) {
+                  final auth = context.watch<AuthProvider>();
+                  final userId = auth.currentUser?.uid;
+                  return IconButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const NotificationsPage()),
+                      );
+                    },
+                    icon: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        const Icon(
+                          Icons.notifications_outlined,
+                          color: NatureColors.pureWhite,
+                          size: 24,
                         ),
-                      ),
+                        if (userId != null)
+                          StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                            stream: FirebaseFirestore.instance
+                                .collection('users')
+                                .doc(userId)
+                                .collection('notifications')
+                                .where('read', isEqualTo: false)
+                                .snapshots(),
+                            builder: (context, snapshot) {
+                              final count = snapshot.data?.docs.length ?? 0;
+                              if (count <= 0) return const SizedBox.shrink();
+                              return Positioned(
+                                right: -2,
+                                top: -2,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                                  decoration: BoxDecoration(
+                                    color: Colors.red,
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                                  child: Text(
+                                    count > 99 ? '99+' : '$count',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                      ],
                     ),
-                  ],
-                ),
-                padding: const EdgeInsets.all(8), // Added padding for better touch target
+                    padding: const EdgeInsets.all(8),
+                  );
+                },
               ),
               const SizedBox(width: 8),
               // Profile Menu

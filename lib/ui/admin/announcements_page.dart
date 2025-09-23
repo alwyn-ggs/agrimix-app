@@ -95,43 +95,46 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       color: NatureColors.pureWhite,
-      child: Row(
+      child: Column(
         children: [
-          Expanded(
-            child: TextField(
-              decoration: InputDecoration(
-                hintText: 'Search...',
-                prefixIcon: const Icon(Icons.search, color: NatureColors.mediumGray, size: 18),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(6),
-                  borderSide: const BorderSide(color: NatureColors.lightGray),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  decoration: InputDecoration(
+                    hintText: 'Search...',
+                    prefixIcon: const Icon(Icons.search, color: NatureColors.mediumGray, size: 18),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(6),
+                      borderSide: const BorderSide(color: NatureColors.lightGray),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(6),
+                      borderSide: const BorderSide(color: NatureColors.primaryGreen),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    isDense: true,
+                  ),
+                  onChanged: (value) {
+                    setState(() {
+                      _searchQuery = value;
+                    });
+                  },
                 ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(6),
-                  borderSide: const BorderSide(color: NatureColors.primaryGreen),
-                ),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                isDense: true,
               ),
-              onChanged: (value) {
-                setState(() {
-                  _searchQuery = value;
-                });
-              },
-            ),
+            ],
           ),
-          const SizedBox(width: 8),
-          FilterChip(
-            label: const Text('Pinned', style: TextStyle(fontSize: 12)),
-            selected: _showPinnedOnly,
-            onSelected: (selected) {
-              setState(() {
-                _showPinnedOnly = selected;
-              });
+          Consumer<AnnouncementProvider>(
+            builder: (context, provider, child) {
+              return AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                height: provider.isLoading ? 4 : 0,
+                margin: const EdgeInsets.only(top: 8),
+                child: provider.isLoading
+                    ? const LinearProgressIndicator(minHeight: 4)
+                    : const SizedBox.shrink(),
+              );
             },
-            selectedColor: NatureColors.primaryGreen.withAlpha((0.2 * 255).round()),
-            checkmarkColor: NatureColors.primaryGreen,
-            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
           ),
         ],
       ),
@@ -469,7 +472,7 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
         provider.togglePin(announcement.id);
         break;
       case 'send_push':
-        _showConfirmDialog(
+        _showConfirmDialogAsync(
           'Send Push Notification',
           'Are you sure you want to send a push notification for this announcement?',
           () => provider.sendPushNotification(announcement.id),
@@ -479,7 +482,7 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
         _showEditAnnouncementDialog(announcement, provider);
         break;
       case 'delete':
-        _showConfirmDialog(
+        _showConfirmDialogAsync(
           'Delete Announcement',
           'Are you sure you want to delete this announcement? This action cannot be undone.',
           () => provider.deleteAnnouncement(announcement.id),
@@ -492,18 +495,52 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
     showDialog(
       context: context,
       builder: (context) => AnnouncementFormDialog(
-        onSave: (title, body, pinned, cropTargets, sendPush) {
+        onSave: (title, body, pinned, cropTargets) async {
           final authProvider = Provider.of<AuthProvider>(context, listen: false);
           final announcementProvider = Provider.of<AnnouncementProvider>(context, listen: false);
           
-          announcementProvider.createAnnouncement(
+          // Show uploading indicator
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Uploading announcement...'),
+              backgroundColor: NatureColors.lightGreen,
+              duration: Duration(seconds: 2),
+            ),
+          );
+
+          final ok = await announcementProvider.createAnnouncement(
             title: title,
             body: body,
             createdBy: authProvider.currentUser?.email ?? 'Admin',
-            pinned: pinned,
-            cropTargets: cropTargets,
-            sendPush: sendPush,
+            pinned: true,
+            cropTargets: const [],
+            sendPush: false,
           );
+
+          // Show result
+          if (ok) {
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Announcement uploaded successfully'),
+                  backgroundColor: NatureColors.primaryGreen,
+                ),
+              );
+            }
+          } else {
+            if (context.mounted) {
+              final providerErr = Provider.of<AnnouncementProvider>(context, listen: false).error;
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(providerErr != null && providerErr.isNotEmpty
+                      ? 'Failed to upload: $providerErr'
+                      : 'Failed to upload announcement'),
+                  backgroundColor: NatureColors.errorRed,
+                ),
+              );
+            }
+          }
+          return ok;
         },
       ),
     );
@@ -514,18 +551,15 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
       context: context,
       builder: (context) => AnnouncementFormDialog(
         announcement: announcement,
-        onSave: (title, body, pinned, cropTargets, sendPush) {
+        onSave: (title, body, pinned, cropTargets) async {
           final updatedAnnouncement = announcement.copyWith(
             title: title,
             body: body,
-            pinned: pinned,
-            cropTargets: cropTargets,
+            pinned: true,
+            cropTargets: const [],
           );
-          provider.updateAnnouncement(updatedAnnouncement);
-          
-          if (sendPush) {
-            provider.sendPushNotification(announcement.id);
-          }
+          final ok = await provider.updateAnnouncement(updatedAnnouncement);
+          return ok;
         },
       ),
     );
@@ -538,28 +572,50 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
     );
   }
 
-  void _showConfirmDialog(String title, String message, VoidCallback onConfirm) {
+  void _showConfirmDialogAsync(String title, String message, Future<bool> Function() onConfirm) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(title),
-        content: Text(message),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              onConfirm();
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: NatureColors.errorRed,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) {
+          bool localLoading = false;
+          return AlertDialog(
+            title: Text(title),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(message),
+                const SizedBox(height: 8),
+                if (localLoading) const LinearProgressIndicator(minHeight: 3),
+              ],
             ),
-            child: const Text('Confirm'),
-          ),
-        ],
+            actions: [
+              TextButton(
+                onPressed: localLoading ? null : () => Navigator.of(context).pop(),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: localLoading
+                    ? null
+                    : () async {
+                        setState(() => localLoading = true);
+                        final ok = await onConfirm();
+                        if (mounted) Navigator.of(context).pop();
+                        if (mounted) {
+                          final err = Provider.of<AnnouncementProvider>(context, listen: false).error;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(ok ? 'Operation completed' : (err?.isNotEmpty == true ? err! : 'Operation failed')),
+                              backgroundColor: ok ? NatureColors.primaryGreen : NatureColors.errorRed,
+                            ),
+                          );
+                        }
+                      },
+                style: ElevatedButton.styleFrom(backgroundColor: NatureColors.errorRed),
+                child: const Text('Confirm'),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -582,7 +638,7 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
 
 class AnnouncementFormDialog extends StatefulWidget {
   final Announcement? announcement;
-  final Function(String title, String body, bool pinned, List<String> cropTargets, bool sendPush) onSave;
+  final Future<bool> Function(String title, String body, bool pinned, List<String> cropTargets) onSave;
 
   const AnnouncementFormDialog({
     super.key,
@@ -597,10 +653,10 @@ class AnnouncementFormDialog extends StatefulWidget {
 class _AnnouncementFormDialogState extends State<AnnouncementFormDialog> {
   final _titleController = TextEditingController();
   final _bodyController = TextEditingController();
-  bool _pinned = false;
-  bool _sendPush = false;
+  bool _pinned = true; // forced pinned
   List<String> _selectedCrops = [];
   List<String> _availableCrops = [];
+  bool _submitting = false;
 
   @override
   void initState() {
@@ -608,10 +664,10 @@ class _AnnouncementFormDialogState extends State<AnnouncementFormDialog> {
     if (widget.announcement != null) {
       _titleController.text = widget.announcement!.title;
       _bodyController.text = widget.announcement!.body;
-      _pinned = widget.announcement!.pinned;
-      _selectedCrops = List.from(widget.announcement!.cropTargets);
+      _pinned = true;
+      _selectedCrops = const [];
     }
-    _loadAvailableCrops();
+    // Skip loading crops; targeting removed
   }
 
   Future<void> _loadAvailableCrops() async {
@@ -625,140 +681,87 @@ class _AnnouncementFormDialogState extends State<AnnouncementFormDialog> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      child: Container(
-        width: MediaQuery.of(context).size.width * 0.6,
-        constraints: const BoxConstraints(maxWidth: 400),
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 640),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
             Text(
               widget.announcement == null ? 'Create Announcement' : 'Edit Announcement',
               style: const TextStyle(
-                fontSize: 16,
+                fontSize: 18,
                 fontWeight: FontWeight.bold,
                 color: NatureColors.textDark,
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
             TextField(
               controller: _titleController,
               decoration: const InputDecoration(
-                labelText: 'Title',
-                labelStyle: TextStyle(fontSize: 12),
+                labelText: 'Announcement Title',
+                hintText: 'Enter a concise title',
+                labelStyle: TextStyle(fontSize: 13),
                 border: OutlineInputBorder(),
                 focusedBorder: OutlineInputBorder(
                   borderSide: BorderSide(color: NatureColors.primaryGreen),
                 ),
-                isDense: true,
-                contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                isDense: false,
+                contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               ),
-              style: const TextStyle(fontSize: 13),
+              style: const TextStyle(fontSize: 14),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 14),
             TextField(
               controller: _bodyController,
               decoration: const InputDecoration(
                 labelText: 'Message',
-                labelStyle: TextStyle(fontSize: 12),
+                hintText: 'Write the announcement message that all users will see...',
+                labelStyle: TextStyle(fontSize: 13),
                 border: OutlineInputBorder(),
                 focusedBorder: OutlineInputBorder(
                   borderSide: BorderSide(color: NatureColors.primaryGreen),
                 ),
-                isDense: true,
-                contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                isDense: false,
+                contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               ),
-              style: const TextStyle(fontSize: 13),
-              maxLines: 2,
+              style: const TextStyle(fontSize: 14, height: 1.4),
+              minLines: 4,
+              maxLines: 8,
             ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Checkbox(
-                  value: _pinned,
-                  onChanged: (value) => setState(() => _pinned = value ?? false),
-                  activeColor: NatureColors.primaryGreen,
-                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-                const Text('Pin this announcement', style: TextStyle(fontSize: 12)),
-              ],
-            ),
-            if (widget.announcement == null) ...[
-              Row(
-                children: [
-                  Checkbox(
-                    value: _sendPush,
-                    onChanged: (value) => setState(() => _sendPush = value ?? false),
-                    activeColor: NatureColors.primaryGreen,
-                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                  const Text('Send push notification', style: TextStyle(fontSize: 12)),
-                ],
-              ),
-            ],
             const SizedBox(height: 8),
             const Text(
-              'Target Crops (Optional)',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: NatureColors.textDark,
-                fontSize: 12,
-              ),
+              'Note: This announcement will be pinned and sent to Notifications (bell) for all users.',
+              style: TextStyle(fontSize: 12, color: NatureColors.mediumGray),
             ),
-            const SizedBox(height: 4),
-            if (_availableCrops.isNotEmpty)
-              Wrap(
-                spacing: 4,
-                runSpacing: 4,
-                children: _availableCrops.map((crop) {
-                  final isSelected = _selectedCrops.contains(crop);
-                  return FilterChip(
-                    label: Text(crop, style: const TextStyle(fontSize: 10)),
-                    selected: isSelected,
-                    onSelected: (selected) {
-                      setState(() {
-                        if (selected) {
-                          _selectedCrops.add(crop);
-                        } else {
-                          _selectedCrops.remove(crop);
-                        }
-                      });
-                    },
-                    selectedColor: NatureColors.primaryGreen.withAlpha((0.2 * 255).round()),
-                    checkmarkColor: NatureColors.primaryGreen,
-                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  );
-                }).toList(),
-              )
-            else
-              const Text(
-                'Loading available crops...',
-                style: TextStyle(color: NatureColors.mediumGray, fontSize: 10),
-              ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('Cancel', style: TextStyle(fontSize: 12)),
+                  child: const Text('Cancel', style: TextStyle(fontSize: 13)),
                 ),
                 const SizedBox(width: 6),
                 ElevatedButton(
                   onPressed: _saveAnnouncement,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: NatureColors.primaryGreen,
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                   ),
                   child: Text(
-                    widget.announcement == null ? 'Create' : 'Update',
-                    style: const TextStyle(fontSize: 12),
+                    _submitting
+                        ? 'Saving...'
+                        : (widget.announcement == null ? 'Create' : 'Update'),
+                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
                   ),
                 ),
               ],
             ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -774,15 +777,23 @@ class _AnnouncementFormDialogState extends State<AnnouncementFormDialog> {
       );
       return;
     }
-
+    if (_submitting) return;
+    setState(() { _submitting = true; });
     widget.onSave(
       _titleController.text.trim(),
       _bodyController.text.trim(),
       _pinned,
       _selectedCrops,
-      _sendPush,
-    );
-    Navigator.of(context).pop();
+    ).then((ok) {
+      if (mounted) {
+        setState(() { _submitting = false; });
+        if (ok) {
+          Navigator.of(context).pop();
+        }
+      }
+    }).catchError((_) {
+      if (mounted) setState(() { _submitting = false; });
+    });
   }
 
   @override

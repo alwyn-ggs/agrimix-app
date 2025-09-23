@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../providers/community_provider.dart';
 import '../../providers/moderation_provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../models/post.dart';
 import '../../models/comment.dart';
 import '../../theme/theme.dart';
 import '../../models/violation.dart';
+import '../community/post_detail_page.dart';
 
 class CommunityModerationPage extends StatefulWidget {
   const CommunityModerationPage({super.key, required int initialTabIndex});
@@ -16,6 +19,7 @@ class CommunityModerationPage extends StatefulWidget {
 
 class _CommunityModerationPageState extends State<CommunityModerationPage> with TickerProviderStateMixin {
   late TabController _tabController;
+  final FirebaseFirestore _db = FirebaseFirestore.instance;
 
   @override
   void initState() {
@@ -539,9 +543,37 @@ class _CommunityModerationPageState extends State<CommunityModerationPage> with 
   }
 
   Widget _buildViolationCard(dynamic violation) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: Padding(
+    final isPostReport = _getTargetTypeString(violation.targetType) == 'post';
+    return InkWell(
+      onTap: !isPostReport
+          ? null
+          : () async {
+              try {
+                final postsRepo = context.read<CommunityProvider>().postsRepo;
+                final post = await postsRepo.getPost(violation.targetId);
+                if (post != null && mounted) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => PostDetailPage(post: post),
+                    ),
+                  );
+                } else if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Reported post not found or has been removed.')),
+                  );
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Failed to open reported post: $e')),
+                  );
+                }
+              }
+            },
+      child: Card(
+        margin: const EdgeInsets.only(bottom: 12),
+        child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -586,24 +618,29 @@ class _CommunityModerationPageState extends State<CommunityModerationPage> with 
               style: const TextStyle(fontSize: 14),
             ),
             const SizedBox(height: 8),
-            Text(
-              'Reported by: ${violation.reporterUid?.substring(0, 8) ?? 'Unknown'}...',
-              style: const TextStyle(
-                color: NatureColors.lightGray,
-                fontSize: 12,
-              ),
-            ),
+            _buildReporterName(violation.reporterUid),
             const SizedBox(height: 12),
             Row(
               children: [
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: () => _handleViolationAction('resolve', violation),
+                    onPressed: () => _handleViolationAction('warn', violation),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
+                      backgroundColor: Colors.orange,
                       foregroundColor: Colors.white,
                     ),
-                    child: const Text('Resolve'),
+                    child: const Text('Warn'),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () => _handleViolationAction('delete', violation),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                      foregroundColor: Colors.white,
+                    ),
+                    child: const Text('Delete'),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -622,7 +659,7 @@ class _CommunityModerationPageState extends State<CommunityModerationPage> with 
           ],
         ),
       ),
-    );
+    ));
   }
 
   Color _getStatusColor(String status) {
@@ -707,7 +744,12 @@ class _CommunityModerationPageState extends State<CommunityModerationPage> with 
   void _handlePostAction(String action, Post post) {
     switch (action) {
       case 'view':
-        // Navigate to post detail
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => PostDetailPage(post: post),
+          ),
+        );
         break;
       case 'delete':
         _showDeleteConfirmation(post.id, 'post');
@@ -725,14 +767,18 @@ class _CommunityModerationPageState extends State<CommunityModerationPage> with 
 
   void _handleViolationAction(String action, dynamic violation) {
     final moderationProvider = context.read<ModerationProvider>();
+    final currentUser = context.read<AuthProvider>().currentUser;
+    if (currentUser == null) return;
     
     switch (action) {
-      case 'resolve':
-        // For now, we'll use dismissViolation with a reason
-        moderationProvider.dismissViolation(violation.id, 'admin_id', reason: 'Resolved by admin');
-        break;
       case 'dismiss':
-        moderationProvider.dismissViolation(violation.id, 'admin_id', reason: 'Dismissed by admin');
+        moderationProvider.dismissViolation(violation.id, currentUser.uid, reason: 'Dismissed by admin');
+        break;
+      case 'warn':
+        _showWarnDialog(violation);
+        break;
+      case 'delete':
+        _showDeleteDialog(violation);
         break;
     }
   }
@@ -786,6 +832,124 @@ class _CommunityModerationPageState extends State<CommunityModerationPage> with 
               backgroundColor: Colors.red,
               foregroundColor: Colors.white,
             ),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildReporterName(String? reporterUid) {
+    if (reporterUid == null || reporterUid.isEmpty) {
+      return const Text(
+        'Reported by: Unknown',
+        style: TextStyle(color: Colors.black, fontSize: 12),
+      );
+    }
+    return FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+      future: _db.collection('users').doc(reporterUid).get(),
+      builder: (context, snapshot) {
+        String display = 'Unknown';
+        if (snapshot.hasData && snapshot.data!.exists) {
+          final data = snapshot.data!.data();
+          final name = (data?['name'] as String?)?.trim();
+          if (name != null && name.isNotEmpty) {
+            display = name;
+          } else {
+            display = reporterUid.length > 8 ? '${reporterUid.substring(0, 8)}...' : reporterUid;
+          }
+        } else {
+          display = reporterUid.length > 8 ? '${reporterUid.substring(0, 8)}...' : reporterUid;
+        }
+        return Text(
+          'Reported by: $display',
+          style: const TextStyle(color: Colors.black, fontSize: 12),
+        );
+      },
+    );
+  }
+
+  void _showWarnDialog(dynamic violation) {
+    final TextEditingController controller = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Warn User'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Enter a warning message to send to the user:'),
+            const SizedBox(height: 12),
+            TextField(
+              controller: controller,
+              decoration: const InputDecoration(
+                hintText: 'Warning message',
+                border: OutlineInputBorder(),
+              ),
+              maxLines: 3,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final text = controller.text.trim();
+              if (text.isEmpty) return;
+              final moderationProvider = context.read<ModerationProvider>();
+              final currentUser = context.read<AuthProvider>().currentUser;
+              if (currentUser == null) return;
+              try {
+                await moderationProvider.warnUser(violation.id, currentUser.uid, warningMessage: text);
+                if (!mounted) return;
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Warning sent successfully'),
+                    backgroundColor: Colors.orange,
+                  ),
+                );
+              } catch (e) {
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Failed to send warning: $e'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, foregroundColor: Colors.white),
+            child: const Text('Send Warning'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDeleteDialog(dynamic violation) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Content'),
+        content: const Text('Are you sure you want to delete the reported content? This action cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final moderationProvider = context.read<ModerationProvider>();
+              final currentUser = context.read<AuthProvider>().currentUser;
+              if (currentUser == null) return;
+              await moderationProvider.deleteContent(violation.id, currentUser.uid, reason: 'Deleted by admin');
+              if (mounted) Navigator.pop(context);
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
             child: const Text('Delete'),
           ),
         ],
