@@ -11,6 +11,22 @@ class NotificationService {
 
   NotificationService(this._messagingService);
 
+  /// Normalize report reason for admin bell message
+  String _normalizeReasonForAdminBell(String reason) {
+    final trimmed = reason.trim();
+    if (trimmed.isEmpty) return 'a violation';
+    final lower = trimmed.toLowerCase();
+    if (lower.contains('harass')) return 'harassment';
+    if (lower.contains('spam')) return 'spam';
+    if (lower.contains('misleading')) return 'misleading information';
+    if (lower.contains('inappropriate')) return 'inappropriate content';
+    if (lower.contains('violence') || lower.contains('dangerous')) return 'violent or dangerous content';
+    if (lower.contains('hate')) return 'hate speech';
+    if (lower.contains('copyright')) return 'copyright violation';
+    // Default: use user-provided reason as-is
+    return trimmed;
+  }
+
   /// Initialize the notification service
   Future<void> init() async {
     // Initialize timezone data
@@ -186,34 +202,60 @@ class NotificationService {
     required String targetId,
     required String reason,
     required String reporterUid,
+    String? penalizedUserUid,
   }) async {
     try {
+      // Try to resolve reported user's display name
+      String reportedName = 'User';
+      try {
+        final String? uid = penalizedUserUid;
+        if (uid != null && uid.isNotEmpty) {
+          final snap = await _db.collection('users').doc(uid).get();
+          final data = snap.data();
+          final name = (data?['name'] as String?)?.trim();
+          if (name != null && name.isNotEmpty) {
+            reportedName = name;
+          } else {
+            // Shorten UID for readability
+            reportedName = uid.length > 8 ? '${uid.substring(0, 8)}...' : uid;
+          }
+        }
+      } catch (_) {}
+
+      final String normalizedReason = _normalizeReasonForAdminBell(reason);
+      final body = '$reportedName has been reported for $normalizedReason. Check your Community Dashboard.';
+
       // Get all admin users
       final adminQuery = await _db
           .collection('users')
           .where('role', isEqualTo: 'admin')
           .get();
 
+      final batch = _db.batch();
       for (final adminDoc in adminQuery.docs) {
         final adminId = adminDoc.id;
-        final tokens = await _messagingService.getUserTokens(adminId);
-        
-        if (tokens.isNotEmpty) {
-          await _createNotificationRecord(
-            userId: adminId,
-            title: 'New Violation Report',
-            body: 'New $targetType reported: $reason',
-            type: 'violation_report',
-            data: {
-              'violationId': violationId,
-              'targetType': targetType,
-              'targetId': targetId,
-              'reason': reason,
-              'reporterUid': reporterUid,
-            },
-          );
-        }
+        final notifRef = _db
+            .collection('users')
+            .doc(adminId)
+            .collection('notifications')
+            .doc();
+        batch.set(notifRef, {
+          'title': 'Community Report',
+          'body': body,
+          'type': 'violation_report',
+          'data': {
+            'violationId': violationId,
+            'targetType': targetType,
+            'targetId': targetId,
+            'reason': reason,
+            'reporterUid': reporterUid,
+            'penalizedUserUid': penalizedUserUid,
+          },
+          'read': false,
+          'createdAt': FieldValue.serverTimestamp(),
+        });
       }
+      await batch.commit();
     } catch (e) {
       AppLogger.error('Failed to send violation report notification: $e', e);
     }

@@ -114,10 +114,11 @@ class ModerationProvider extends ChangeNotifier {
     required String reason,
     required String reporterUid,
     String? penalizedUserUid,
+    String? providedId,
   }) async {
     try {
       final violation = Violation(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        id: providedId ?? DateTime.now().millisecondsSinceEpoch.toString(),
         targetType: targetType,
         targetId: targetId,
         reason: reason,
@@ -309,6 +310,8 @@ class ModerationProvider extends ChangeNotifier {
     String? penalizedUserUid,
   }) async {
     try {
+      // Generate a single violationId to use consistently
+      final String violationId = DateTime.now().millisecondsSinceEpoch.toString();
       // Create violation report
       await reportViolation(
         targetType: targetType,
@@ -316,15 +319,17 @@ class ModerationProvider extends ChangeNotifier {
         reason: reason,
         reporterUid: reporterUid,
         penalizedUserUid: penalizedUserUid,
+        providedId: violationId,
       );
 
       // Notify admins about new violation
       await _notificationService.sendViolationReportNotification(
-        violationId: DateTime.now().millisecondsSinceEpoch.toString(),
+        violationId: violationId,
         targetType: targetType.name,
         targetId: targetId,
         reason: reason,
         reporterUid: reporterUid,
+        penalizedUserUid: penalizedUserUid,
       );
     } catch (e) {
       _error = 'Failed to report violation: $e';

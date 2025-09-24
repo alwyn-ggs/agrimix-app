@@ -7,18 +7,15 @@ import '../services/notification_service.dart';
 class AnnouncementProvider extends ChangeNotifier {
   final AnnouncementsRepo _repo;
   final FCMPushService _pushService;
-  NotificationService? _notificationService; // optional injection
+  final NotificationService? _notificationService; // optional injection
   List<Announcement> items = [];
   bool _isLoading = false;
   String? _error;
 
   AnnouncementProvider(this._repo, this._pushService, [this._notificationService]) {
-    // Initial load to populate immediately
-    _loadAllAnnouncements();
-    // Live updates
-    _repo.watchAnnouncements().listen((v) {
-      items = v;
-      notifyListeners();
+    _repo.watchAnnouncements().listen((v) { 
+      items = v; 
+      notifyListeners(); 
     });
   }
 
@@ -30,7 +27,7 @@ class AnnouncementProvider extends ChangeNotifier {
     required String title,
     required String body,
     required String createdBy,
-    bool pinned = true, // force pinned by default
+    bool pinned = false,
     List<String> cropTargets = const [],
     bool sendPush = false,
   }) async {
@@ -43,26 +40,20 @@ class AnnouncementProvider extends ChangeNotifier {
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         title: title,
         body: body,
-        pinned: true, // ensure pinned regardless of UI
+        pinned: pinned,
         createdAt: DateTime.now(),
         createdBy: createdBy,
-        cropTargets: const [], // remove targeting
+        cropTargets: cropTargets,
         pushSent: false,
       );
 
       await _repo.createAnnouncement(announcement);
 
-      // Ensure list updates immediately even if stream is delayed
-      // ignore: unawaited_futures
-      _loadAllAnnouncements();
-
-      // Also fanout to in-app notifications (bell) without blocking the UI
+      // Also fanout to in-app notifications (bell)
       try {
         final notifs = _notificationService;
         if (notifs != null) {
-          // Fire-and-forget
-          // ignore: unawaited_futures
-          notifs.sendAnnouncementToAllUsers(
+          await notifs.sendAnnouncementToAllUsers(
             title: title,
             body: body,
             announcementId: announcement.id,
@@ -70,7 +61,20 @@ class AnnouncementProvider extends ChangeNotifier {
         }
       } catch (_) {}
 
-      // Push notifications disabled per request; rely on in-app notifications bell
+      // Send push notification if requested
+      if (sendPush) {
+        final pushSuccess = await _pushService.sendAnnouncementPush(
+          title: title,
+          body: body,
+          announcementId: announcement.id,
+          cropTargets: cropTargets.isNotEmpty ? cropTargets : null,
+        );
+
+        // Update announcement with push status
+        if (pushSuccess) {
+          await _repo.updateAnnouncement(announcement.copyWith(pushSent: true));
+        }
+      }
 
       _isLoading = false;
       notifyListeners();
@@ -80,16 +84,6 @@ class AnnouncementProvider extends ChangeNotifier {
       _error = e.toString();
       notifyListeners();
       return false;
-    }
-  }
-
-  Future<void> _loadAllAnnouncements() async {
-    try {
-      final all = await _repo.getAllAnnouncements();
-      items = all;
-      notifyListeners();
-    } catch (_) {
-      // ignore load errors; stream will update if available
     }
   }
 
