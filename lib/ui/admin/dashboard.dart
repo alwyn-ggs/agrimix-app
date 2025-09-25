@@ -57,14 +57,12 @@ class _DashboardState extends State<Dashboard> {
 
  @override
   Widget build(BuildContext context) {
-    final auth = context.watch<AuthProvider>();
+    context.watch<AuthProvider>();
     return PopScope(
       canPop: true,
       onPopInvokedWithResult: (didPop, result) {
         if (didPop) {
-          if (!auth.rememberMe && auth.isLoggedIn) {
-            context.read<AuthProvider>().signOut();
-          }
+          // Persist session by default; do not sign out on back navigation
         }
       },
       child: Scaffold(

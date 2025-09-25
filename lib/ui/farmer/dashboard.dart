@@ -20,27 +20,23 @@ class Dashboard extends StatefulWidget {
 
 class _DashboardState extends State<Dashboard> {
   int _index = 0;
+  final _tabs = const [
+    HomeTab(),
+    RecipesTab(),
+    FermentationTab(),
+    CommunityTab(),
+    MyRecipesTab(),
+    ProfileTab(),
+  ];
 
   @override
   Widget build(BuildContext context) {
-    final auth = context.watch<AuthProvider>();
-    final tabs = [
-      HomeTab(
-        onTapBrowseRecipes: () => setState(() => _index = 1),
-      ),
-      const RecipesTab(),
-      const FermentationTab(),
-      const CommunityTab(),
-      const MyRecipesTab(),
-      const ProfileTab(),
-    ];
+    context.watch<AuthProvider>();
     return PopScope(
       canPop: true,
       onPopInvokedWithResult: (didPop, result) {
         if (didPop) {
-          if (!auth.rememberMe && auth.isLoggedIn) {
-            context.read<AuthProvider>().signOut();
-          }
+          // Persist session by default; do not sign out on back navigation
         }
       },
       child: Scaffold(
@@ -63,7 +59,7 @@ class _DashboardState extends State<Dashboard> {
                   ],
                 ),
               ),
-              child: tabs[_index],
+              child: _tabs[_index],
             ),
           ),
           // Bottom Navigation

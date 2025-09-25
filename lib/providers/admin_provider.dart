@@ -123,14 +123,27 @@ class AdminProvider extends ChangeNotifier {
       (recipeList) {
         AppLogger.debug('AdminProvider: Received ${recipeList.length} recipes from stream');
         _recipes = recipeList;
+        _loading = false;
+        _error = null;
         notifyListeners();
       },
       onError: (error) {
         AppLogger.debug('AdminProvider: Error in recipes stream: $error');
         _error = error.toString();
+        _loading = false;
         notifyListeners();
       },
     );
+  }
+
+  // Public method to refresh recipes
+  void refreshRecipes() {
+    AppLogger.debug('AdminProvider: Refreshing recipes...');
+    _recipesSubscription?.cancel();
+    _loading = true;
+    _error = null;
+    notifyListeners();
+    _startListeningToRecipes();
   }
 
   // Recipe moderation methods

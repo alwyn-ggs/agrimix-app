@@ -80,6 +80,20 @@ service cloud.firestore {
         // Owner or admin can delete notifications
         allow delete: if isAdmin() || (isSignedIn() && request.auth.uid == userId);
       }
+
+      // User favorites subcollection: users/{userId}/favorites/{recipeId}
+      match /favorites/{recipeId} {
+        // Users can read their own favorites
+        allow read: if isSignedIn() && request.auth.uid == userId;
+        
+        // Users can create/delete their own favorites
+        allow create, delete: if isSignedIn() && request.auth.uid == userId
+          && request.resource.data.recipeId is string
+          && request.resource.data.createdAt is timestamp;
+        
+        // No updates allowed for favorites (only create/delete)
+        allow update: if false;
+      }
     }
 
     // Announcements: public read; admins manage

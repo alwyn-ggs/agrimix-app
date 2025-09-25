@@ -35,6 +35,20 @@ class UsersRepo {
     }
   }
 
+  Stream<AppUser?> watchUser(String uid) {
+    try {
+      return _fs.db
+          .collection('users')
+          .doc(uid)
+          .snapshots()
+          .map((doc) => doc.exists ? AppUser.fromMap(doc.id, doc.data()!) : null);
+    } catch (e) {
+      AppLogger.error('UsersRepo: Error watching user: $e', e);
+      // Fallback to a stream that emits null on error to keep UI stable
+      return Stream.value(null);
+    }
+  }
+
   Future<void> createUser(AppUser user) async {
     try {
       AppLogger.debug('UsersRepo: Creating user document for ${user.uid}');

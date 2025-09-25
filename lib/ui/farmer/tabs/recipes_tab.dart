@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../models/recipe.dart';
+import '../../../models/user.dart';
 import '../../../repositories/recipes_repo.dart';
+import '../../../repositories/users_repo.dart';
+import '../../../providers/auth_provider.dart';
 import '../../../theme/theme.dart';
 import '../../../router.dart';
+import '../../../utils/logger.dart';
 
 class RecipesTab extends StatelessWidget {
   const RecipesTab({super.key});
@@ -155,6 +159,31 @@ class RecipesTab extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildLiveRatingChip() {
+    return StreamBuilder<List<Map<String, dynamic>>>(
+      stream: recipesRepo.watchRecipeRatingsRaw(recipe.id),
+      builder: (context, snapshot) {
+        double avg = recipe.avgRating;
+        int count = recipe.totalRatings;
+        if (snapshot.hasData) {
+          final ratings = snapshot.data!;
+          if (ratings.isNotEmpty) {
+            final total = ratings
+                .map((m) => (m['rating'] as num?)?.toDouble() ?? 0.0)
+                .fold<double>(0.0, (a, b) => a + b);
+            count = ratings.length;
+            avg = total / count;
+          }
+        }
+        return _buildEnhancedChip(
+          Icons.star,
+          '${avg.toStringAsFixed(1)} ($count)',
+          Colors.amber[700]!,
+        );
+      },
     );
   }
 
@@ -325,8 +354,12 @@ class _PublicRecipesList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final repo = context.read<RecipesRepo>();
+    final usersRepo = context.read<UsersRepo>();
+    final authProvider = context.watch<AuthProvider>();
+    final currentUser = authProvider.currentAppUser;
+    
     return StreamBuilder<List<Recipe>>(
-      // Watch all to avoid index requirements; filter client-side
+      // Query all recipes and filter client-side to avoid composite index issues
       stream: repo.watchAll(),
       builder: (context, snap) {
         if (snap.connectionState == ConnectionState.waiting) {
@@ -335,15 +368,20 @@ class _PublicRecipesList extends StatelessWidget {
             child: Center(child: CircularProgressIndicator()),
           );
         }
-        final recipes = (snap.data ?? const <Recipe>[]) 
-            .where((r) => r.visibility == RecipeVisibility.public && !r.isStandard)
-            .toList();
+        
+        // Get all recipes and filter for public, non-standard recipes
+        final allRecipes = snap.data ?? const <Recipe>[];
+        final recipes = allRecipes.where((r) => 
+          r.visibility == RecipeVisibility.public && !r.isStandard
+        ).toList();
+        
         if (snap.hasError) {
-          return Padding(
-            padding: const EdgeInsets.all(16),
+          AppLogger.error('Error in recipe stream: ${snap.error}');
+          return const Padding(
+            padding: EdgeInsets.all(16),
             child: Text(
               'Failed to load recipes. Please try again.',
-              style: const TextStyle(color: Colors.red),
+              style: TextStyle(color: Colors.red),
               textAlign: TextAlign.center,
             ),
           );
@@ -365,71 +403,466 @@ class _PublicRecipesList extends StatelessWidget {
           separatorBuilder: (_, __) => const SizedBox(height: 8),
           itemBuilder: (context, index) {
             final r = recipes[index];
-            return ListTile(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              tileColor: Colors.white,
-              leading: Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: NatureColors.lightGray,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: r.imageUrls.isNotEmpty
-                    ? ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: Image.network(
-                          r.imageUrls.first,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => const Icon(Icons.restaurant_menu, color: NatureColors.mediumGray),
-                        ),
-                      )
-                    : const Icon(Icons.restaurant_menu, color: NatureColors.mediumGray),
-              ),
-              title: Text(
-                r.name,
-                style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.black),
-              ),
-              subtitle: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: r.method == RecipeMethod.ffj
-                          ? NatureColors.lightGreen.withAlpha((0.2 * 255).round())
-                          : NatureColors.accentGreen.withAlpha((0.2 * 255).round()),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      r.method.name,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: r.method == RecipeMethod.ffj ? NatureColors.primaryGreen : NatureColors.darkGreen,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      r.cropTarget,
-                      style: const TextStyle(fontSize: 12, color: NatureColors.darkGray),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              ),
-              trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
-              onTap: () {
-                Navigator.of(context).pushNamed(
-                  Routes.recipeDetail,
-                  arguments: {'id': r.id},
-                );
-              },
+            return _InteractiveRecipeCard(
+              recipe: r,
+              currentUserId: currentUser?.uid,
+              recipesRepo: repo,
+              usersRepo: usersRepo,
             );
           },
         );
       },
     );
+  }
+}
+
+class _InteractiveRecipeCard extends StatelessWidget {
+  final Recipe recipe;
+  final String? currentUserId;
+  final RecipesRepo recipesRepo;
+  final UsersRepo usersRepo;
+
+  const _InteractiveRecipeCard({
+    required this.recipe,
+    required this.currentUserId,
+    required this.recipesRepo,
+    required this.usersRepo,
+  });
+
+  // Cache author names to avoid flicker when stream rebuilds
+  static final Map<String, String> _authorNameCache = {};
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
+      elevation: 3,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Colors.white,
+              NatureColors.lightGray.withAlpha((0.1 * 255).round()),
+            ],
+          ),
+        ),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () {
+            Navigator.of(context).pushNamed(
+              Routes.recipeDetail,
+              arguments: {'id': recipe.id},
+            );
+          },
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header with image and basic info
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Enhanced thumbnail
+                    Container(
+                      width: 80,
+                      height: 80,
+                      decoration: BoxDecoration(
+                        color: NatureColors.lightGray,
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withAlpha((0.1 * 255).round()),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: recipe.imageUrls.isNotEmpty
+                          ? ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: Image.network(
+                                recipe.imageUrls.first,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) => const Icon(Icons.restaurant_menu, color: NatureColors.mediumGray, size: 32),
+                              ),
+                            )
+                          : const Icon(Icons.restaurant_menu, color: NatureColors.mediumGray, size: 32),
+                    ),
+                    const SizedBox(width: 16),
+                    // Title and author info
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  recipe.name,
+                                  style: const TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: NatureColors.darkGreen,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              _buildVisibilityChip(recipe),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          // Author information
+                          StreamBuilder<AppUser?>(
+                            stream: usersRepo.watchUser(recipe.ownerUid),
+                            builder: (context, userSnap) {
+                              final author = userSnap.data;
+                              final hasName = author != null && author.name.trim().isNotEmpty;
+                              final ownerUid = recipe.ownerUid;
+                              if (hasName) {
+                                _authorNameCache[ownerUid] = author!.name;
+                              }
+                              final cachedName = _authorNameCache[ownerUid];
+                              final nameToShow = hasName ? author!.name : (cachedName ?? '');
+                              if (nameToShow.trim().isEmpty) return const SizedBox.shrink();
+                              return Row(
+                                children: [
+                                  const CircleAvatar(
+                                    radius: 12,
+                                    backgroundColor: NatureColors.primaryGreen,
+                                    child: Icon(Icons.person, size: 14, color: Colors.white),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'by: $nameToShow',
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      color: NatureColors.darkGray,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              );
+                            },
+                          ),
+                          if (recipe.description.isNotEmpty) ...[
+                            const SizedBox(height: 8),
+                            Text(
+                              recipe.description,
+                              style: const TextStyle(fontSize: 14, color: NatureColors.darkGray),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                // Enhanced info chips
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 8,
+                  children: [
+                    _buildEnhancedChip(Icons.local_dining, recipe.method.name.toUpperCase(), NatureColors.primaryGreen),
+                    _buildEnhancedChip(Icons.eco, recipe.cropTarget, NatureColors.lightGreen),
+                    _buildLiveRatingChip(),
+                    _buildEnhancedChip(Icons.favorite, '${recipe.likes}', Colors.red[400]!),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                // Interactive rating and favorites section
+                Row(
+                  children: [
+                    // Rating section
+                    Expanded(
+                      child: _buildRatingSection(recipe),
+                    ),
+                    const SizedBox(width: 16),
+                    // Favorites button
+                    _buildFavoritesButton(recipe),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                // Action buttons
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final isCompact = constraints.maxWidth < 400;
+                    if (isCompact) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Updated: ${_formatDate(recipe.updatedAt)}',
+                            style: const TextStyle(fontSize: 12, color: NatureColors.mediumGray),
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: ElevatedButton.icon(
+                                  onPressed: () {
+                                    Navigator.of(context).pushNamed(
+                                      Routes.recipeDetail,
+                                      arguments: {'id': recipe.id},
+                                    );
+                                  },
+                                  icon: const Icon(Icons.visibility, size: 18),
+                                  label: const Text('View Recipe'),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: NatureColors.primaryGreen,
+                                    foregroundColor: Colors.white,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      );
+                    }
+                    return Row(
+                      children: [
+                        Text(
+                          'Updated: ${_formatDate(recipe.updatedAt)}',
+                          style: const TextStyle(fontSize: 12, color: NatureColors.mediumGray),
+                        ),
+                        const Spacer(),
+                        ElevatedButton.icon(
+                          onPressed: () {
+                            Navigator.of(context).pushNamed(
+                              Routes.recipeDetail,
+                              arguments: {'id': recipe.id},
+                            );
+                          },
+                          icon: const Icon(Icons.visibility, size: 18),
+                          label: const Text('View Recipe'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: NatureColors.primaryGreen,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+
+  Widget _buildEnhancedChip(IconData icon, String text, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withAlpha((0.1 * 255).round()),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withAlpha((0.3 * 255).round()), width: 1),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: color),
+          const SizedBox(width: 6),
+          Text(
+            text,
+            style: TextStyle(
+              fontSize: 13,
+              color: color,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildVisibilityChip(Recipe recipe) {
+    final isPublic = recipe.visibility == RecipeVisibility.public;
+    return _buildBadge(isPublic ? 'PUBLIC' : 'PRIVATE', isPublic ? Colors.green[800]! : Colors.grey[700]!, isPublic ? Colors.green[100]! : Colors.grey[200]!);
+  }
+
+  Widget _buildBadge(String text, Color fg, Color bg) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(12)),
+      child: Text(text, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: fg)),
+    );
+  }
+
+  Widget _buildRatingSection(Recipe recipe) {
+    if (currentUserId == null || currentUserId == recipe.ownerUid) {
+      return const SizedBox.shrink();
+    }
+
+    return FutureBuilder<double?>(
+      future: recipesRepo.getRecipeRating(recipe.id, currentUserId!),
+      builder: (context, snapshot) {
+        final userRating = snapshot.data;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Rate this recipe:',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: NatureColors.darkGray,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: List.generate(5, (index) {
+                final starIndex = index + 1;
+                final isFilled = userRating != null && starIndex <= userRating;
+                return GestureDetector(
+                  onTap: () => _rateRecipe(context, recipe, starIndex),
+                  child: Container(
+                    margin: const EdgeInsets.only(right: 4),
+                    child: Icon(
+                      isFilled ? Icons.star : Icons.star_border,
+                      color: isFilled ? Colors.amber[600] : Colors.grey[400],
+                      size: 24,
+                    ),
+                  ),
+                );
+              }),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildFavoritesButton(Recipe recipe) {
+    if (currentUserId == null) return const SizedBox.shrink();
+
+    return StreamBuilder<bool>(
+      stream: recipesRepo.watchIsFavorite(
+        userId: currentUserId!,
+        recipeId: recipe.id,
+      ),
+      builder: (context, snapshot) {
+        final isFavorite = snapshot.data ?? false;
+        return ElevatedButton.icon(
+          onPressed: () => _toggleFavorite(context, recipe),
+          icon: Icon(
+            isFavorite ? Icons.favorite : Icons.favorite_border,
+            size: 18,
+          ),
+          label: Text(isFavorite ? 'Saved' : 'Save'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: isFavorite ? Colors.red[50] : Colors.grey[50],
+            foregroundColor: isFavorite ? Colors.red[600] : Colors.grey[600],
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: BorderSide(
+                color: isFavorite ? Colors.red[200]! : Colors.grey[300]!,
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _rateRecipe(BuildContext context, Recipe recipe, int rating) async {
+    try {
+      await recipesRepo.rateRecipe(
+        recipe.id,
+        currentUserId!,
+        rating.toDouble(),
+      );
+      
+      // Show success feedback
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Recipe rated $rating star${rating > 1 ? 's' : ''}!'),
+          backgroundColor: NatureColors.primaryGreen,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    } catch (e) {
+      // Show error feedback
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to rate recipe: $e'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
+  }
+
+  Future<void> _toggleFavorite(BuildContext context, Recipe recipe) async {
+    try {
+      // Get current favorite status before toggling
+      final isCurrentlyFavorite = await recipesRepo.watchIsFavorite(
+        userId: currentUserId!,
+        recipeId: recipe.id,
+      ).first;
+      
+      await recipesRepo.toggleFavorite(
+        userId: currentUserId!,
+        recipeId: recipe.id,
+      );
+      
+      // Show success feedback
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            isCurrentlyFavorite 
+              ? 'Recipe removed from favorites!' 
+              : 'Recipe saved to favorites!'
+          ),
+          backgroundColor: NatureColors.primaryGreen,
+          duration: const Duration(seconds: 2),
+          action: SnackBarAction(
+            label: 'View Favorites',
+            textColor: Colors.white,
+            onPressed: () {
+              // Navigate to My Recipes tab with Favorites selected
+              // This would require access to the parent dashboard to switch tabs
+              // For now, just show a message
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Go to "My Recipes" tab to view your favorites'),
+                  duration: Duration(seconds: 2),
+                ),
+              );
+            },
+          ),
+        ),
+      );
+    } catch (e) {
+      // Show error feedback
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to save recipe: $e'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
+  }
+
+  String _formatDate(DateTime date) {
+    return '${date.day}/${date.month}/${date.year}';
   }
 }

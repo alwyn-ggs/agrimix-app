@@ -144,6 +144,73 @@ class _RecipesPageState extends State<RecipesPage> with TickerProviderStateMixin
   Widget _buildAllRecipesTab() {
     return Consumer<AdminProvider>(
       builder: (context, adminProvider, child) {
+        // Show loading state
+        if (adminProvider.loading) {
+          return const Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                CircularProgressIndicator(color: NatureColors.primaryGreen),
+                SizedBox(height: 16),
+                Text(
+                  'Loading recipes...',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: NatureColors.darkGray,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        // Show error state
+        if (adminProvider.error != null) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(
+                  Icons.error_outline,
+                  size: 64,
+                  color: Colors.red,
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Failed to load recipes',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: NatureColors.darkGray,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  adminProvider.error!,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: NatureColors.mediumGray,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton.icon(
+                  onPressed: () {
+                    // Refresh the admin provider
+                    adminProvider.refreshRecipes();
+                  },
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Retry'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: NatureColors.primaryGreen,
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
         // Sectioned view like user Recipes tab: Standard + Other
         final all = adminProvider.allRecipes;
         final standardRecipes = all.where((r) => r.isStandard).where(_matchesFilters).toList();
@@ -216,6 +283,72 @@ class _RecipesPageState extends State<RecipesPage> with TickerProviderStateMixin
   Widget _buildStandardRecipesTab() {
     return Consumer<AdminProvider>(
       builder: (context, adminProvider, child) {
+        // Show loading state
+        if (adminProvider.loading) {
+          return const Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                CircularProgressIndicator(color: NatureColors.primaryGreen),
+                SizedBox(height: 16),
+                Text(
+                  'Loading recipes...',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: NatureColors.darkGray,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        // Show error state
+        if (adminProvider.error != null) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(
+                  Icons.error_outline,
+                  size: 64,
+                  color: Colors.red,
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Failed to load recipes',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: NatureColors.darkGray,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  adminProvider.error!,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: NatureColors.mediumGray,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton.icon(
+                  onPressed: () {
+                    adminProvider.refreshRecipes();
+                  },
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Retry'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: NatureColors.primaryGreen,
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
         final recipes = adminProvider.standardRecipes;
         return _buildRecipesList(recipes);
       },
@@ -225,6 +358,72 @@ class _RecipesPageState extends State<RecipesPage> with TickerProviderStateMixin
   Widget _buildFlaggedRecipesTab() {
     return Consumer<AdminProvider>(
       builder: (context, adminProvider, child) {
+        // Show loading state
+        if (adminProvider.loading) {
+          return const Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                CircularProgressIndicator(color: NatureColors.primaryGreen),
+                SizedBox(height: 16),
+                Text(
+                  'Loading recipes...',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: NatureColors.darkGray,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        // Show error state
+        if (adminProvider.error != null) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(
+                  Icons.error_outline,
+                  size: 64,
+                  color: Colors.red,
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Failed to load recipes',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: NatureColors.darkGray,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  adminProvider.error!,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: NatureColors.mediumGray,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton.icon(
+                  onPressed: () {
+                    adminProvider.refreshRecipes();
+                  },
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Retry'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: NatureColors.primaryGreen,
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
         final recipes = adminProvider.flaggedRecipes;
         return _buildRecipesList(recipes);
       },
@@ -290,7 +489,7 @@ class _RecipesPageState extends State<RecipesPage> with TickerProviderStateMixin
             end: Alignment.bottomRight,
             colors: [
               Colors.white,
-              NatureColors.lightGray.withOpacity(0.1),
+              NatureColors.lightGray.withAlpha((0.1 * 255).round()),
             ],
           ),
         ),
@@ -312,7 +511,7 @@ class _RecipesPageState extends State<RecipesPage> with TickerProviderStateMixin
                       borderRadius: BorderRadius.circular(12),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
+                          color: Colors.black.withAlpha((0.1 * 255).round()),
                           blurRadius: 8,
                           offset: const Offset(0, 2),
                         ),
@@ -540,9 +739,9 @@ class _RecipesPageState extends State<RecipesPage> with TickerProviderStateMixin
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withAlpha((0.1 * 255).round()),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withOpacity(0.3), width: 1),
+        border: Border.all(color: color.withAlpha((0.3 * 255).round()), width: 1),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
