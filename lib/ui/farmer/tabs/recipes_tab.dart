@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
 import '../../../models/recipe.dart';
 import '../../../models/user.dart';
@@ -90,43 +91,10 @@ class RecipesTab extends StatelessWidget {
                           color: NatureColors.darkGray,
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: NatureColors.primaryGreen,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Text(
-                          '2',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
                     ],
                   ),
                 ),
-                
-                // FPJ Recipe
-                _buildStandardRecipeCard(
-                  context: context,
-                  method: RecipeMethod.fpj,
-                  title: '🌱 Fermented Plant Juice (FPJ)',
-                  description: 'For general plant growth and development',
-                  color: NatureColors.lightGreen,
-                ),
-                
-                // FFJ Recipe
-                _buildStandardRecipeCard(
-                  context: context,
-                  method: RecipeMethod.ffj,
-                  title: '🍌 Fermented Fruit Juice (FFJ)',
-                  description: 'For flowering and fruit development',
-                  color: NatureColors.accentGreen,
-                ),
+                const _StandardRecipesList(),
                 
                 // Divider between standard and other recipes
                 Container(
@@ -324,6 +292,95 @@ class RecipesTab extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+class _StandardRecipesList extends StatelessWidget {
+  const _StandardRecipesList();
+
+  @override
+  Widget build(BuildContext context) {
+    final repo = context.read<RecipesRepo>();
+    final usersRepo = context.read<UsersRepo>();
+    final auth = context.watch<AuthProvider>();
+    final uid = auth.currentUser?.uid;
+    return StreamBuilder<List<Recipe>>(
+      // Stream all to avoid composite index requirement; filter client-side
+      stream: repo.watchAll(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Padding(
+            padding: EdgeInsets.all(16),
+            child: Center(child: CircularProgressIndicator()),
+          );
+        }
+        final recipes = (snapshot.data ?? const <Recipe>[]) 
+            .where((r) => r.isStandard)
+            .toList();
+        if (recipes.isEmpty) {
+          return const Padding(
+            padding: EdgeInsets.all(16),
+            child: Text(
+              'No standard recipes available yet.',
+              style: TextStyle(color: Colors.grey),
+              textAlign: TextAlign.center,
+            ),
+          );
+        }
+        return ListView.separated(
+          physics: const NeverScrollableScrollPhysics(),
+          shrinkWrap: true,
+          itemCount: recipes.length,
+          separatorBuilder: (_, __) => const SizedBox(height: 8),
+          itemBuilder: (context, index) {
+            final r = recipes[index];
+            return _InteractiveRecipeCard(
+              recipe: r,
+              currentUserId: uid,
+              recipesRepo: repo,
+              usersRepo: usersRepo,
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _useStandardRecipe(BuildContext context, Recipe standard, String uid) async {
+    try {
+      final repo = context.read<RecipesRepo>();
+      final newId = FirebaseFirestore.instance.collection(Recipe.collectionPath).doc().id;
+      final copy = Recipe(
+        id: newId,
+        ownerUid: uid,
+        name: standard.name,
+        description: standard.description,
+        method: standard.method,
+        cropTarget: standard.cropTarget,
+        ingredients: standard.ingredients,
+        steps: standard.steps,
+        visibility: RecipeVisibility.private,
+        isStandard: false,
+        likes: 0,
+        avgRating: 0.0,
+        totalRatings: 0,
+        imageUrls: standard.imageUrls,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+      await repo.createRecipe(copy);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Added to your Drafts. Edit and share when ready.')),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to use recipe: $e')),
+        );
+      }
+    }
   }
 }
 
@@ -549,45 +606,49 @@ class _InteractiveRecipeCard extends StatelessWidget {
                   children: [
                     _buildEnhancedChip(Icons.local_dining, recipe.method.name.toUpperCase(), NatureColors.primaryGreen),
                     _buildEnhancedChip(Icons.eco, recipe.cropTarget, NatureColors.lightGreen),
-                    StreamBuilder<List<Map<String, dynamic>>>(
-                      stream: recipesRepo.watchRecipeRatingsRaw(recipe.id),
-                      builder: (context, snapshot) {
-                        double avg = recipe.avgRating;
-                        int count = recipe.totalRatings;
-                        if (snapshot.hasData) {
-                          final ratings = snapshot.data!;
-                          if (ratings.isNotEmpty) {
-                            final total = ratings
-                                .map((m) => (m['rating'] as num?)?.toDouble() ?? 0.0)
-                                .fold<double>(0.0, (a, b) => a + b);
-                            count = ratings.length;
-                            avg = total / count;
+                    if (!recipe.isStandard) ...[
+                      StreamBuilder<List<Map<String, dynamic>>>(
+                        stream: recipesRepo.watchRecipeRatingsRaw(recipe.id),
+                        builder: (context, snapshot) {
+                          double avg = recipe.avgRating;
+                          int count = recipe.totalRatings;
+                          if (snapshot.hasData) {
+                            final ratings = snapshot.data!;
+                            if (ratings.isNotEmpty) {
+                              final total = ratings
+                                  .map((m) => (m['rating'] as num?)?.toDouble() ?? 0.0)
+                                  .fold<double>(0.0, (a, b) => a + b);
+                              count = ratings.length;
+                              avg = total / count;
+                            }
                           }
-                        }
-                        return _buildEnhancedChip(
-                          Icons.star,
-                          '${avg.toStringAsFixed(1)} ($count)',
-                          Colors.amber[700]!,
-                        );
-                      },
-                    ),
-                    _buildEnhancedChip(Icons.favorite, '${recipe.likes}', Colors.red[400]!),
+                          return _buildEnhancedChip(
+                            Icons.star,
+                            '${avg.toStringAsFixed(1)} ($count)',
+                            Colors.amber[700]!,
+                          );
+                        },
+                      ),
+                      _buildEnhancedChip(Icons.favorite, '${recipe.likes}', Colors.red[400]!),
+                    ],
                   ],
                 ),
                 const SizedBox(height: 16),
                 // Interactive rating and favorites section
-                Row(
-                  children: [
-                    // Rating section
-                    Expanded(
-                      child: _buildRatingSection(recipe),
-                    ),
-                    const SizedBox(width: 16),
-                    // Favorites button
-                    _buildFavoritesButton(recipe),
-                  ],
-                ),
-                const SizedBox(height: 16),
+                if (!recipe.isStandard) ...[
+                  Row(
+                    children: [
+                      // Rating section
+                      Expanded(
+                        child: _buildRatingSection(recipe),
+                      ),
+                      const SizedBox(width: 16),
+                      // Favorites button
+                      _buildFavoritesButton(recipe),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                ],
                 // Action buttons
                 LayoutBuilder(
                   builder: (context, constraints) {

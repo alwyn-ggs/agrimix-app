@@ -15,6 +15,7 @@ class RecipeEditPage extends StatelessWidget {
     final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
     final mode = args?['mode'] as String?;
     final recipeId = args?['recipeId'] as String?;
+    final forceStandard = (args?['forceStandard'] as bool?) ?? false;
     return Scaffold(
       backgroundColor: NatureColors.natureBackground,
       appBar: AppBar(
@@ -24,7 +25,7 @@ class RecipeEditPage extends StatelessWidget {
         ),
         backgroundColor: NatureColors.primaryGreen,
       ),
-      body: _RecipeForm(mode: mode, recipeId: recipeId),
+      body: _RecipeForm(mode: mode, recipeId: recipeId, forceStandard: forceStandard),
     );
   }
 }
@@ -32,7 +33,8 @@ class RecipeEditPage extends StatelessWidget {
 class _RecipeForm extends StatefulWidget {
   final String? mode;
   final String? recipeId;
-  const _RecipeForm({this.mode, this.recipeId});
+  final bool forceStandard;
+  const _RecipeForm({this.mode, this.recipeId, this.forceStandard = false});
 
   @override
   State<_RecipeForm> createState() => _RecipeFormState();
@@ -58,6 +60,10 @@ class _RecipeFormState extends State<_RecipeForm> {
     super.initState();
     if (widget.mode == 'edit' && widget.recipeId != null) {
       _loadExistingRecipe();
+    }
+    // If admin invoked Standard creation, default fields accordingly
+    if (widget.mode == 'create' && widget.forceStandard) {
+      _visibility = RecipeVisibility.public;
     }
   }
 
@@ -121,6 +127,12 @@ class _RecipeFormState extends State<_RecipeForm> {
             _buildStepsSection(),
             const SizedBox(height: 24),
             _buildVisibilitySection(),
+            const SizedBox(height: 16),
+            if (widget.forceStandard)
+              const Text(
+                'This will be saved as a Standard recipe and visible to all users.',
+                style: TextStyle(color: Colors.black54),
+              ),
             const SizedBox(height: 32),
             _buildSaveButton(),
           ],
@@ -643,7 +655,7 @@ class _RecipeFormState extends State<_RecipeForm> {
         ingredients: _ingredients,
         steps: _steps,
         visibility: _visibility,
-        isStandard: false,
+        isStandard: widget.forceStandard ? true : (_existingRecipe?.isStandard ?? false),
         likes: _existingRecipe?.likes ?? 0,
         avgRating: _existingRecipe?.avgRating ?? 0.0,
         totalRatings: _existingRecipe?.totalRatings ?? 0,

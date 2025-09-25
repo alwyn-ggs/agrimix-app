@@ -18,12 +18,15 @@ class _RecipesPageState extends State<RecipesPage> with TickerProviderStateMixin
   late TabController _tabController;
   String _searchQuery = '';
   RecipeMethod? _selectedMethod;
-  bool _showStandardOnly = false;
+  // Removed: standard-only filter chip
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    _tabController.addListener(() {
+      if (mounted) setState(() {});
+    });
   }
 
   @override
@@ -55,6 +58,7 @@ class _RecipesPageState extends State<RecipesPage> with TickerProviderStateMixin
           ),
         ],
       ),
+      floatingActionButton: null,
     );
   }
 
@@ -107,21 +111,31 @@ class _RecipesPageState extends State<RecipesPage> with TickerProviderStateMixin
                   },
                 ),
               ),
-              const SizedBox(width: 16),
-              FilterChip(
-                label: const Text('Standard Only'),
-                selected: _showStandardOnly,
-                onSelected: (value) {
-                  setState(() {
-                    _showStandardOnly = value;
-                  });
-                },
-              ),
+              const SizedBox(width: 12),
+              if (_tabController.index == 1)
+                FilledButton.icon(
+                  onPressed: _createStandardRecipe,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: NatureColors.primaryGreen,
+                    foregroundColor: Colors.white,
+                  ),
+                  icon: const Icon(Icons.add, size: 18),
+                  label: const Text('New Standard'),
+                ),
             ],
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _createStandardRecipe() async {
+    // Simple flow: open editor in create mode; after save, admin can toggle to Standard in edit.
+    if (!mounted) return;
+    Navigator.of(context).pushNamed(Routes.recipeEdit, arguments: {
+      'mode': 'create',
+      'forceStandard': true,
+    });
   }
 
   Widget _buildTabBar() {
@@ -349,8 +363,37 @@ class _RecipesPageState extends State<RecipesPage> with TickerProviderStateMixin
           );
         }
 
-        final recipes = adminProvider.standardRecipes;
-        return _buildRecipesList(recipes);
+        final recipes = adminProvider.standardRecipes.where(_matchesFilters).toList();
+        return ListView(
+          padding: const EdgeInsets.only(bottom: 16),
+          children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              color: NatureColors.pureWhite,
+              child: Row(
+                children: [
+                  const Icon(Icons.star, color: NatureColors.primaryGreen, size: 20),
+                  const SizedBox(width: 8),
+                  const Text(
+                    'Standard Recipes',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: NatureColors.darkGray),
+                  ),
+                  const SizedBox(width: 8),
+                  _buildBadge('${recipes.length}', Colors.white, NatureColors.primaryGreen),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            if (recipes.isEmpty)
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Text('No standard recipes', style: TextStyle(color: NatureColors.mediumGray)),
+              )
+            else
+              ...recipes.map(_buildRecipeCard),
+          ],
+        );
       },
     );
   }
@@ -613,24 +656,28 @@ class _RecipesPageState extends State<RecipesPage> with TickerProviderStateMixin
                 children: [
                   _buildEnhancedChip(Icons.local_dining, recipe.method.name.toUpperCase(), NatureColors.primaryGreen),
                   _buildEnhancedChip(Icons.eco, recipe.cropTarget, NatureColors.lightGreen),
-                  _buildEnhancedChip(Icons.star, '${recipe.avgRating.toStringAsFixed(1)} (${recipe.totalRatings})', Colors.amber[700]!),
-                  _buildEnhancedChip(Icons.favorite, '${recipe.likes}', Colors.red[400]!),
+                  if (!recipe.isStandard) ...[
+                    _buildEnhancedChip(Icons.star, '${recipe.avgRating.toStringAsFixed(1)} (${recipe.totalRatings})', Colors.amber[700]!),
+                    _buildEnhancedChip(Icons.favorite, '${recipe.likes}', Colors.red[400]!),
+                  ],
                 ],
               ),
               const SizedBox(height: 16),
               // Interactive rating and favorites section
-              Row(
-                children: [
-                  // Rating section
-                  Expanded(
-                    child: _buildRatingSection(recipe),
-                  ),
-                  const SizedBox(width: 16),
-                  // Favorites button
-                  _buildFavoritesButton(recipe),
-                ],
-              ),
-              const SizedBox(height: 16),
+              if (!recipe.isStandard) ...[
+                Row(
+                  children: [
+                    // Rating section
+                    Expanded(
+                      child: _buildRatingSection(recipe),
+                    ),
+                    const SizedBox(width: 16),
+                    // Favorites button
+                    _buildFavoritesButton(recipe),
+                  ],
+                ),
+                const SizedBox(height: 16),
+              ],
               // Action buttons
               LayoutBuilder(
                 builder: (context, constraints) {
@@ -680,36 +727,47 @@ class _RecipesPageState extends State<RecipesPage> with TickerProviderStateMixin
                       ],
                     );
                   }
-                  return Row(
+                  return Wrap(
+                    spacing: 12,
+                    runSpacing: 8,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    alignment: WrapAlignment.spaceBetween,
                     children: [
                       Text(
                         'Updated: ${_formatDate(recipe.updatedAt)}',
                         style: const TextStyle(fontSize: 12, color: NatureColors.mediumGray),
                       ),
-                      const Spacer(),
-                      ElevatedButton.icon(
-                        onPressed: () => _viewRecipe(context, recipe),
-                        icon: const Icon(Icons.visibility, size: 18),
-                        label: const Text('View Recipe'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: NatureColors.primaryGreen,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      OutlinedButton.icon(
-                        onPressed: () => _confirmDelete(context, recipe),
-                        icon: const Icon(Icons.delete, size: 18),
-                        label: const Text('Delete'),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.red,
-                          side: const BorderSide(color: Colors.red),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            ElevatedButton.icon(
+                              onPressed: () => _viewRecipe(context, recipe),
+                              icon: const Icon(Icons.visibility, size: 18),
+                              label: const Text('View Recipe'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: NatureColors.primaryGreen,
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            OutlinedButton.icon(
+                              onPressed: () => _confirmDelete(context, recipe),
+                              icon: const Icon(Icons.delete, size: 18),
+                              label: const Text('Delete'),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: Colors.red,
+                                side: const BorderSide(color: Colors.red),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
@@ -736,27 +794,35 @@ class _RecipesPageState extends State<RecipesPage> with TickerProviderStateMixin
 
 
   Widget _buildEnhancedChip(IconData icon, String text, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: color.withAlpha((0.1 * 255).round()),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withAlpha((0.3 * 255).round()), width: 1),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 16, color: color),
-          const SizedBox(width: 6),
-          Text(
-            text,
-            style: TextStyle(
-              fontSize: 13,
-              color: color,
-              fontWeight: FontWeight.w600,
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 160),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: color.withAlpha((0.1 * 255).round()),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: color.withAlpha((0.3 * 255).round()), width: 1),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 16, color: color),
+            const SizedBox(width: 6),
+            Flexible(
+              child: Text(
+                text,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                softWrap: false,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: color,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
