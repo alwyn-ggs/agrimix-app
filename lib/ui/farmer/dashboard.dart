@@ -20,14 +20,6 @@ class Dashboard extends StatefulWidget {
 
 class _DashboardState extends State<Dashboard> {
   int _index = 0;
-  final _tabs = const [
-    HomeTab(),
-    RecipesTab(),
-    FermentationTab(),
-    CommunityTab(),
-    MyRecipesTab(),
-    ProfileTab(),
-  ];
 
   @override
   Widget build(BuildContext context) {
@@ -59,7 +51,7 @@ class _DashboardState extends State<Dashboard> {
                   ],
                 ),
               ),
-              child: _tabs[_index],
+              child: _buildCurrentTab(),
             ),
           ),
           // Bottom Navigation
@@ -68,6 +60,27 @@ class _DashboardState extends State<Dashboard> {
         ),
       ),
     ));
+  }
+
+  Widget _buildCurrentTab() {
+    switch (_index) {
+      case 0:
+        return HomeTab(
+          onTapBrowseRecipes: () => setState(() => _index = 1),
+        );
+      case 1:
+        return const RecipesTab();
+      case 2:
+        return const FermentationTab();
+      case 3:
+        return const CommunityTab();
+      case 4:
+        return const MyRecipesTab();
+      case 5:
+        return const ProfileTab();
+      default:
+        return const HomeTab();
+    }
   }
 
   Widget _buildTopBar() {

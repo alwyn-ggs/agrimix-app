@@ -71,7 +71,7 @@ class _RecipeDetailBody extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildRecipeInfo(recipe),
+                        _buildRecipeInfo(context, recipe),
                         const SizedBox(height: 24),
                         _buildDescription(recipe),
                         const SizedBox(height: 24),
@@ -186,10 +186,11 @@ class _RecipeDetailBody extends StatelessWidget {
           icon: Icon(isFav ? Icons.favorite : Icons.favorite_border, color: Colors.white),
           onPressed: () => context.read<RecipesRepo>().toggleFavorite(userId: uid, recipeId: recipe.id),
         ),
-        IconButton(
-          icon: const Icon(Icons.share, color: Colors.white),
-          onPressed: () => _shareRecipe(context, recipe),
-        ),
+        if (uid == recipe.ownerUid)
+          IconButton(
+            icon: const Icon(Icons.share, color: Colors.white),
+            onPressed: () => _shareRecipe(context, recipe),
+          ),
         if (uid == recipe.ownerUid)
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert, color: Colors.white),
@@ -222,50 +223,67 @@ class _RecipeDetailBody extends StatelessWidget {
     );
   }
 
-  Widget _buildRecipeInfo(Recipe recipe) {
+  Widget _buildRecipeInfo(BuildContext context, Recipe recipe) {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            Row(
-              children: [
-                const Icon(Icons.star, color: Colors.orange, size: 20),
-                const SizedBox(width: 8),
-                Text(
-                  recipe.avgRating.toStringAsFixed(1),
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: NatureColors.darkGreen,
-                  ),
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  '(${recipe.totalRatings} ratings)',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: NatureColors.mediumGray,
-                  ),
-                ),
-                const Spacer(),
-                if (recipe.isStandard)
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: NatureColors.primaryGreen.withAlpha((0.1 * 255).round()),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: const Text(
-                      'Standard Recipe',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: NatureColors.primaryGreen,
+            StreamBuilder<List<Map<String, dynamic>>>(
+              stream: context.read<RecipesRepo>().watchRecipeRatingsRaw(recipe.id),
+              builder: (context, snapshot) {
+                double avg = recipe.avgRating;
+                int count = recipe.totalRatings;
+                if (snapshot.hasData) {
+                  final ratings = snapshot.data!;
+                  if (ratings.isNotEmpty) {
+                    final total = ratings
+                        .map((m) => (m['rating'] as num?)?.toDouble() ?? 0.0)
+                        .fold<double>(0.0, (a, b) => a + b);
+                    count = ratings.length;
+                    avg = total / count;
+                  }
+                }
+                return Row(
+                  children: [
+                    const Icon(Icons.star, color: Colors.orange, size: 20),
+                    const SizedBox(width: 8),
+                    Text(
+                      avg.toStringAsFixed(1),
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: NatureColors.darkGreen,
                       ),
                     ),
-                  ),
-              ],
+                    const SizedBox(width: 4),
+                    Text(
+                      '($count ratings)',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: NatureColors.mediumGray,
+                      ),
+                    ),
+                    const Spacer(),
+                    if (recipe.isStandard)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: NatureColors.primaryGreen.withAlpha((0.1 * 255).round()),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: const Text(
+                          'Standard Recipe',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: NatureColors.primaryGreen,
+                          ),
+                        ),
+                      ),
+                  ],
+                );
+              },
             ),
             const SizedBox(height: 12),
             Row(

@@ -162,30 +162,7 @@ class RecipesTab extends StatelessWidget {
     );
   }
 
-  Widget _buildLiveRatingChip() {
-    return StreamBuilder<List<Map<String, dynamic>>>(
-      stream: recipesRepo.watchRecipeRatingsRaw(recipe.id),
-      builder: (context, snapshot) {
-        double avg = recipe.avgRating;
-        int count = recipe.totalRatings;
-        if (snapshot.hasData) {
-          final ratings = snapshot.data!;
-          if (ratings.isNotEmpty) {
-            final total = ratings
-                .map((m) => (m['rating'] as num?)?.toDouble() ?? 0.0)
-                .fold<double>(0.0, (a, b) => a + b);
-            count = ratings.length;
-            avg = total / count;
-          }
-        }
-        return _buildEnhancedChip(
-          Icons.star,
-          '${avg.toStringAsFixed(1)} ($count)',
-          Colors.amber[700]!,
-        );
-      },
-    );
-  }
+  
 
   Widget _buildStandardRecipeCard({
     required BuildContext context,
@@ -525,10 +502,10 @@ class _InteractiveRecipeCard extends StatelessWidget {
                               final hasName = author != null && author.name.trim().isNotEmpty;
                               final ownerUid = recipe.ownerUid;
                               if (hasName) {
-                                _authorNameCache[ownerUid] = author!.name;
+                                _authorNameCache[ownerUid] = author.name;
                               }
                               final cachedName = _authorNameCache[ownerUid];
-                              final nameToShow = hasName ? author!.name : (cachedName ?? '');
+                              final nameToShow = hasName ? author.name : (cachedName ?? '');
                               if (nameToShow.trim().isEmpty) return const SizedBox.shrink();
                               return Row(
                                 children: [
@@ -572,7 +549,28 @@ class _InteractiveRecipeCard extends StatelessWidget {
                   children: [
                     _buildEnhancedChip(Icons.local_dining, recipe.method.name.toUpperCase(), NatureColors.primaryGreen),
                     _buildEnhancedChip(Icons.eco, recipe.cropTarget, NatureColors.lightGreen),
-                    _buildLiveRatingChip(),
+                    StreamBuilder<List<Map<String, dynamic>>>(
+                      stream: recipesRepo.watchRecipeRatingsRaw(recipe.id),
+                      builder: (context, snapshot) {
+                        double avg = recipe.avgRating;
+                        int count = recipe.totalRatings;
+                        if (snapshot.hasData) {
+                          final ratings = snapshot.data!;
+                          if (ratings.isNotEmpty) {
+                            final total = ratings
+                                .map((m) => (m['rating'] as num?)?.toDouble() ?? 0.0)
+                                .fold<double>(0.0, (a, b) => a + b);
+                            count = ratings.length;
+                            avg = total / count;
+                          }
+                        }
+                        return _buildEnhancedChip(
+                          Icons.star,
+                          '${avg.toStringAsFixed(1)} ($count)',
+                          Colors.amber[700]!,
+                        );
+                      },
+                    ),
                     _buildEnhancedChip(Icons.favorite, '${recipe.likes}', Colors.red[400]!),
                   ],
                 ),
