@@ -20,18 +20,20 @@ class Dashboard extends StatefulWidget {
 
 class _DashboardState extends State<Dashboard> {
   int _index = 0;
-  final _tabs = const [
-    HomeTab(),
-    RecipesTab(),
-    FermentationTab(),
-    CommunityTab(),
-    MyRecipesTab(),
-    ProfileTab(),
-  ];
 
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
+    final tabs = [
+      HomeTab(
+        onTapBrowseRecipes: () => setState(() => _index = 1),
+      ),
+      const RecipesTab(),
+      const FermentationTab(),
+      const CommunityTab(),
+      const MyRecipesTab(),
+      const ProfileTab(),
+    ];
     return PopScope(
       canPop: true,
       onPopInvokedWithResult: (didPop, result) {
@@ -61,7 +63,7 @@ class _DashboardState extends State<Dashboard> {
                   ],
                 ),
               ),
-              child: _tabs[_index],
+              child: tabs[_index],
             ),
           ),
           // Bottom Navigation

@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../services/auth_service.dart';
 import '../services/messaging_service.dart';
 import '../repositories/users_repo.dart';
@@ -32,26 +32,22 @@ class AuthProvider extends ChangeNotifier {
     AppLogger.debug('AuthProvider: Initializing...');
     // Ensure remember-me preference is loaded BEFORE listening to auth changes
     _loadRememberPreference().then((_) {
-      // Listen to auth state changes
       auth.authStateChanges().listen(
         (User? user) {
           AppLogger.debug('AuthProvider: Auth state changed - user: ${user?.uid}');
           _currentUser = user;
           if (user != null) {
-            // If user opted not to be remembered, sign out on cold start
             if (!_rememberMe) {
               AppLogger.debug('AuthProvider: rememberMe=false → signing out on init');
               signOut();
               return;
             }
-            // Enter loading state while fetching Firestore user document
             loading = true;
             notifyListeners();
-            // Load user data from Firestore
             _loadUserData(user.uid);
           } else {
             _currentAppUser = null;
-            loading = false; // Set loading to false when no user
+            loading = false;
             AppLogger.debug('AuthProvider: No user, setting loading to false');
             notifyListeners();
           }
@@ -137,9 +133,6 @@ class AuthProvider extends ChangeNotifier {
     error = null;
     notifyListeners();
     try {
-      // Prevent the auth-state listener from signing out during registration
-      // even if rememberMe preference is false. We won't persist this change.
-      _rememberMe = true;
       AppLogger.debug('AuthProvider: Starting registration for $email');
       final userCredential = await auth.register(email, password);
       if (userCredential.user != null) {
@@ -173,11 +166,6 @@ class AuthProvider extends ChangeNotifier {
           messaging.saveTokenToUser(appUser.uid, newToken);
         });
       }
-      // Restore remember-me flag to persisted preference after setup
-      try {
-        final prefs = await SharedPreferences.getInstance();
-        _rememberMe = prefs.getBool('remember_me') ?? false;
-      } catch (_) {}
     } catch (e) {
       AppLogger.debug('AuthProvider: Error during registration: $e');
       error = e.toString();
@@ -226,4 +214,5 @@ class AuthProvider extends ChangeNotifier {
       _rememberMe = false;
     }
   }
+
 }

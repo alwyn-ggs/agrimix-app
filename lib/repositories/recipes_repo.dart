@@ -47,6 +47,25 @@ class RecipesRepo {
     }
   }
 
+  // Deep delete: remove recipe and its immediate subcollections (e.g., ratings)
+  Future<void> deleteRecipeDeep(String recipeId) async {
+    try {
+      // Delete ratings subcollection documents
+      final ratingsSnap = await _fs.db
+          .collection(Recipe.ratingsSubcollectionPath(recipeId))
+          .get();
+      final batch = _fs.batch();
+      for (final doc in ratingsSnap.docs) {
+        batch.delete(doc.reference);
+      }
+      // Delete the recipe document
+      batch.delete(_fs.db.collection(Recipe.collectionPath).doc(recipeId));
+      await batch.commit();
+    } catch (e) {
+      throw Exception('Failed to deep delete recipe: $e');
+    }
+  }
+
   // Get all recipes (for My Recipes tab)
   Future<List<Recipe>> getAllRecipes() async {
     try {

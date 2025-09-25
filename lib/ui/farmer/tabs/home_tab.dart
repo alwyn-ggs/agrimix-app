@@ -6,7 +6,8 @@ import '../../../providers/auth_provider.dart';
 import '../../../models/announcement.dart';
 
 class HomeTab extends StatelessWidget {
-  const HomeTab({super.key});
+  final VoidCallback? onTapBrowseRecipes;
+  const HomeTab({super.key, this.onTapBrowseRecipes});
 
   @override
   Widget build(BuildContext context) {
@@ -97,7 +98,13 @@ class HomeTab extends StatelessWidget {
                   title: 'Browse Recipes',
                   subtitle: 'Find what to make',
                   color: NatureColors.lightGreen,
-                  onTap: () => Navigator.of(context).pushNamed(Routes.recipes),
+                  onTap: () {
+                    if (onTapBrowseRecipes != null) {
+                      onTapBrowseRecipes!.call();
+                    } else {
+                      Navigator.of(context).pushNamed(Routes.recipes);
+                    }
+                  },
                 ),
               ),
               const SizedBox(width: 12),

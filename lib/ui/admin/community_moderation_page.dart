@@ -57,16 +57,11 @@ class _CommunityModerationPageState extends State<CommunityModerationPage> with 
     return Scaffold(
       backgroundColor: NatureColors.natureBackground,
       appBar: AppBar(
-        title: const Text('Community Moderation'),
         backgroundColor: NatureColors.primaryGreen,
         foregroundColor: NatureColors.pureWhite,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _loadData,
-            tooltip: 'Refresh Data',
-          ),
-        ],
+        automaticallyImplyLeading: false,
+        elevation: 0,
+        toolbarHeight: 0,
         bottom: TabBar(
           controller: _tabController,
           labelColor: NatureColors.pureWhite,
@@ -112,48 +107,52 @@ class _CommunityModerationPageState extends State<CommunityModerationPage> with 
     return Consumer<CommunityProvider>(
       builder: (context, communityProvider, child) {
         if (communityProvider.isLoadingPosts) {
-          return const Center(child: CircularProgressIndicator());
+          return RefreshIndicator(
+            onRefresh: () async => _loadData(),
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              children: const [
+                SizedBox(height: 200),
+                Center(child: CircularProgressIndicator()),
+                SizedBox(height: 200),
+              ],
+            ),
+          );
         }
 
         if (communityProvider.posts.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.article_outlined, size: 64, color: NatureColors.lightGray),
-                const SizedBox(height: 16),
-                const Text(
+          return RefreshIndicator(
+            onRefresh: () async => _loadData(),
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.all(16),
+              children: const [
+                SizedBox(height: 60),
+                Icon(Icons.article_outlined, size: 64, color: NatureColors.lightGray),
+                SizedBox(height: 16),
+                Text(
                   'No posts found',
+                  textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 18,
                     color: NatureColors.lightGray,
                   ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Loading: ${communityProvider.isLoadingPosts}',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: NatureColors.lightGray,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                ElevatedButton(
-                  onPressed: _loadData,
-                  child: const Text('Refresh'),
                 ),
               ],
             ),
           );
         }
 
-        return ListView.builder(
-          padding: const EdgeInsets.all(16),
-          itemCount: communityProvider.posts.length,
-          itemBuilder: (context, index) {
-            final post = communityProvider.posts[index];
-            return _buildPostCard(post);
-          },
+        return RefreshIndicator(
+          onRefresh: () async => _loadData(),
+          child: ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: communityProvider.posts.length,
+            itemBuilder: (context, index) {
+              final post = communityProvider.posts[index];
+              return _buildPostCard(post);
+            },
+          ),
         );
       },
     );
@@ -214,48 +213,53 @@ class _CommunityModerationPageState extends State<CommunityModerationPage> with 
     return Consumer<ModerationProvider>(
       builder: (context, moderationProvider, child) {
         if (moderationProvider.loading) {
-          return const Center(child: CircularProgressIndicator());
+          return RefreshIndicator(
+            onRefresh: () async => _loadData(),
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              children: const [
+                SizedBox(height: 200),
+                Center(child: CircularProgressIndicator()),
+                SizedBox(height: 200),
+              ],
+            ),
+          );
         }
 
-        if (moderationProvider.violations.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.report_problem_outlined, size: 64, color: NatureColors.lightGray),
-                const SizedBox(height: 16),
-                const Text(
-                  'No reports found',
+        final openViolations = moderationProvider.openViolations;
+        if (openViolations.isEmpty) {
+          return RefreshIndicator(
+            onRefresh: () async => _loadData(),
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.all(16),
+              children: const [
+                SizedBox(height: 60),
+                Icon(Icons.report_problem_outlined, size: 64, color: NatureColors.lightGray),
+                SizedBox(height: 16),
+                Text(
+                  'No open reports',
+                  textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 18,
                     color: NatureColors.lightGray,
                   ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Loading: ${moderationProvider.loading}',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: NatureColors.lightGray,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                ElevatedButton(
-                  onPressed: _loadData,
-                  child: const Text('Refresh'),
                 ),
               ],
             ),
           );
         }
 
-        return ListView.builder(
-          padding: const EdgeInsets.all(16),
-          itemCount: moderationProvider.violations.length,
-          itemBuilder: (context, index) {
-            final violation = moderationProvider.violations[index];
-            return _buildViolationCard(violation);
-          },
+        return RefreshIndicator(
+          onRefresh: () async => _loadData(),
+          child: ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: openViolations.length,
+            itemBuilder: (context, index) {
+              final violation = openViolations[index];
+              return _buildViolationCard(violation);
+            },
+          ),
         );
       },
     );
@@ -765,14 +769,34 @@ class _CommunityModerationPageState extends State<CommunityModerationPage> with 
     }
   }
 
-  void _handleViolationAction(String action, dynamic violation) {
+  Future<void> _handleViolationAction(String action, dynamic violation) async {
     final moderationProvider = context.read<ModerationProvider>();
     final currentUser = context.read<AuthProvider>().currentUser;
     if (currentUser == null) return;
     
     switch (action) {
       case 'dismiss':
-        moderationProvider.dismissViolation(violation.id, currentUser.uid, reason: 'Dismissed by admin');
+        try {
+          await moderationProvider.dismissViolation(
+            violation.id,
+            currentUser.uid,
+            reason: 'Dismissed by admin',
+          );
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Report dismissed successfully'),
+            ),
+          );
+        } catch (e) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to dismiss report: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
         break;
       case 'warn':
         _showWarnDialog(violation);
@@ -946,8 +970,29 @@ class _CommunityModerationPageState extends State<CommunityModerationPage> with 
               final moderationProvider = context.read<ModerationProvider>();
               final currentUser = context.read<AuthProvider>().currentUser;
               if (currentUser == null) return;
-              await moderationProvider.deleteContent(violation.id, currentUser.uid, reason: 'Deleted by admin');
-              if (mounted) Navigator.pop(context);
+              try {
+                await moderationProvider.deleteContent(
+                  violation.id,
+                  currentUser.uid,
+                  reason: 'Deleted by admin',
+                );
+                if (!mounted) return;
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Content deleted and report resolved'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              } catch (e) {
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Failed to delete content: $e'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
             child: const Text('Delete'),

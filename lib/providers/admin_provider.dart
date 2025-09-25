@@ -50,6 +50,7 @@ class AdminProvider extends ChangeNotifier {
   List<Recipe> get allRecipes => _recipes;
   List<Recipe> get standardRecipes => _recipes.where((recipe) => recipe.isStandard).toList();
   List<Recipe> get nonStandardRecipes => _recipes.where((recipe) => !recipe.isStandard).toList();
+  List<Recipe> get publicRecipes => _recipes.where((recipe) => recipe.visibility == RecipeVisibility.public).toList();
   List<Recipe> get flaggedRecipes => _recipes.where((recipe) => 
     recipe.totalRatings > 0 && recipe.avgRating < 2.0).toList();
 
@@ -233,7 +234,7 @@ class AdminProvider extends ChangeNotifier {
       
       // Admin action completed
 
-      await recipes.deleteRecipe(recipeId);
+      await recipes.deleteRecipeDeep(recipeId);
       AppLogger.debug('AdminProvider: Recipe $recipeId deleted');
     } catch (e) {
       AppLogger.debug('AdminProvider: Error deleting recipe: $e');

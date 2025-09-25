@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../../models/recipe.dart';
+import '../../../repositories/recipes_repo.dart';
 import '../../../theme/theme.dart';
+import '../../../router.dart';
 
 class RecipesTab extends StatelessWidget {
   const RecipesTab({super.key});
@@ -142,15 +145,10 @@ class RecipesTab extends StatelessWidget {
                   ),
                 ),
                 
-                // All other recipes would be listed here
-                // For now, showing a placeholder
-                const Padding(
-                  padding: EdgeInsets.all(16),
-                  child: Text(
-                    'Other recipes will appear here...',
-                    style: TextStyle(color: Colors.grey),
-                    textAlign: TextAlign.center,
-                  ),
+                // Public user-shared recipes (non-standard)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: _PublicRecipesList(),
                 ),
               ],
             ),
@@ -319,6 +317,119 @@ class RecipesTab extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _PublicRecipesList extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final repo = context.read<RecipesRepo>();
+    return StreamBuilder<List<Recipe>>(
+      // Watch all to avoid index requirements; filter client-side
+      stream: repo.watchAll(),
+      builder: (context, snap) {
+        if (snap.connectionState == ConnectionState.waiting) {
+          return const Padding(
+            padding: EdgeInsets.all(16),
+            child: Center(child: CircularProgressIndicator()),
+          );
+        }
+        final recipes = (snap.data ?? const <Recipe>[]) 
+            .where((r) => r.visibility == RecipeVisibility.public && !r.isStandard)
+            .toList();
+        if (snap.hasError) {
+          return Padding(
+            padding: const EdgeInsets.all(16),
+            child: Text(
+              'Failed to load recipes. Please try again.',
+              style: const TextStyle(color: Colors.red),
+              textAlign: TextAlign.center,
+            ),
+          );
+        }
+        if (recipes.isEmpty) {
+          return const Padding(
+            padding: EdgeInsets.all(16),
+            child: Text(
+              'No shared recipes yet. Be the first to share!',
+              style: TextStyle(color: Colors.grey),
+              textAlign: TextAlign.center,
+            ),
+          );
+        }
+        return ListView.separated(
+          physics: const NeverScrollableScrollPhysics(),
+          shrinkWrap: true,
+          itemCount: recipes.length,
+          separatorBuilder: (_, __) => const SizedBox(height: 8),
+          itemBuilder: (context, index) {
+            final r = recipes[index];
+            return ListTile(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              tileColor: Colors.white,
+              leading: Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: NatureColors.lightGray,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: r.imageUrls.isNotEmpty
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.network(
+                          r.imageUrls.first,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => const Icon(Icons.restaurant_menu, color: NatureColors.mediumGray),
+                        ),
+                      )
+                    : const Icon(Icons.restaurant_menu, color: NatureColors.mediumGray),
+              ),
+              title: Text(
+                r.name,
+                style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.black),
+              ),
+              subtitle: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: r.method == RecipeMethod.ffj
+                          ? NatureColors.lightGreen.withAlpha((0.2 * 255).round())
+                          : NatureColors.accentGreen.withAlpha((0.2 * 255).round()),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      r.method.name,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: r.method == RecipeMethod.ffj ? NatureColors.primaryGreen : NatureColors.darkGreen,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      r.cropTarget,
+                      style: const TextStyle(fontSize: 12, color: NatureColors.darkGray),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+              trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+              onTap: () {
+                Navigator.of(context).pushNamed(
+                  Routes.recipeDetail,
+                  arguments: {'id': r.id},
+                );
+              },
+            );
+          },
+        );
+      },
     );
   }
 }

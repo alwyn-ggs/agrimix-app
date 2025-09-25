@@ -59,9 +59,19 @@ service cloud.firestore {
         // The owner can read their notifications
         allow read: if isSignedIn() && request.auth.uid == userId;
 
-        // Admins can create notifications for any user (e.g., warnings, system messages)
-        // Users can also create (for testing/dev), but generally only admins will create
-        allow create: if (isAdmin()) || (isSignedIn() && request.auth.uid == userId);
+        // Creation rules:
+        // - Admins can create notifications for any user (system/moderation messages)
+        // - Any signed-in user can create a notification for an admin user (e.g., report alerts)
+        // - A user can create their own notifications (e.g., local testing/dev)
+        allow create: if (
+          isAdmin() ||
+          (
+            isSignedIn() && (
+              request.auth.uid == userId ||
+              get(/databases/$(database)/documents/users/$(userId)).data.role == 'admin'
+            )
+          )
+        );
 
         // The owner can update only the 'read' field
         allow update: if isSignedIn() && request.auth.uid == userId &&

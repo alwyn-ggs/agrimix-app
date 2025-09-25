@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../repositories/recipes_repo.dart';
 import '../../models/recipe.dart';
@@ -590,12 +591,59 @@ class _RecipeDetailBody extends StatelessWidget {
                         color: NatureColors.mediumGray,
                       ),
                     ),
-                    onTap: () {
+                    onTap: () async {
                       Navigator.pop(context);
-                      Navigator.of(context).pushNamed(
-                        Routes.newPost,
-                        arguments: {'preselectedRecipe': recipe},
-                      );
+                      Recipe recipeToShare = recipe;
+                      try {
+                        // If it's a draft (private), create a public copy instead of converting the draft
+                        if (recipe.visibility == RecipeVisibility.private) {
+                          final newId = FirebaseFirestore.instance.collection(Recipe.collectionPath).doc().id;
+                          final publicCopy = Recipe(
+                            id: newId,
+                            ownerUid: recipe.ownerUid,
+                            name: recipe.name,
+                            description: recipe.description,
+                            method: recipe.method,
+                            cropTarget: recipe.cropTarget,
+                            ingredients: recipe.ingredients,
+                            steps: recipe.steps,
+                            visibility: RecipeVisibility.public,
+                            isStandard: false,
+                            likes: 0,
+                            avgRating: 0.0,
+                            totalRatings: 0,
+                            imageUrls: recipe.imageUrls,
+                            createdAt: DateTime.now(),
+                            updatedAt: DateTime.now(),
+                          );
+                          await context.read<RecipesRepo>().createRecipe(publicCopy);
+                          recipeToShare = publicCopy;
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Recipe shared publicly and kept in Drafts.')),
+                            );
+                          }
+                        } else {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Recipe is public and visible in Recipes tab.')),
+                            );
+                          }
+                        }
+                      } catch (e) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Failed to share recipe: $e')),
+                          );
+                        }
+                      }
+
+                      if (context.mounted) {
+                        Navigator.of(context).pushNamed(
+                          Routes.newPost,
+                          arguments: {'preselectedRecipe': recipeToShare},
+                        );
+                      }
                     },
                   ),
                   

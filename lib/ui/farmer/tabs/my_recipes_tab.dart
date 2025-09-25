@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../theme/theme.dart';
 import '../../../router.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/recipe_provider.dart';
-import '../../../models/recipe.dart';
 import '../../../repositories/recipes_repo.dart';
+import '../../../models/recipe.dart';
 
 class MyRecipesTab extends StatefulWidget {
   const MyRecipesTab({super.key});
@@ -520,6 +521,52 @@ class _MyRecipesTabState extends State<MyRecipesTab> with TickerProviderStateMix
                     ],
                   ),
                   const Spacer(),
+                  if (recipe.visibility == RecipeVisibility.private) ...[
+                    TextButton.icon(
+                      onPressed: () async {
+                        try {
+                          final repo = context.read<RecipesRepo>();
+                          final newId = FirebaseFirestore.instance.collection(Recipe.collectionPath).doc().id;
+                          final publicCopy = Recipe(
+                            id: newId,
+                            ownerUid: recipe.ownerUid,
+                            name: recipe.name,
+                            description: recipe.description,
+                            method: recipe.method,
+                            cropTarget: recipe.cropTarget,
+                            ingredients: recipe.ingredients,
+                            steps: recipe.steps,
+                            visibility: RecipeVisibility.public,
+                            isStandard: false,
+                            likes: 0,
+                            avgRating: 0.0,
+                            totalRatings: 0,
+                            imageUrls: recipe.imageUrls,
+                            createdAt: DateTime.now(),
+                            updatedAt: DateTime.now(),
+                          );
+                          await repo.createRecipe(publicCopy);
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Shared publicly. Draft kept.')),
+                            );
+                          }
+                        } catch (e) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Failed to share: $e')),
+                            );
+                          }
+                        }
+                      },
+                      icon: const Icon(Icons.public, size: 16, color: NatureColors.primaryGreen),
+                      label: const Text('Share', style: TextStyle(color: NatureColors.primaryGreen)),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      ),
+                    ),
+                  ],
+                  const SizedBox(width: 8),
                   Text(
                     _formatDate(recipe.updatedAt),
                     style: const TextStyle(

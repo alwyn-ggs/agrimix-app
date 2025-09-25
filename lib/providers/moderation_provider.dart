@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import '../repositories/violations_repo.dart';
 import '../repositories/posts_repo.dart';
 import '../repositories/comments_repo.dart';
+import '../repositories/recipes_repo.dart';
 import '../services/notification_service.dart';
 import '../models/violation.dart';
 import '../models/post.dart';
@@ -13,6 +14,7 @@ class ModerationProvider extends ChangeNotifier {
   final ViolationsRepo _violationsRepo;
   final PostsRepo _postsRepo;
   final CommentsRepo _commentsRepo;
+  final RecipesRepo _recipesRepo;
   final NotificationService _notificationService;
 
   List<Violation> _violations = [];
@@ -27,6 +29,7 @@ class ModerationProvider extends ChangeNotifier {
     this._postsRepo,
     this._commentsRepo,
     this._notificationService,
+    this._recipesRepo,
   ) {
     _startListeningToViolations();
   }
@@ -176,7 +179,8 @@ class ModerationProvider extends ChangeNotifier {
               targetUserId = comment?.authorId;
               break;
             case ViolationTargetType.recipe:
-              // TODO: implement recipe owner lookup if needed
+              final recipe = await _recipesRepo.getRecipe(violation.targetId);
+              targetUserId = recipe?.ownerUid;
               break;
             case ViolationTargetType.user:
               targetUserId = violation.targetId;

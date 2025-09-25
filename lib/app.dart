@@ -63,7 +63,7 @@ class AgriMixAppRoot extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => FermentationProvider(fermentationRepo, notificationService)),
         ChangeNotifierProvider(create: (_) => CommunityProvider(postsRepo, commentsRepo, violationsRepo)),
         ChangeNotifierProvider(create: (_) => AnnouncementProvider(announcementsRepo, fcmPushService, notificationService)),
-        ChangeNotifierProvider(create: (_) => ModerationProvider(violationsRepo, postsRepo, commentsRepo, notificationService)),
+        ChangeNotifierProvider(create: (_) => ModerationProvider(violationsRepo, postsRepo, commentsRepo, notificationService, recipesRepo)),
         ChangeNotifierProvider(create: (_) => AdminProvider(usersRepo, postsRepo, recipesRepo, authService)),
         ChangeNotifierProvider(create: (_) => AdminFermentationProvider()),
         // Expose repos needed directly by pages (detail/edit/flows)
