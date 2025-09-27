@@ -171,13 +171,13 @@ service cloud.firestore {
       allow update, delete: if isAdmin();
     }
 
-    // Fermentation logs: farmers CRUD own; admins can read all
+    // Fermentation logs: any signed-in user can CRUD their own; admins can read all
     match /fermentation_logs/{logId} {
       allow read: if isSignedIn() && (isAdmin() || resource.data.ownerUid == request.auth.uid);
-      allow create: if isFarmer()
+      allow create: if isSignedIn()
         && request.resource.data.ownerUid == request.auth.uid
-        && isValidMethod(request.resource.data.method);
-      allow update, delete: if (isFarmer() && resource.data.ownerUid == request.auth.uid) || isAdmin();
+        && (request.resource.data.method == 'ffj' || request.resource.data.method == 'fpj');
+      allow update, delete: if (isSignedIn() && resource.data.ownerUid == request.auth.uid) || isAdmin();
     }
 
     // Audit logs: admins only

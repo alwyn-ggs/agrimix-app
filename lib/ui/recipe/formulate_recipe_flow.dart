@@ -3,12 +3,14 @@ import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../providers/recipe_provider.dart';
 import '../../repositories/recipes_repo.dart';
+import '../../repositories/fermentation_repo.dart';
 import '../../models/recipe.dart';
 import '../../models/ingredient.dart';
+import '../../models/fermentation_log.dart';
 import '../../providers/auth_provider.dart';
-import '../../router.dart';
 import '../../theme/theme.dart';
 import '../../services/fermentation_guide_service.dart';
+import '../../services/notification_service.dart';
 import 'fermentation_guide_screen.dart';
 import 'recipe_analytics_widget.dart';
 
@@ -294,7 +296,32 @@ class _FormulateRecipeFlowState extends State<FormulateRecipeFlow> {
                       ingredients: _resolveSelectedIngredients(context),
                       cache: _imageUrlCache,
                     ),
-                      const SizedBox(height: 120), // padding for bottom bar
+                      const SizedBox(height: 16),
+                      // Info box about automatic fermentation
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.withAlpha((0.1 * 255).round()),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.blue.withAlpha((0.3 * 255).round())),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.info_outline, color: Colors.blue.shade700, size: 20),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Click "Start Fermentation" to automatically create a fermentation log and begin tracking your fermentation process.',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.blue.shade700,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 100), // padding for bottom bar
                     ],
                   ),
                 ),
@@ -319,8 +346,14 @@ class _FormulateRecipeFlowState extends State<FormulateRecipeFlow> {
             const SizedBox(width: 12),
             Expanded(
               child: OutlinedButton(
-                onPressed: () => _proceedToStart(context),
-                child: const Text('Proceed to Start'),
+                onPressed: _saving ? null : () => _proceedToStart(context),
+                child: _saving 
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('Start Fermentation'),
               ),
             ),
           ],
@@ -417,7 +450,7 @@ class _FormulateRecipeFlowState extends State<FormulateRecipeFlow> {
     }
   }
 
-  void _proceedToStart(BuildContext context) {
+  Future<void> _proceedToStart(BuildContext context) async {
     try {
       final auth = context.read<AuthProvider>();
       final owner = auth.currentUser?.uid ?? '';
@@ -432,17 +465,37 @@ class _FormulateRecipeFlowState extends State<FormulateRecipeFlow> {
         return;
       }
 
+      // Show loading indicator
+      setState(() => _saving = true);
+
+      // Generate recipe and save it first
       final generated = _generateRecipe(ownerUid: owner);
-      Navigator.of(context).pushNamed(Routes.newLog, arguments: {
-        'draftRecipe': generated.toMap(),
-      });
+      final recipesRepo = context.read<RecipesRepo>();
+      await recipesRepo.createRecipe(generated);
+
+      // Create fermentation log automatically
+      await _createAutoFermentationLog(context, generated, owner);
+
+      if (mounted) {
+        setState(() => _saving = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Recipe saved and fermentation started automatically!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        Navigator.of(context).pop();
+      }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to start fermentation: ${e.toString()}'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      if (mounted) {
+        setState(() => _saving = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to start fermentation: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -628,6 +681,81 @@ class _FormulateRecipeFlowState extends State<FormulateRecipeFlow> {
       for (final id in _selectedIds)
         if (byId.containsKey(id)) byId[id]!
     ];
+  }
+
+  Future<void> _createAutoFermentationLog(BuildContext context, Recipe recipe, String ownerUid) async {
+    try {
+      final fermentationRepo = context.read<FermentationRepo>();
+      final notificationService = context.read<NotificationService>();
+      
+      // Convert recipe method to fermentation method
+      final fermentationMethod = recipe.method == RecipeMethod.ffj 
+          ? FermentationMethod.ffj 
+          : FermentationMethod.fpj;
+      
+      // Create fermentation ingredients from recipe ingredients
+      final fermentationIngredients = recipe.ingredients.map((ingredient) => 
+        FermentationIngredient(
+          name: ingredient.name,
+          amount: ingredient.amount,
+          unit: ingredient.unit,
+        )
+      ).toList();
+      
+      // Generate default stages based on method
+      final stages = _generateDefaultStages(fermentationMethod);
+      
+      // Create fermentation title from recipe
+      final fermentationTitle = '${recipe.name} - ${recipe.cropTarget}';
+      
+      // Create the fermentation log
+      final fermentationLog = FermentationLog(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        ownerUid: ownerUid,
+        recipeId: recipe.id, // Link to the recipe
+        title: fermentationTitle,
+        method: fermentationMethod,
+        ingredients: fermentationIngredients,
+        startAt: DateTime.now(),
+        stages: stages,
+        currentStage: 0,
+        status: FermentationStatus.active,
+        notes: 'Auto-created from recipe: ${recipe.name}',
+        photos: const <String>[],
+        alertsEnabled: true,
+        createdAt: DateTime.now(),
+      );
+      
+      // Save the fermentation log
+      await fermentationRepo.createFermentationLog(fermentationLog);
+      
+      // Schedule notifications if alerts are enabled
+      await notificationService.scheduleFermentationNotifications(
+        fermentationLog.id,
+        fermentationLog.title,
+        stages.map((s) => s.toMap()).toList(),
+        fermentationLog.startAt,
+      );
+      
+    } catch (e) {
+      throw Exception('Failed to create fermentation log: $e');
+    }
+  }
+
+  List<FermentationStage> _generateDefaultStages(FermentationMethod method) {
+    if (method == FermentationMethod.ffj) {
+      return const [
+        FermentationStage(day: 0, label: 'Day 1', action: 'Mix fruits and sugar'),
+        FermentationStage(day: 2, label: 'Day 3', action: 'Stir mixture and check aroma'),
+        FermentationStage(day: 6, label: 'Day 7', action: 'Strain and bottle the juice'),
+      ];
+    } else {
+      return const [
+        FermentationStage(day: 0, label: 'Day 1', action: 'Mix plant materials and sugar'),
+        FermentationStage(day: 2, label: 'Day 3', action: 'Stir and check fermentation'),
+        FermentationStage(day: 6, label: 'Day 7', action: 'Strain and store'),
+      ];
+    }
   }
 }
 

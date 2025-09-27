@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
+import 'dart:typed_data';
+import 'package:flutter/material.dart';
 import 'messaging_service.dart';
 import '../utils/logger.dart';
 
@@ -10,6 +12,79 @@ class NotificationService {
   final FlutterLocalNotificationsPlugin _localNotifications = FlutterLocalNotificationsPlugin();
 
   NotificationService(this._messagingService);
+
+  /// Handle notification actions (when user taps on notification buttons)
+  static void handleNotificationAction(String action, String payload) {
+    switch (action) {
+      case 'open_app':
+        // Navigate to fermentation detail page
+        // This would typically be handled by your app's navigation system
+        AppLogger.info('User tapped "Open App" for payload: $payload');
+        break;
+      case 'mark_done':
+        // Mark fermentation stage as completed
+        AppLogger.info('User tapped "Mark as Done" for payload: $payload');
+        // You can implement logic to update the fermentation log here
+        break;
+      default:
+        AppLogger.info('Unknown notification action: $action');
+    }
+  }
+
+  /// Test notification (for development/testing)
+  Future<void> testFermentationNotification() async {
+    try {
+      await _localNotifications.show(
+        999, // Test ID
+        '🌱 Test Fermentation Alert!',
+        'This is a test notification to check if fermentation alerts work properly.\n\nDay 3: Stir mixture and check aroma\n\nTap to open the app and track your progress.',
+        NotificationDetails(
+          android: AndroidNotificationDetails(
+            'fermentation_channel',
+            'Fermentation Notifications',
+            channelDescription: 'Important reminders for your fermentation process',
+            importance: Importance.max,
+            priority: Priority.max,
+            enableVibration: true,
+            vibrationPattern: Int64List.fromList([0, 1000, 500, 1000]),
+            enableLights: true,
+            ledColor: const Color(0xFF4CAF50),
+            ledOnMs: 1000,
+            ledOffMs: 500,
+            showWhen: true,
+            when: null,
+            usesChronometer: false,
+                playSound: true,
+            category: AndroidNotificationCategory.reminder,
+            actions: const [
+              AndroidNotificationAction(
+                'open_app',
+                'Open App',
+                showsUserInterface: true,
+              ),
+              AndroidNotificationAction(
+                'mark_done',
+                'Mark as Done',
+                showsUserInterface: true,
+              ),
+            ],
+          ),
+          iOS: const DarwinNotificationDetails(
+            presentAlert: true,
+            presentBadge: true,
+            presentSound: true,
+            badgeNumber: 1,
+            categoryIdentifier: 'FERMENTATION_REMINDER',
+            threadIdentifier: 'test_fermentation',
+            interruptionLevel: InterruptionLevel.timeSensitive,
+          ),
+        ),
+        payload: 'test:fermentation:999',
+      );
+    } catch (e) {
+      AppLogger.error('Failed to show test notification: $e', e);
+    }
+  }
 
   /// Normalize report reason for admin bell message
   String _normalizeReasonForAdminBell(String reason) {
@@ -440,25 +515,57 @@ class NotificationService {
       for (int i = 0; i < stages.length; i++) {
         final stage = stages[i];
         final day = stage['day'] as int;
-        final stageTitle = stage['title'] as String;
+        final stageLabel = stage['label'] as String? ?? 'Stage ${i + 1}';
+        final stageAction = stage['action'] as String? ?? '';
         final notificationDate = startDate.add(Duration(days: day));
         
         // Only schedule if the date is in the future
         if (notificationDate.isAfter(DateTime.now())) {
           await _localNotifications.zonedSchedule(
             logId.hashCode + i, // Unique ID for each notification
-            'Fermentation Reminder',
-            '$title - $stageTitle',
+            '🌱 Fermentation Time!',
+            '$title\n\n$stageLabel: $stageAction\n\nTap to open the app and track your progress.',
             _convertToTZDateTime(notificationDate),
-            const NotificationDetails(
+            NotificationDetails(
               android: AndroidNotificationDetails(
                 'fermentation_channel',
                 'Fermentation Notifications',
-                channelDescription: 'Notifications for fermentation stages',
-                importance: Importance.high,
-                priority: Priority.high,
+                channelDescription: 'Important reminders for your fermentation process',
+                importance: Importance.max,
+                priority: Priority.max,
+                enableVibration: true,
+                vibrationPattern: Int64List.fromList([0, 1000, 500, 1000]),
+                enableLights: true,
+                ledColor: const Color(0xFF4CAF50),
+                ledOnMs: 1000,
+                ledOffMs: 500,
+                showWhen: true,
+                when: null,
+                usesChronometer: false,
+                playSound: true,
+                category: AndroidNotificationCategory.reminder,
+                actions: const [
+                  AndroidNotificationAction(
+                    'open_app',
+                    'Open App',
+                    showsUserInterface: true,
+                  ),
+                  AndroidNotificationAction(
+                    'mark_done',
+                    'Mark as Done',
+                    showsUserInterface: true,
+                  ),
+                ],
               ),
-              iOS: DarwinNotificationDetails(),
+              iOS: DarwinNotificationDetails(
+                presentAlert: true,
+                presentBadge: true,
+                presentSound: true,
+                badgeNumber: 1,
+                categoryIdentifier: 'FERMENTATION_REMINDER',
+                threadIdentifier: 'fermentation_$logId',
+                interruptionLevel: InterruptionLevel.timeSensitive,
+              ),
             ),
             uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
             matchDateTimeComponents: DateTimeComponents.time,

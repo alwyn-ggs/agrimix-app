@@ -6,6 +6,7 @@ import '../../repositories/fermentation_repo.dart';
 import '../../models/fermentation_log.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/notification_service.dart';
+import '../common/notification_test_widget.dart';
 
 class LogDetailPage extends StatelessWidget {
   const LogDetailPage({super.key});
@@ -67,6 +68,10 @@ class _DetailState extends State<_Detail> {
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          // Test Notification Widget (for development)
+          const NotificationTestWidget(),
+          const SizedBox(height: 16),
+          
           // Header Card
           Card(
             elevation: 4,
