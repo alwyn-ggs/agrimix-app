@@ -57,7 +57,7 @@ class AgriMixAppRoot extends StatelessWidget {
 
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => AuthProvider(authService, usersRepo, messagingService)),
+        ChangeNotifierProvider(create: (_) => AuthProvider(authService, usersRepo, messagingService, notificationService)),
         ChangeNotifierProvider(create: (_) => UserProvider(usersRepo)),
         ChangeNotifierProvider(create: (_) => RecipeProvider(recipesRepo, ingredientsRepo)),
         ChangeNotifierProvider(create: (_) => FermentationProvider(fermentationRepo, notificationService)),

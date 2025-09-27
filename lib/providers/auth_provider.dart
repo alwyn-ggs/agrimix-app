@@ -4,6 +4,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/auth_service.dart';
 import '../services/messaging_service.dart';
+import '../services/notification_service.dart';
 import '../repositories/users_repo.dart';
 import '../models/user.dart';
 import '../utils/logger.dart';
@@ -12,13 +13,14 @@ class AuthProvider extends ChangeNotifier {
   final AuthService auth;
   final UsersRepo usersRepo;
   final MessagingService messaging;
+  final NotificationService? notificationService;
   bool loading = false;
   String? error;
   User? _currentUser;
   AppUser? _currentAppUser;
   bool _rememberMe = false;
 
-  AuthProvider(this.auth, this.usersRepo, this.messaging) {
+  AuthProvider(this.auth, this.usersRepo, this.messaging, [this.notificationService]) {
     _init();
   }
 
@@ -75,6 +77,17 @@ class AuthProvider extends ChangeNotifier {
         AppLogger.debug('AuthProvider: Subscribed to announcements topic');
       } catch (e) {
         AppLogger.debug('AuthProvider: Failed to subscribe to announcements topic: $e');
+        // Non-fatal error, continue
+      }
+      
+      // Deliver pending notifications when user logs in
+      try {
+        if (notificationService != null) {
+          await notificationService!.deliverPendingNotifications(uid);
+          AppLogger.debug('AuthProvider: Delivered pending notifications for user $uid');
+        }
+      } catch (e) {
+        AppLogger.debug('AuthProvider: Failed to deliver pending notifications: $e');
         // Non-fatal error, continue
       }
       

@@ -1,4 +1,5 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -85,33 +86,41 @@ class FCMPushService {
     List<String>? cropTargets,
   }) async {
     try {
-      // Send to general announcements topic
-      final success = await sendToTopic(
-        topic: 'announcements',
+      // Get current user to skip them
+      final currentUser = FirebaseAuth.instance.currentUser;
+      final currentUserId = currentUser?.uid;
+      
+      // Get all users except admins and current user
+      final usersSnap = await _db.collection('users').get();
+      final userIds = <String>[];
+      
+      for (final userDoc in usersSnap.docs) {
+        final data = userDoc.data();
+        final role = (data['role'] as String?)?.toLowerCase();
+        final userId = userDoc.id;
+        
+        // Skip admins and current user - they don't need to receive their own announcements
+        if (role == 'admin' || userId == currentUserId) continue;
+        
+        userIds.add(userId);
+      }
+      
+      if (userIds.isEmpty) {
+        AppLogger.warning('No users to send announcement push to');
+        return true; // Not an error, just no recipients
+      }
+      
+      // Send to specific users instead of topics
+      final success = await sendToUsers(
+        userIds: userIds,
         title: title,
         body: body,
         data: {
           'announcementId': announcementId ?? '',
           'cropTargets': cropTargets?.join(',') ?? '',
+          'type': 'announcement',
         },
       );
-
-      // If crop targets are specified, also send to specific crop topics
-      if (cropTargets != null && cropTargets.isNotEmpty) {
-        for (final crop in cropTargets) {
-          final cropTopic = 'announcements_${crop.toLowerCase().replaceAll(' ', '_')}';
-          await sendToTopic(
-            topic: cropTopic,
-            title: title,
-            body: body,
-            data: {
-              'announcementId': announcementId ?? '',
-              'cropTargets': cropTargets.join(','),
-              'targetCrop': crop,
-            },
-          );
-        }
-      }
 
       return success;
     } catch (e) {

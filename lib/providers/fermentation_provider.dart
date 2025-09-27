@@ -3,6 +3,7 @@ import 'dart:io';
 import '../repositories/fermentation_repo.dart';
 import '../services/notification_service.dart';
 import '../models/fermentation_log.dart';
+import '../utils/logger.dart';
 
 class FermentationProvider extends ChangeNotifier {
   final FermentationRepo _repo;
@@ -197,16 +198,25 @@ class FermentationProvider extends ChangeNotifier {
 
   Future<void> deleteFermentationLog(String logId) async {
     try {
+      AppLogger.info('DEBUG: Starting deleteFermentationLog for ID: $logId');
       _isLoading = true;
       _error = null;
       notifyListeners();
 
-      // Cancel notifications first
-      await _notifs.cancelFermentationNotifications(logId);
-      
-      // Delete the log
+      // Delete the log first (faster)
+      AppLogger.info('DEBUG: Calling _repo.deleteFermentationLog for ID: $logId');
       await _repo.deleteFermentationLog(logId);
+      AppLogger.info('DEBUG: Repository delete completed for ID: $logId');
+      
+      // Cancel notifications in background (non-blocking)
+      _notifs.cancelFermentationNotifications(logId).catchError((e) {
+        // Log error but don't fail the delete operation
+        AppLogger.warning('Failed to cancel notifications for log $logId: $e');
+      });
+      
+      AppLogger.info('DEBUG: deleteFermentationLog completed successfully for ID: $logId');
     } catch (e) {
+      AppLogger.error('DEBUG: deleteFermentationLog failed for ID: $logId, error: $e');
       _error = e.toString();
       rethrow;
     } finally {

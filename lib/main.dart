@@ -44,17 +44,15 @@ Future<void> main() async {
     // Initialize Firebase Messaging
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
     
-    // Initialize notification service asynchronously (non-blocking)
+    // Initialize notification service
     final messagingService = MessagingService();
     final notificationService = NotificationService(messagingService);
-    notificationService.init().timeout(
-      const Duration(seconds: 5),
-      onTimeout: () {
-        AppLogger.warning('Warning: Notification service initialization timed out');
-      },
-    ).catchError((error) {
+    try {
+      await notificationService.init();
+      AppLogger.info('Notification service initialized successfully');
+    } catch (error) {
       AppLogger.warning('Warning: Notification service initialization failed: $error');
-    });
+    }
     
     // Request notification permissions on mobile only (Android/iOS)
     final isMobile = !kIsWeb &&

@@ -5,6 +5,7 @@ import '../../../providers/auth_provider.dart';
 import '../../../models/fermentation_log.dart';
 import '../../fermentation/new_log_page.dart';
 import '../../fermentation/log_detail_page.dart';
+import '../../../utils/logger.dart';
 
 class FermentationTab extends StatefulWidget {
   const FermentationTab({super.key});
@@ -208,8 +209,11 @@ class _FermentationTabState extends State<FermentationTab> with TickerProviderSt
       elevation: 2,
       child: InkWell(
         onTap: () => _showLogDetail(context, log),
+        onLongPress: () => _showLogOptions(context, log),
         borderRadius: BorderRadius.circular(12),
-        child: Padding(
+        child: Stack(
+          children: [
+            Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -375,6 +379,26 @@ class _FermentationTabState extends State<FermentationTab> with TickerProviderSt
             ],
           ),
         ),
+        
+        // Long press hint
+        Positioned(
+          top: 8,
+          right: 8,
+          child: Container(
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: Colors.black.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: const Icon(
+              Icons.more_horiz,
+              size: 16,
+              color: Colors.grey,
+            ),
+          ),
+        ),
+      ],
+    ),
       ),
     );
   }
@@ -420,6 +444,144 @@ class _FermentationTabState extends State<FermentationTab> with TickerProviderSt
         settings: RouteSettings(arguments: {'id': log.id}),
       ),
     );
+  }
+
+  void _showLogOptions(BuildContext context, FermentationLog log) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Header
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              log.title,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            
+            // Edit option
+            ListTile(
+              leading: const Icon(Icons.edit, color: Colors.blue),
+              title: const Text('Edit'),
+              subtitle: const Text('Modify fermentation details'),
+              onTap: () {
+                Navigator.pop(context);
+                _editFermentationLog(context, log);
+              },
+            ),
+            
+            // Delete option
+            ListTile(
+              leading: const Icon(Icons.delete, color: Colors.red),
+              title: const Text('Delete'),
+              subtitle: const Text('Remove this fermentation log'),
+              onTap: () {
+                Navigator.pop(context);
+                _confirmDeleteLog(context, log);
+              },
+            ),
+            
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _editFermentationLog(BuildContext context, FermentationLog log) {
+    // Navigate to the detail page where editing can be done
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const LogDetailPage(),
+        settings: RouteSettings(arguments: {'id': log.id, 'editMode': true}),
+      ),
+    );
+  }
+
+  void _confirmDeleteLog(BuildContext context, FermentationLog log) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Fermentation Log'),
+        content: Text('Are you sure you want to delete "${log.title}"? This action cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await _deleteFermentationLog(context, log);
+            },
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _deleteFermentationLog(BuildContext context, FermentationLog log) async {
+    try {
+      // Show immediate feedback with SnackBar
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Deleting "${log.title}"...'),
+            backgroundColor: Colors.orange,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+
+      AppLogger.info('DEBUG: Starting delete for log ID: ${log.id}');
+      
+      // Delete the fermentation log (optimized - no loading dialog)
+      final provider = Provider.of<FermentationProvider>(context, listen: false);
+      await provider.deleteFermentationLog(log.id);
+      
+      AppLogger.info('DEBUG: Delete completed for log ID: ${log.id}');
+
+      // Show success message
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Fermentation log "${log.title}" deleted successfully'),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      AppLogger.error('DEBUG: Delete error: $e');
+      // Show error message
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to delete fermentation log: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
   }
 
   void _showFilterDialog(BuildContext context) {

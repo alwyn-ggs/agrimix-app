@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../repositories/violations_repo.dart';
 import '../repositories/posts_repo.dart';
 import '../repositories/comments_repo.dart';
@@ -326,7 +327,7 @@ class ModerationProvider extends ChangeNotifier {
         providedId: violationId,
       );
 
-      // Notify admins about new violation
+      // Notify admins about new violation (database records)
       await _notificationService.sendViolationReportNotification(
         violationId: violationId,
         targetType: targetType.name,
@@ -335,6 +336,51 @@ class ModerationProvider extends ChangeNotifier {
         reporterUid: reporterUid,
         penalizedUserUid: penalizedUserUid,
       );
+
+      // Also send local notifications to admins
+      try {
+        // Get reporter name for the notification
+        String reporterName = 'Anonymous User';
+        try {
+          final reporterDoc = await FirebaseFirestore.instance
+              .collection('users')
+              .doc(reporterUid)
+              .get();
+          if (reporterDoc.exists) {
+            final data = reporterDoc.data();
+            final name = (data?['name'] as String?)?.trim();
+            if (name != null && name.isNotEmpty) {
+              reporterName = name;
+            }
+          }
+        } catch (_) {}
+
+        // Get reported content title/description
+        String reportedContent = 'Content';
+        try {
+          if (targetType == ViolationTargetType.post) {
+            final postDoc = await FirebaseFirestore.instance
+                .collection('posts')
+                .doc(targetId)
+                .get();
+            if (postDoc.exists) {
+              final data = postDoc.data();
+              final title = (data?['title'] as String?)?.trim();
+              if (title != null && title.isNotEmpty) {
+                reportedContent = title;
+              }
+            }
+          }
+        } catch (_) {}
+
+        await _notificationService.sendReportNotification(
+          reportId: violationId,
+          reportType: targetType.name,
+          reportedContent: reportedContent,
+          reporterName: reporterName,
+          reason: reason,
+        );
+      } catch (_) {}
     } catch (e) {
       _error = 'Failed to report violation: $e';
       notifyListeners();

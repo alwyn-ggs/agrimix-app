@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../services/firestore_service.dart';
 import '../services/storage_service.dart';
 import '../models/fermentation_log.dart';
+import '../utils/logger.dart';
 
 class FermentationRepo {
   final FirestoreService _fs;
@@ -41,8 +42,11 @@ class FermentationRepo {
 
   Future<void> deleteFermentationLog(String logId) async {
     try {
+      AppLogger.info('DEBUG: Repository deleteFermentationLog called for ID: $logId');
       await _fs.deleteDocument(FermentationLog.collectionPath, logId);
+      AppLogger.info('DEBUG: Repository deleteFermentationLog completed for ID: $logId');
     } catch (e) {
+      AppLogger.error('DEBUG: Repository deleteFermentationLog failed for ID: $logId, error: $e');
       throw Exception('Failed to delete fermentation log: $e');
     }
   }

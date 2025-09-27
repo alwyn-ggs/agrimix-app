@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'dart:typed_data';
@@ -13,78 +14,61 @@ class NotificationService {
 
   NotificationService(this._messagingService);
 
+  bool _isInitialized = false;
+
+  /// Ensure notification service is initialized
+  Future<void> _ensureInitialized() async {
+    if (!_isInitialized) {
+      await init();
+      _isInitialized = true;
+    }
+  }
+
   /// Handle notification actions (when user taps on notification buttons)
   static void handleNotificationAction(String action, String payload) {
     switch (action) {
       case 'open_app':
         // Navigate to fermentation detail page
-        // This would typically be handled by your app's navigation system
         AppLogger.info('User tapped "Open App" for payload: $payload');
+        _navigateToNotificationBell();
         break;
       case 'mark_done':
         // Mark fermentation stage as completed
         AppLogger.info('User tapped "Mark as Done" for payload: $payload');
-        // You can implement logic to update the fermentation log here
+        _navigateToNotificationBell();
+        break;
+      case 'view_announcement':
+        // Navigate to announcement details
+        AppLogger.info('User tapped "View Details" for announcement: $payload');
+        _navigateToNotificationBell();
+        break;
+      case 'mark_read':
+        // Mark notification as read
+        AppLogger.info('User tapped "Mark as Read" for payload: $payload');
+        _navigateToNotificationBell();
+        break;
+      case 'view_report':
+        // Navigate to report details
+        AppLogger.info('User tapped "Review Report" for payload: $payload');
+        _navigateToNotificationBell();
+        break;
+      case 'dismiss':
+        // Dismiss notification
+        AppLogger.info('User tapped "Dismiss" for payload: $payload');
         break;
       default:
         AppLogger.info('Unknown notification action: $action');
+        _navigateToNotificationBell();
     }
   }
 
-  /// Test notification (for development/testing)
-  Future<void> testFermentationNotification() async {
-    try {
-      await _localNotifications.show(
-        999, // Test ID
-        '🌱 Test Fermentation Alert!',
-        'This is a test notification to check if fermentation alerts work properly.\n\nDay 3: Stir mixture and check aroma\n\nTap to open the app and track your progress.',
-        NotificationDetails(
-          android: AndroidNotificationDetails(
-            'fermentation_channel',
-            'Fermentation Notifications',
-            channelDescription: 'Important reminders for your fermentation process',
-            importance: Importance.max,
-            priority: Priority.max,
-            enableVibration: true,
-            vibrationPattern: Int64List.fromList([0, 1000, 500, 1000]),
-            enableLights: true,
-            ledColor: const Color(0xFF4CAF50),
-            ledOnMs: 1000,
-            ledOffMs: 500,
-            showWhen: true,
-            when: null,
-            usesChronometer: false,
-                playSound: true,
-            category: AndroidNotificationCategory.reminder,
-            actions: const [
-              AndroidNotificationAction(
-                'open_app',
-                'Open App',
-                showsUserInterface: true,
-              ),
-              AndroidNotificationAction(
-                'mark_done',
-                'Mark as Done',
-                showsUserInterface: true,
-              ),
-            ],
-          ),
-          iOS: const DarwinNotificationDetails(
-            presentAlert: true,
-            presentBadge: true,
-            presentSound: true,
-            badgeNumber: 1,
-            categoryIdentifier: 'FERMENTATION_REMINDER',
-            threadIdentifier: 'test_fermentation',
-            interruptionLevel: InterruptionLevel.timeSensitive,
-          ),
-        ),
-        payload: 'test:fermentation:999',
-      );
-    } catch (e) {
-      AppLogger.error('Failed to show test notification: $e', e);
-    }
+  /// Navigate to notification bell (this would be handled by your app's navigation)
+  static void _navigateToNotificationBell() {
+    // This would typically use your app's navigation system
+    // For example: Navigator.pushNamed(context, '/notifications');
+    AppLogger.info('Navigating to notification bell');
   }
+
 
   /// Normalize report reason for admin bell message
   String _normalizeReasonForAdminBell(String reason) {
@@ -104,6 +88,8 @@ class NotificationService {
 
   /// Initialize the notification service
   Future<void> init() async {
+    if (_isInitialized) return;
+    
     // Initialize timezone data
     // Initialize timezone data - this is done automatically in newer versions
     // tz.initializeTimeZones();
@@ -116,6 +102,7 @@ class NotificationService {
     );
     
     await _localNotifications.initialize(initSettings);
+    _isInitialized = true;
   }
 
   /// Send moderation notification to user
@@ -364,13 +351,18 @@ class NotificationService {
     required String announcementId,
   }) async {
     try {
+      // Get current user to skip them
+      final currentUser = FirebaseAuth.instance.currentUser;
+      final currentUserId = currentUser?.uid;
+      
       final usersSnap = await _db.collection('users').get();
       final batch = _db.batch();
       for (final userDoc in usersSnap.docs) {
         final data = userDoc.data();
         final role = (data['role'] as String?)?.toLowerCase();
-        // Skip admins: Admins should not receive admin announcements in their bell
-        if (role == 'admin') {
+        final userId = userDoc.id;
+        // Skip admins and current user: They should not receive their own announcements
+        if (role == 'admin' || userId == currentUserId) {
           continue;
         }
         final notifRef = _db
@@ -511,21 +503,27 @@ class NotificationService {
     DateTime startDate,
   ) async {
     try {
+      // Ensure notification service is initialized
+      await _ensureInitialized();
       // Schedule notifications for each stage
       for (int i = 0; i < stages.length; i++) {
         final stage = stages[i];
         final day = stage['day'] as int;
         final stageLabel = stage['label'] as String? ?? 'Stage ${i + 1}';
         final stageAction = stage['action'] as String? ?? '';
-        final notificationDate = startDate.add(Duration(days: day));
-        
-        // Only schedule if the date is in the future
-        if (notificationDate.isAfter(DateTime.now())) {
+         final notificationDate = startDate.add(Duration(days: day));
+         
+         // Schedule notification at the exact stage time (no early scheduling)
+         final exactNotificationDate = notificationDate;
+         
+         // Only schedule if the date is in the future
+         if (exactNotificationDate.isAfter(DateTime.now())) {
+          AppLogger.info('Scheduling fermentation notification for $stageLabel at ${exactNotificationDate.toString()}');
           await _localNotifications.zonedSchedule(
             logId.hashCode + i, // Unique ID for each notification
             '🌱 Fermentation Time!',
             '$title\n\n$stageLabel: $stageAction\n\nTap to open the app and track your progress.',
-            _convertToTZDateTime(notificationDate),
+            _convertToTZDateTime(exactNotificationDate),
             NotificationDetails(
               android: AndroidNotificationDetails(
                 'fermentation_channel',
@@ -568,9 +566,10 @@ class NotificationService {
               ),
             ),
             uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
-            matchDateTimeComponents: DateTimeComponents.time,
             payload: 'fermentation:$logId:$i',
           );
+        } else {
+          AppLogger.warning('Skipping fermentation notification for $stageLabel - date is in the past: ${exactNotificationDate.toString()}');
         }
       }
     } catch (e) {
@@ -640,6 +639,306 @@ class NotificationService {
     }
   }
 
+
+  /// Send announcement notification to all users
+  Future<void> sendAnnouncementNotification({
+    required String title,
+    required String body,
+    required String announcementId,
+  }) async {
+    try {
+      await _ensureInitialized();
+      
+      // Get current user to skip them
+      final currentUser = FirebaseAuth.instance.currentUser;
+      final currentUserId = currentUser?.uid;
+      
+      // Get all users except admins and current user
+      final usersSnap = await _db.collection('users').get();
+      
+      for (final userDoc in usersSnap.docs) {
+        final data = userDoc.data();
+        final role = (data['role'] as String?)?.toLowerCase();
+        final userId = userDoc.id;
+        
+        // Skip admins and current user - they don't need to receive their own announcements
+        if (role == 'admin' || userId == currentUserId) continue;
+        
+        // Always create database record (this will be delivered when user logs in)
+        await _createNotificationRecord(
+          userId: userId,
+          title: '📢 $title',
+          body: body,
+          type: 'announcement',
+          data: {
+            'announcementId': announcementId,
+            'action': 'announcement',
+            'pendingLocalNotification': true, // Flag to send local notification on login
+          },
+        );
+        
+        // Try to send local notification if user is currently logged in
+        try {
+          await _localNotifications.show(
+            announcementId.hashCode + userId.hashCode,
+            '📢 $title',
+            body,
+            NotificationDetails(
+              android: AndroidNotificationDetails(
+                'announcements_channel',
+                'Announcements',
+                channelDescription: 'Important announcements from administrators',
+                importance: Importance.max,
+                priority: Priority.max,
+                enableVibration: true,
+                vibrationPattern: Int64List.fromList([0, 500, 200, 500]),
+                enableLights: true,
+                ledColor: const Color(0xFF2196F3),
+                ledOnMs: 1000,
+                ledOffMs: 500,
+                showWhen: true,
+                playSound: true,
+                category: AndroidNotificationCategory.message,
+                actions: const [
+                  AndroidNotificationAction(
+                    'view_announcement',
+                    'View Details',
+                    showsUserInterface: true,
+                  ),
+                  AndroidNotificationAction(
+                    'mark_read',
+                    'Mark as Read',
+                    showsUserInterface: false,
+                  ),
+                ],
+              ),
+              iOS: DarwinNotificationDetails(
+                presentAlert: true,
+                presentBadge: true,
+                presentSound: true,
+                badgeNumber: 1,
+                categoryIdentifier: 'ANNOUNCEMENT',
+                threadIdentifier: 'announcement_$announcementId',
+                interruptionLevel: InterruptionLevel.timeSensitive,
+              ),
+            ),
+            payload: 'announcement:$announcementId',
+          );
+          
+          AppLogger.info('Announcement notification delivered to logged-in user $userId');
+        } catch (e) {
+          // User is not logged in - notification will be delivered when they log in
+          AppLogger.info('User $userId is not logged in - notification queued for delivery on login');
+        }
+      }
+    } catch (e) {
+      AppLogger.error('Failed to send announcement notification: $e', e);
+    }
+  }
+
+  /// Send report notification to admins
+  Future<void> sendReportNotification({
+    required String reportId,
+    required String reportType,
+    required String reportedContent,
+    required String reporterName,
+    required String reason,
+  }) async {
+    try {
+      await _ensureInitialized();
+      
+      // Get all admin users
+      final adminQuery = await _db
+          .collection('users')
+          .where('role', isEqualTo: 'admin')
+          .get();
+
+      for (final adminDoc in adminQuery.docs) {
+        final adminId = adminDoc.id;
+        
+        // Always create database record (this will be delivered when admin logs in)
+        await _createNotificationRecord(
+          userId: adminId,
+          title: '🚨 New Report',
+          body: '$reporterName reported $reportType: $reportedContent\nReason: $reason',
+          type: 'report',
+          data: {
+            'reportId': reportId,
+            'reportType': reportType,
+            'reportedContent': reportedContent,
+            'reporterName': reporterName,
+            'reason': reason,
+            'action': 'report',
+            'pendingLocalNotification': true, // Flag to send local notification on login
+          },
+        );
+        
+        // Try to send local notification if admin is currently logged in
+        try {
+          await _localNotifications.show(
+            reportId.hashCode + adminId.hashCode,
+            '🚨 New Report',
+            '$reporterName reported $reportType: $reportedContent\nReason: $reason',
+            NotificationDetails(
+              android: AndroidNotificationDetails(
+                'reports_channel',
+                'Reports',
+                channelDescription: 'Community reports requiring attention',
+                importance: Importance.max,
+                priority: Priority.max,
+                enableVibration: true,
+                vibrationPattern: Int64List.fromList([0, 300, 100, 300, 100, 300]),
+                enableLights: true,
+                ledColor: const Color(0xFFFF5722),
+                ledOnMs: 1000,
+                ledOffMs: 500,
+                showWhen: true,
+                playSound: true,
+                category: AndroidNotificationCategory.status,
+                actions: const [
+                  AndroidNotificationAction(
+                    'view_report',
+                    'Review Report',
+                    showsUserInterface: true,
+                  ),
+                  AndroidNotificationAction(
+                    'dismiss',
+                    'Dismiss',
+                    showsUserInterface: false,
+                  ),
+                ],
+              ),
+              iOS: DarwinNotificationDetails(
+                presentAlert: true,
+                presentBadge: true,
+                presentSound: true,
+                badgeNumber: 1,
+                categoryIdentifier: 'REPORT',
+                threadIdentifier: 'report_$reportId',
+                interruptionLevel: InterruptionLevel.timeSensitive,
+              ),
+            ),
+            payload: 'report:$reportId',
+          );
+          
+          AppLogger.info('Report notification delivered to logged-in admin $adminId');
+        } catch (e) {
+          // Admin is not logged in - notification will be delivered when they log in
+          AppLogger.info('Admin $adminId is not logged in - notification queued for delivery on login');
+        }
+      }
+    } catch (e) {
+      AppLogger.error('Failed to send report notification: $e', e);
+    }
+  }
+
+
+  /// Deliver pending notifications when user logs in
+  Future<void> deliverPendingNotifications(String userId) async {
+    try {
+      await _ensureInitialized();
+      
+      // Get all pending notifications for this user
+      final pendingQuery = await _db
+          .collection('users')
+          .doc(userId)
+          .collection('notifications')
+          .where('data.pendingLocalNotification', isEqualTo: true)
+          .get();
+
+      for (final doc in pendingQuery.docs) {
+        final data = doc.data();
+        final title = data['title'] as String;
+        final body = data['body'] as String;
+        final type = data['type'] as String;
+        final notificationData = data['data'] as Map<String, dynamic>? ?? {};
+
+        // Send local notification
+        try {
+          await _localNotifications.show(
+            doc.id.hashCode,
+            title,
+            body,
+            NotificationDetails(
+              android: AndroidNotificationDetails(
+                type == 'announcement' ? 'announcements_channel' : 'reports_channel',
+                type == 'announcement' ? 'Announcements' : 'Reports',
+                channelDescription: type == 'announcement' 
+                    ? 'Important announcements from administrators'
+                    : 'Community reports requiring attention',
+                importance: Importance.max,
+                priority: Priority.max,
+                enableVibration: true,
+                vibrationPattern: Int64List.fromList(
+                  type == 'announcement' 
+                      ? [0, 500, 200, 500]
+                      : [0, 300, 100, 300, 100, 300]
+                ),
+                enableLights: true,
+                ledColor: type == 'announcement' 
+                    ? const Color(0xFF2196F3)
+                    : const Color(0xFFFF5722),
+                ledOnMs: 1000,
+                ledOffMs: 500,
+                showWhen: true,
+                playSound: true,
+                category: type == 'announcement' 
+                    ? AndroidNotificationCategory.message
+                    : AndroidNotificationCategory.status,
+                actions: type == 'announcement' 
+                    ? const [
+                        AndroidNotificationAction(
+                          'view_announcement',
+                          'View Details',
+                          showsUserInterface: true,
+                        ),
+                        AndroidNotificationAction(
+                          'mark_read',
+                          'Mark as Read',
+                          showsUserInterface: false,
+                        ),
+                      ]
+                    : const [
+                        AndroidNotificationAction(
+                          'view_report',
+                          'Review Report',
+                          showsUserInterface: true,
+                        ),
+                        AndroidNotificationAction(
+                          'dismiss',
+                          'Dismiss',
+                          showsUserInterface: false,
+                        ),
+                      ],
+              ),
+              iOS: DarwinNotificationDetails(
+                presentAlert: true,
+                presentBadge: true,
+                presentSound: true,
+                badgeNumber: 1,
+                categoryIdentifier: type == 'announcement' ? 'ANNOUNCEMENT' : 'REPORT',
+                threadIdentifier: '${type}_${notificationData['announcementId'] ?? notificationData['reportId'] ?? ''}',
+                interruptionLevel: InterruptionLevel.timeSensitive,
+              ),
+            ),
+            payload: '$type:${notificationData['announcementId'] ?? notificationData['reportId'] ?? ''}',
+          );
+
+          // Mark as delivered (user is authenticated as themselves, so they have permission)
+          await doc.reference.update({
+            'data.pendingLocalNotification': false,
+            'deliveredAt': FieldValue.serverTimestamp(),
+          });
+
+          AppLogger.info('Delivered pending notification to user $userId: $title');
+        } catch (e) {
+          AppLogger.error('Failed to deliver pending notification: $e', e);
+        }
+      }
+    } catch (e) {
+      AppLogger.error('Failed to deliver pending notifications: $e', e);
+    }
+  }
 
   /// Convert DateTime to TZDateTime for scheduling
   tz.TZDateTime _convertToTZDateTime(DateTime dateTime) {

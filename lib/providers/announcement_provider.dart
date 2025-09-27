@@ -49,11 +49,19 @@ class AnnouncementProvider extends ChangeNotifier {
 
       await _repo.createAnnouncement(announcement);
 
-      // Also fanout to in-app notifications (bell)
+      // Also fanout to in-app notifications (bell) and local notifications
       try {
         final notifs = _notificationService;
         if (notifs != null) {
+          // Send to notification bell (database records)
           await notifs.sendAnnouncementToAllUsers(
+            title: title,
+            body: body,
+            announcementId: announcement.id,
+          );
+          
+          // Send local notifications to all users
+          await notifs.sendAnnouncementNotification(
             title: title,
             body: body,
             announcementId: announcement.id,
@@ -156,6 +164,18 @@ class AnnouncementProvider extends ChangeNotifier {
         announcementId: announcement.id,
         cropTargets: announcement.cropTargets.isNotEmpty ? announcement.cropTargets : null,
       );
+
+      // Also send local notifications
+      try {
+        final notifs = _notificationService;
+        if (notifs != null) {
+          await notifs.sendAnnouncementNotification(
+            title: announcement.title,
+            body: announcement.body,
+            announcementId: announcement.id,
+          );
+        }
+      } catch (_) {}
 
       // Update announcement with push status
       if (pushSuccess) {

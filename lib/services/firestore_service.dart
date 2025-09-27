@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../utils/logger.dart';
 
 class FirestoreService {
   final _db = FirebaseFirestore.instance;
@@ -24,8 +25,11 @@ class FirestoreService {
 
   Future<void> deleteDocument(String collection, String docId) async {
     try {
+      AppLogger.info('DEBUG: FirestoreService deleteDocument called for collection: $collection, docId: $docId');
       await _db.collection(collection).doc(docId).delete();
+      AppLogger.info('DEBUG: FirestoreService deleteDocument completed for collection: $collection, docId: $docId');
     } catch (e) {
+      AppLogger.error('DEBUG: FirestoreService deleteDocument failed for collection: $collection, docId: $docId, error: $e');
       throw Exception('Failed to delete document: $e');
     }
   }
