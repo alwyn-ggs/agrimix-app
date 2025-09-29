@@ -33,6 +33,20 @@ class _NewLogPageState extends State<NewLogPage> {
 
   @override
   Widget build(BuildContext context) {
+    // Prefill from arguments if provided
+    final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    if (args != null && _selectedRecipe == null) {
+      final recipe = args['recipe'] as Recipe?;
+      if (recipe != null) {
+        _selectedRecipe = recipe;
+        _title.text = recipe.name.isNotEmpty ? 'Fermentation - ${recipe.name}' : 'New Fermentation';
+        _method = recipe.method == RecipeMethod.ffj ? FermentationMethod.ffj : FermentationMethod.fpj;
+        _stages = _defaultStages(_method);
+        _ingredients = recipe.ingredients.map((ing) => 
+          FermentationIngredient(name: ing.name, amount: ing.amount, unit: ing.unit)
+        ).toList();
+      }
+    }
     return Scaffold(
       appBar: AppBar(
         title: const Text('New Fermentation', style: TextStyle(color: Colors.white)),

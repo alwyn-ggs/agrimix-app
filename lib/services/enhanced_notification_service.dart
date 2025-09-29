@@ -413,7 +413,7 @@ class EnhancedNotificationService {
         presentSound: true,
       );
 
-      final details = NotificationDetails(
+      const details = NotificationDetails(
         android: androidDetails,
         iOS: iosDetails,
       );
@@ -455,7 +455,7 @@ class EnhancedNotificationService {
         actions: androidActions,
       );
 
-      final iosDetails = DarwinNotificationDetails(
+      const iosDetails = DarwinNotificationDetails(
         presentAlert: true,
         presentBadge: true,
         presentSound: true,
@@ -488,7 +488,7 @@ class EnhancedNotificationService {
     required DateTime scheduledTime,
   }) async {
     try {
-      final androidDetails = AndroidNotificationDetails(
+      const androidDetails = AndroidNotificationDetails(
         'scheduled_notifications',
         'Scheduled Notifications',
         channelDescription: 'Notifications scheduled based on user preferences',
@@ -503,7 +503,7 @@ class EnhancedNotificationService {
         presentSound: true,
       );
 
-      final details = NotificationDetails(
+      const details = NotificationDetails(
         android: androidDetails,
         iOS: iosDetails,
       );

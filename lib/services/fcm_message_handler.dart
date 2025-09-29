@@ -1,4 +1,6 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'notification_service.dart';
 import '../utils/logger.dart';
@@ -33,6 +35,12 @@ class FCMMessageHandler {
       body,
       payload: 'announcement:${message.data['announcementId'] ?? ''}',
     );
+
+    // Mark as delivered to avoid duplicate delivery on next login if an ID is present
+    final String? announcementId = message.data['announcementId'] as String?;
+    if (announcementId != null && announcementId.isNotEmpty) {
+      _markPendingAnnouncementDelivered(announcementId);
+    }
 
     // Show in-app banner if app is open
     if (context.mounted) {
@@ -132,4 +140,34 @@ class FCMMessageHandler {
       // This will be handled by the app's navigation system
     }
   }
+}
+
+// Best-effort helper to clear queued announcement notifications when shown in foreground
+void _markPendingAnnouncementDelivered(String announcementId) async {
+  try {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) return;
+    final userId = currentUser.uid;
+
+    final db = FirebaseFirestore.instance;
+    final pendingQuery = await db
+        .collection('users')
+        .doc(userId)
+        .collection('notifications')
+        .where('type', isEqualTo: 'announcement')
+        .where('data.announcementId', isEqualTo: announcementId)
+        .where('data.pendingLocalNotification', isEqualTo: true)
+        .get();
+
+    if (pendingQuery.docs.isEmpty) return;
+
+    final batch = db.batch();
+    for (final doc in pendingQuery.docs) {
+      batch.update(doc.reference, {
+        'data.pendingLocalNotification': false,
+        'deliveredAt': FieldValue.serverTimestamp(),
+      });
+    }
+    await batch.commit();
+  } catch (_) {}
 }

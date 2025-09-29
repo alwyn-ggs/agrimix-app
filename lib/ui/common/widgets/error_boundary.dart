@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
-import '../../../theme/theme.dart';
 import 'app_error.dart';
 
 /// Error boundary widget to catch and handle unhandled exceptions
@@ -165,13 +164,11 @@ class AsyncErrorBoundary extends StatefulWidget {
 }
 
 class _AsyncErrorBoundaryState extends State<AsyncErrorBoundary> {
-  Object? _error;
   bool _hasError = false;
   bool _isRetrying = false;
 
   void _handleError(Object error) {
     setState(() {
-      _error = error;
       _hasError = true;
     });
   }
@@ -186,7 +183,6 @@ class _AsyncErrorBoundaryState extends State<AsyncErrorBoundary> {
     try {
       await widget.onRetry!();
       setState(() {
-        _error = null;
         _hasError = false;
         _isRetrying = false;
       });

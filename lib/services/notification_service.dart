@@ -944,4 +944,66 @@ class NotificationService {
   tz.TZDateTime _convertToTZDateTime(DateTime dateTime) {
     return tz.TZDateTime.from(dateTime, tz.local);
   }
+
+  /// Mark any pending announcement notifications (by announcementId) as delivered for the current user
+  Future<void> markPendingDeliveredForAnnouncement(String announcementId) async {
+    try {
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser == null) return;
+      final userId = currentUser.uid;
+
+      final pendingQuery = await _db
+          .collection('users')
+          .doc(userId)
+          .collection('notifications')
+          .where('type', isEqualTo: 'announcement')
+          .where('data.announcementId', isEqualTo: announcementId)
+          .where('data.pendingLocalNotification', isEqualTo: true)
+          .get();
+
+      if (pendingQuery.docs.isEmpty) return;
+
+      final batch = _db.batch();
+      for (final doc in pendingQuery.docs) {
+        batch.update(doc.reference, {
+          'data.pendingLocalNotification': false,
+          'deliveredAt': FieldValue.serverTimestamp(),
+        });
+      }
+      await batch.commit();
+    } catch (e) {
+      AppLogger.error('Failed to mark pending announcement as delivered: $e', e);
+    }
+  }
+
+  /// Mark any pending report notifications (by reportId) as delivered for the current user
+  Future<void> markPendingDeliveredForReport(String reportId) async {
+    try {
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser == null) return;
+      final userId = currentUser.uid;
+
+      final pendingQuery = await _db
+          .collection('users')
+          .doc(userId)
+          .collection('notifications')
+          .where('type', isEqualTo: 'report')
+          .where('data.reportId', isEqualTo: reportId)
+          .where('data.pendingLocalNotification', isEqualTo: true)
+          .get();
+
+      if (pendingQuery.docs.isEmpty) return;
+
+      final batch = _db.batch();
+      for (final doc in pendingQuery.docs) {
+        batch.update(doc.reference, {
+          'data.pendingLocalNotification': false,
+          'deliveredAt': FieldValue.serverTimestamp(),
+        });
+      }
+      await batch.commit();
+    } catch (e) {
+      AppLogger.error('Failed to mark pending report as delivered: $e', e);
+    }
+  }
 }

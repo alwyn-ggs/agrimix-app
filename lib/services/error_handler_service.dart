@@ -1,5 +1,4 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import '../utils/logger.dart';
 
 /// Centralized error handling service
@@ -134,8 +133,7 @@ class ErrorHandlerService {
         return 'Server is temporarily unavailable. Please try again later.';
       
       case AppErrorType.unknown:
-      default:
-        // In debug mode, show the actual error
+      // In debug mode, show the actual error
         if (kDebugMode) {
           return errorString;
         }
@@ -166,7 +164,6 @@ class ErrorHandlerService {
       print('User Message: $userMessage');
     }
 
-    // TODO: Implement user notification system
     // This could be a snackbar, dialog, or in-app notification
     if (showToUser) {
       // For now, we'll just log that we should show to user

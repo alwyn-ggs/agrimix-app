@@ -5,6 +5,7 @@ import '../../providers/auth_provider.dart';
 import '../../repositories/recipes_repo.dart';
 import '../../models/recipe.dart';
 import '../../theme/theme.dart';
+import '../../router.dart';
 import 'dart:io';
 
 class RecipeEditPage extends StatelessWidget {
@@ -516,31 +517,58 @@ class _RecipeFormState extends State<_RecipeForm> {
   }
 
   Widget _buildSaveButton() {
-    return SizedBox(
-      width: double.infinity,
-      child: FilledButton(
-        onPressed: _saving ? null : _save,
-        style: FilledButton.styleFrom(
-          backgroundColor: NatureColors.primaryGreen,
-          padding: const EdgeInsets.symmetric(vertical: 16),
-        ),
-        child: _saving
-            ? const SizedBox(
-                height: 20,
-                width: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: Colors.white,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: FilledButton(
+                onPressed: _saving ? null : _save,
+                style: FilledButton.styleFrom(
+                  backgroundColor: NatureColors.primaryGreen,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
-              )
-            : Text(
-                widget.mode == 'create' ? 'Create Recipe' : 'Update Recipe',
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
+                child: _saving
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : Text(
+                        widget.mode == 'create' ? 'Create Recipe' : 'Update Recipe',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            if (_existingRecipe?.visibility == RecipeVisibility.private)
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    // Navigate to start fermentation with current recipe data
+                    Navigator.of(context).pushNamed(
+                      Routes.newLog,
+                      arguments: {
+                        'prefill': {
+                          'recipeId': widget.recipeId,
+                        }
+                      },
+                    );
+                  },
+                  icon: const Icon(Icons.play_circle_fill),
+                  label: const Text('Start Fermenting'),
                 ),
               ),
-      ),
+          ],
+        ),
+      ],
     );
   }
 

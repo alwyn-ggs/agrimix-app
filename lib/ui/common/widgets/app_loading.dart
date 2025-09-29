@@ -40,7 +40,7 @@ class AppLoading extends StatelessWidget {
               const SizedBox(height: 16),
               Text(
                 message!,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 14,
                   color: NatureColors.mediumGray,
                 ),
@@ -72,7 +72,7 @@ class AppLoadingOverlay extends StatelessWidget {
     if (!isVisible) return const SizedBox.shrink();
 
     return Container(
-      color: backgroundColor ?? Colors.black.withOpacity(0.5),
+      color: backgroundColor ?? Colors.black.withValues(alpha: 0.5),
       child: const AppLoading(
         message: 'Loading...',
         showMessage: true,

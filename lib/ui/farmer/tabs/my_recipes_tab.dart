@@ -19,6 +19,7 @@ class _MyRecipesTabState extends State<MyRecipesTab> with TickerProviderStateMix
   late TabController _tabController;
   String _searchQuery = '';
   RecipeMethod? _selectedMethod;
+  bool _deleting = false;
 
   @override
   void initState() {
@@ -65,12 +66,12 @@ class _MyRecipesTabState extends State<MyRecipesTab> with TickerProviderStateMix
           _buildMyCreatedTab(userId, recipeProvider),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
+      floatingActionButton: FloatingActionButton(
         onPressed: () => Navigator.of(context).pushNamed(Routes.formulateRecipe),
-        icon: const Icon(Icons.add),
-        label: const Text('Create Recipe'),
         backgroundColor: NatureColors.primaryGreen,
         foregroundColor: Colors.white,
+        tooltip: 'Create',
+        child: const Icon(Icons.add),
       ),
     );
   }
@@ -394,6 +395,32 @@ class _MyRecipesTabState extends State<MyRecipesTab> with TickerProviderStateMix
                             color: NatureColors.darkGreen,
                           ),
                         ),
+                        if (recipe.visibility == RecipeVisibility.private) ...[
+                          const SizedBox(height: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Colors.orange.withAlpha((0.15 * 255).round()),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.orange.withAlpha((0.4 * 255).round())),
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.edit_note, size: 14, color: Colors.orange),
+                                SizedBox(width: 4),
+                                Text(
+                                  'Draft',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.orange,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                         if (recipe.description.isNotEmpty) ...[
                           const SizedBox(height: 4),
                           Text(
@@ -441,6 +468,32 @@ class _MyRecipesTabState extends State<MyRecipesTab> with TickerProviderStateMix
                             ),
                           ],
                         ),
+                        if (recipe.ingredients.isNotEmpty) ...[
+                          const SizedBox(height: 8),
+                          Wrap(
+                            spacing: 6,
+                            runSpacing: 6,
+                            children: [
+                              for (final ing in recipe.ingredients.take(4))
+                                Chip(
+                                  label: Text(
+                                    ing.name,
+                                    style: const TextStyle(fontSize: 12),
+                                  ),
+                                  backgroundColor: NatureColors.lightGray,
+                                  visualDensity: VisualDensity.compact,
+                                  padding: const EdgeInsets.symmetric(horizontal: 6),
+                                ),
+                              if (recipe.ingredients.length > 4)
+                                Chip(
+                                  label: Text('+${recipe.ingredients.length - 4} more', style: const TextStyle(fontSize: 12)),
+                                  backgroundColor: NatureColors.lightGray,
+                                  visualDensity: VisualDensity.compact,
+                                  padding: const EdgeInsets.symmetric(horizontal: 6),
+                                ),
+                            ],
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -496,7 +549,9 @@ class _MyRecipesTabState extends State<MyRecipesTab> with TickerProviderStateMix
                 ],
               ),
               const SizedBox(height: 12),
+              // Start Fermenting button is shown inside the draft detail view, not here
               Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Row(
                     children: [
@@ -521,57 +576,44 @@ class _MyRecipesTabState extends State<MyRecipesTab> with TickerProviderStateMix
                     ],
                   ),
                   const Spacer(),
-                  if (recipe.visibility == RecipeVisibility.private) ...[
-                    TextButton.icon(
-                      onPressed: () async {
-                        try {
-                          final repo = context.read<RecipesRepo>();
-                          final newId = FirebaseFirestore.instance.collection(Recipe.collectionPath).doc().id;
-                          final publicCopy = Recipe(
-                            id: newId,
-                            ownerUid: recipe.ownerUid,
-                            name: recipe.name,
-                            description: recipe.description,
-                            method: recipe.method,
-                            cropTarget: recipe.cropTarget,
-                            ingredients: recipe.ingredients,
-                            steps: recipe.steps,
-                            visibility: RecipeVisibility.public,
-                            isStandard: false,
-                            likes: 0,
-                            avgRating: 0.0,
-                            totalRatings: 0,
-                            imageUrls: recipe.imageUrls,
-                            createdAt: DateTime.now(),
-                            updatedAt: DateTime.now(),
-                          );
-                          await repo.createRecipe(publicCopy);
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Shared publicly. Draft kept.')),
-                            );
-                          }
-                        } catch (e) {
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('Failed to share: $e')),
-                            );
-                          }
-                        }
-                      },
-                      icon: const Icon(Icons.public, size: 16, color: NatureColors.primaryGreen),
-                      label: const Text('Share', style: TextStyle(color: NatureColors.primaryGreen)),
-                      style: TextButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  Flexible(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerRight,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          if (recipe.visibility == RecipeVisibility.private)
+                            IconButton(
+                              tooltip: 'Edit draft',
+                              onPressed: () => Navigator.of(context).pushNamed(
+                                Routes.recipeEdit,
+                                arguments: {'mode': 'edit', 'recipeId': recipe.id},
+                              ),
+                              icon: const Icon(Icons.edit, size: 16, color: NatureColors.primaryGreen),
+                              constraints: const BoxConstraints(),
+                              padding: EdgeInsets.zero,
+                            ),
+                          if (recipe.visibility == RecipeVisibility.private)
+                            IconButton(
+                              tooltip: 'Delete draft',
+                              onPressed: () => _confirmDeleteDraft(recipe),
+                              icon: const Icon(Icons.delete_outline, size: 16, color: Colors.redAccent),
+                              constraints: const BoxConstraints(),
+                              padding: EdgeInsets.zero,
+                            ),
+                          const SizedBox(width: 6),
+                          Text(
+                            _formatDate(recipe.updatedAt),
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: NatureColors.mediumGray,
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                  ],
-                  const SizedBox(width: 8),
-                  Text(
-                    _formatDate(recipe.updatedAt),
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: NatureColors.mediumGray,
                     ),
                   ),
                 ],
@@ -595,6 +637,48 @@ class _MyRecipesTabState extends State<MyRecipesTab> with TickerProviderStateMix
         size: 24,
       ),
     );
+  }
+
+  Future<void> _confirmDeleteDraft(Recipe recipe) async {
+    if (_deleting) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete draft?'),
+        content: Text('This will permanently delete "${recipe.name}". This action cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(foregroundColor: Colors.redAccent),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    try {
+      setState(() => _deleting = true);
+      final repo = context.read<RecipesRepo>();
+      await repo.deleteRecipeDeep(recipe.id);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Draft deleted')),
+      );
+      // Trigger refresh by reloading the current tab view
+      setState(() {});
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to delete: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _deleting = false);
+    }
   }
 
   String _formatDate(DateTime date) {

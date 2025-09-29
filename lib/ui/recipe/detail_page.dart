@@ -94,6 +94,29 @@
                           const SizedBox(height: 24),
                           _buildSteps(recipe),
                           const SizedBox(height: 24),
+                          // Start fermenting for drafts (private) owned by user
+                          if (recipe.visibility == RecipeVisibility.private && uid == recipe.ownerUid)
+                            SafeArea(
+                              top: false,
+                              child: SizedBox(
+                                width: double.infinity,
+                                child: FilledButton.icon(
+                                  onPressed: () => Navigator.of(context).pushNamed(
+                                    Routes.newLog,
+                                    arguments: {'recipe': recipe},
+                                  ),
+                                  style: FilledButton.styleFrom(
+                                    backgroundColor: Colors.green,
+                                    padding: const EdgeInsets.symmetric(vertical: 14),
+                                    foregroundColor: Colors.white,
+                                  ),
+                                  icon: const Icon(Icons.play_circle_fill, size: 18),
+                                  label: const Text('Start Fermenting'),
+                                ),
+                              ),
+                            ),
+                          if (recipe.visibility == RecipeVisibility.private && uid == recipe.ownerUid)
+                            const SizedBox(height: 24),
                           if (_shouldShowUseButton(uid, recipe))
                             SafeArea(
                               top: false,
@@ -220,7 +243,7 @@
               icon: const Icon(Icons.share, color: Colors.white),
               onPressed: () => _shareRecipe(context, recipe),
             ),
-          if (uid == recipe.ownerUid || isAdmin)
+          if (uid == recipe.ownerUid)
             Builder(
               builder: (menuContext) {
                 return IconButton(

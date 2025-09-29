@@ -499,7 +499,7 @@ class PostCard extends StatelessWidget {
                                         width: 120,
                                         height: 120,
                                         decoration: BoxDecoration(
-                                          gradient: LinearGradient(
+                                          gradient: const LinearGradient(
                                             colors: [
                                               NatureColors.lightGray,
                                               NatureColors.mediumGray,

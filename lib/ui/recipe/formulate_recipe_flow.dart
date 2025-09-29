@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../providers/recipe_provider.dart';
@@ -11,8 +12,6 @@ import '../../providers/auth_provider.dart';
 import '../../theme/theme.dart';
 import '../../services/fermentation_guide_service.dart';
 import '../../services/notification_service.dart';
-import '../../services/error_handler_service.dart';
-import '../../ui/common/widgets/index.dart';
 import 'fermentation_guide_screen.dart';
 import 'recipe_analytics_widget.dart';
 
@@ -997,6 +996,8 @@ class _IngredientSelectionWidgetState extends State<_IngredientSelectionWidget> 
   String _selectedCategory = 'All';
   List<String> _categories = ['All'];
   final Map<String, String?> _imageUrlCache = <String, String?>{}; // ingredientId -> imageUrl
+  Timer? _debounce;
+  String _sortOption = 'A-Z';
 
   @override
   void initState() {
@@ -1104,6 +1105,23 @@ class _IngredientSelectionWidgetState extends State<_IngredientSelectionWidget> 
       ).toList();
     }
 
+    // Sorting
+    switch (_sortOption) {
+      case 'A-Z':
+        list.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+        break;
+      case 'Category':
+        list.sort((a, b) {
+          final byCat = a.category.toLowerCase().compareTo(b.category.toLowerCase());
+          if (byCat != 0) return byCat;
+          return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+        });
+        break;
+      case 'Newest':
+        list.sort((a, b) => (b.createdAt).compareTo(a.createdAt));
+        break;
+    }
+
     return list;
   }
 
@@ -1116,7 +1134,12 @@ class _IngredientSelectionWidgetState extends State<_IngredientSelectionWidget> 
       children: [
         // Search bar
         TextField(
-          onChanged: (value) => setState(() => _searchQuery = value),
+          onChanged: (value) {
+            _debounce?.cancel();
+            _debounce = Timer(const Duration(milliseconds: 250), () {
+              if (mounted) setState(() => _searchQuery = value);
+            });
+          },
           style: const TextStyle(color: Colors.black),
           cursorColor: Colors.black,
           decoration: InputDecoration(
@@ -1142,24 +1165,41 @@ class _IngredientSelectionWidgetState extends State<_IngredientSelectionWidget> 
         
         const SizedBox(height: 12),
         
-        // Category filter
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: [
-              for (final category in _categories)
-                Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: FilterChip(
-                    label: Text(category),
-                    selected: _selectedCategory == category,
-                    onSelected: (selected) {
-                      setState(() => _selectedCategory = selected ? category : 'All');
-                    },
-                  ),
+        // Filters and sort
+        Row(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    for (final category in _categories)
+                      Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: FilterChip(
+                          label: Text(category),
+                          selected: _selectedCategory == category,
+                          onSelected: (selected) {
+                            setState(() => _selectedCategory = selected ? category : 'All');
+                          },
+                        ),
+                      ),
+                  ],
                 ),
-            ],
-          ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            DropdownButton<String>(
+              value: _sortOption,
+              underline: const SizedBox.shrink(),
+              items: const [
+                DropdownMenuItem(value: 'A-Z', child: Text('A-Z')),
+                DropdownMenuItem(value: 'Category', child: Text('Category')),
+                DropdownMenuItem(value: 'Newest', child: Text('Newest')),
+              ],
+              onChanged: (v) => setState(() => _sortOption = v ?? 'A-Z'),
+            ),
+          ],
         ),
         
         const SizedBox(height: 16),
@@ -1220,6 +1260,7 @@ class _IngredientSelectionWidgetState extends State<_IngredientSelectionWidget> 
                       }
                       widget.onSelectionChanged(newSelection);
                     },
+                    onLongPress: () => _showIngredientDetail(context, ingredient),
                     child: Card(
                       elevation: 2,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -1261,12 +1302,12 @@ class _IngredientSelectionWidgetState extends State<_IngredientSelectionWidget> 
                                   bottomRight: Radius.circular(12),
                                 ),
                               ),
-                              child: Text(
-                                ingredient.name,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                textAlign: TextAlign.center,
+                              child: _HighlightedText(
+                                text: ingredient.name,
+                                query: _searchQuery,
                                 style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                                textAlign: TextAlign.center,
+                                maxLines: 2,
                               ),
                             ),
                           ),
@@ -1292,6 +1333,49 @@ class _IngredientSelectionWidgetState extends State<_IngredientSelectionWidget> 
             ),
           ),
         
+        // Sticky actions for selection
+        if (widget.selectedIds.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: NatureColors.lightGreen.withAlpha((0.4 * 255).round())),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    '${widget.selectedIds.length} selected',
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                ),
+                TextButton(
+                  onPressed: () {
+                    widget.onSelectionChanged(<String>{});
+                  },
+                  child: const Text('Clear all'),
+                ),
+                const SizedBox(width: 8),
+                FilledButton(
+                  onPressed: () {
+                    _showSelectedBottomSheet(context);
+                  },
+                  child: const Text('Review'),
+                ),
+              ],
+            ),
+          ),
+        ],
+
         const SizedBox(height: 12),
         
         // Method-specific tips
@@ -1327,6 +1411,177 @@ class _IngredientSelectionWidgetState extends State<_IngredientSelectionWidget> 
           ),
         ),
       ],
+    );
+  }
+
+  void _showSelectedBottomSheet(BuildContext context) {
+    final selected = _filteredIngredients.where((i) => widget.selectedIds.contains(i.id)).toList();
+    showModalBottomSheet(
+      context: context,
+      showDragHandle: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Selected Ingredients (${selected.length})', style: const TextStyle(fontWeight: FontWeight.w700)),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final ing in selected)
+                    Chip(
+                      label: Text(ing.name),
+                      deleteIcon: const Icon(Icons.close),
+                      onDeleted: () {
+                        final newSel = Set<String>.from(widget.selectedIds)..remove(ing.id);
+                        widget.onSelectionChanged(newSel);
+                        Navigator.of(context).pop();
+                        _showSelectedBottomSheet(context);
+                      },
+                    ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Align(
+                alignment: Alignment.centerRight,
+                child: FilledButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Done'),
+                ),
+              )
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showIngredientDetail(BuildContext context, Ingredient ing) {
+    showModalBottomSheet(
+      context: context,
+      showDragHandle: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (_) {
+        return SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(
+                  height: 180,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: _IngredientImageTile(
+                      ingredientId: ing.id,
+                      nameFallback: ing.name,
+                      cache: _imageUrlCache,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(ing.name, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Chip(label: Text(ing.category)),
+                    if ((ing.recommendedFor).isNotEmpty) const SizedBox(width: 8),
+                    if ((ing.recommendedFor).isNotEmpty)
+                      Chip(
+                        label: Text('For: ${(ing.recommendedFor).join(', ')}', overflow: TextOverflow.ellipsis),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                if ((ing.description ?? '').isNotEmpty)
+                  Text(ing.description!, style: const TextStyle(color: Colors.black87)),
+                const SizedBox(height: 8),
+                if ((ing.precautions).isNotEmpty) ...[
+                  const Text('Precautions', style: TextStyle(fontWeight: FontWeight.w700)),
+                  const SizedBox(height: 4),
+                  for (final p in ing.precautions) Text('• $p'),
+                ],
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        child: const Text('Close'),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: FilledButton.icon(
+                        onPressed: () {
+                          final newSel = Set<String>.from(widget.selectedIds)..add(ing.id);
+                          widget.onSelectionChanged(newSel);
+                          Navigator.of(context).pop();
+                        },
+                        icon: const Icon(Icons.add_circle),
+                        label: const Text('Add'),
+                      ),
+                    ),
+                  ],
+                )
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    super.dispose();
+  }
+}
+
+class _HighlightedText extends StatelessWidget {
+  final String text;
+  final String query;
+  final TextStyle? style;
+  final TextAlign? textAlign;
+  final int? maxLines;
+
+  const _HighlightedText({required this.text, required this.query, this.style, this.textAlign, this.maxLines});
+
+  @override
+  Widget build(BuildContext context) {
+    if (query.isEmpty) {
+      return Text(text, style: style, textAlign: textAlign, maxLines: maxLines, overflow: TextOverflow.ellipsis);
+    }
+    final lower = text.toLowerCase();
+    final q = query.toLowerCase();
+    final start = lower.indexOf(q);
+    if (start < 0) {
+      return Text(text, style: style, textAlign: textAlign, maxLines: maxLines, overflow: TextOverflow.ellipsis);
+    }
+    final end = start + q.length;
+    return RichText(
+      textAlign: textAlign ?? TextAlign.start,
+      maxLines: maxLines,
+      overflow: TextOverflow.ellipsis,
+      text: TextSpan(
+        children: [
+          TextSpan(text: text.substring(0, start), style: style),
+          TextSpan(text: text.substring(start, end), style: style?.copyWith(fontWeight: FontWeight.w900) ?? const TextStyle(fontWeight: FontWeight.w900, color: Colors.white)),
+          TextSpan(text: text.substring(end), style: style),
+        ],
+      ),
     );
   }
 }
