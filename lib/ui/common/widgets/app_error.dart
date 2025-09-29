@@ -10,7 +10,6 @@ class AppError extends StatelessWidget {
   final Color? iconColor;
   final bool showRetryButton;
   final EdgeInsets? padding;
-  final bool isAuthError;
 
   const AppError({
     super.key,
@@ -21,7 +20,6 @@ class AppError extends StatelessWidget {
     this.iconColor,
     this.showRetryButton = true,
     this.padding,
-    this.isAuthError = false,
   });
 
   @override
@@ -36,7 +34,7 @@ class AppError extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: (iconColor ?? Colors.red).withValues(alpha: 0.1),
+                color: (iconColor ?? Colors.red).withValues(alpha: 0.5),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
@@ -88,9 +86,6 @@ class AppError extends StatelessWidget {
                 ),
               ),
             ],
-            
-            // Auth errors now handled by back arrow in AppBar
-            // No need for separate login button
           ],
         ),
       ),
@@ -105,7 +100,6 @@ class AppErrorPage extends StatelessWidget {
   final VoidCallback? onRetry;
   final VoidCallback? onGoBack;
   final IconData? icon;
-  final bool isAuthError;
 
   const AppErrorPage({
     super.key,
@@ -114,7 +108,6 @@ class AppErrorPage extends StatelessWidget {
     this.onRetry,
     this.onGoBack,
     this.icon,
-    this.isAuthError = false,
   });
 
   @override
@@ -124,12 +117,12 @@ class AppErrorPage extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: NatureColors.natureBackground,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () {
-            Navigator.of(context).pop();
-          },
-        ),
+        leading: onGoBack != null
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: onGoBack,
+              )
+            : null,
       ),
       body: AppError(
         message: message,
@@ -137,7 +130,6 @@ class AppErrorPage extends StatelessWidget {
         onRetry: onRetry,
         icon: icon,
         padding: const EdgeInsets.all(32),
-        isAuthError: false, // Remove auth error button
       ),
     );
   }
@@ -235,30 +227,6 @@ class AppNetworkError extends StatelessWidget {
       icon: Icons.wifi_off,
       iconColor: Colors.orange,
       onRetry: onRetry,
-    );
-  }
-}
-
-/// Authentication error specific widget
-class AppAuthError extends StatelessWidget {
-  final String message;
-  final VoidCallback? onRetry;
-
-  const AppAuthError({
-    super.key,
-    required this.message,
-    this.onRetry,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return AppError(
-      title: 'Authentication Error',
-      message: message,
-      icon: Icons.lock_outline,
-      iconColor: Colors.amber,
-      onRetry: onRetry,
-      isAuthError: true,
     );
   }
 }

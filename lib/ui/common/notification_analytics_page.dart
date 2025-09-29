@@ -229,11 +229,11 @@ class _NotificationAnalyticsPageState extends State<NotificationAnalyticsPage> {
 
   Widget _buildEngagementChart() {
     if (_engagementTrends.isEmpty) {
-      return Card(
+      return const Card(
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(16),
           child: Column(
-            children: const [
+            children: [
               Icon(Icons.bar_chart, size: 48, color: Colors.grey),
               SizedBox(height: 16),
               Text(
@@ -510,9 +510,9 @@ class _NotificationAnalyticsPageState extends State<NotificationAnalyticsPage> {
                     ),
                   ],
                 );
-              })),
+              }),
             ],
-          ],
+        )],
         ),
       ),
     );
@@ -615,7 +615,7 @@ class _NotificationAnalyticsPageState extends State<NotificationAnalyticsPage> {
                   style: const TextStyle(fontSize: 12, color: Colors.grey),
                 ),
               );
-            }).toList(),
+            }),
           ],
         ),
       ),

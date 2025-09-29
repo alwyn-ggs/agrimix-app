@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../theme/theme.dart';
 import 'splash_screen.dart';
+import 'widgets/app_error.dart';
 import 'widgets/error_boundary.dart';
 import '../auth/login_screen.dart';
 import '../admin/dashboard.dart' as admin;
@@ -16,13 +17,25 @@ class AppWrapper extends StatelessWidget {
     return ErrorBoundary(
       child: Consumer<AuthProvider>(
         builder: (context, authProvider, child) {
+          // Show error if there's an authentication error
+          if (authProvider.hasError) {
+            return AppErrorPage(
+              title: 'Authentication Error',
+              message: authProvider.error ?? 'An authentication error occurred',
+              onRetry: () {
+                authProvider.clearError();
+                // Try to refresh the current user
+                authProvider.refreshCurrentUser();
+              },
+            );
+          }
           
           // Show splash while loading
           if (authProvider.loading) {
             return const SplashScreen();
           }
           
-          // If not logged in, show login screen (with any errors)
+          // If not logged in, show login screen
           if (!authProvider.isLoggedIn) {
             return const LoginScreen();
           }
