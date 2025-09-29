@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../theme/theme.dart';
 import 'splash_screen.dart';
+import 'widgets/error_boundary.dart';
 import '../auth/login_screen.dart';
 import '../admin/dashboard.dart' as admin;
 import '../farmer/dashboard.dart' as farmer;
@@ -12,40 +13,43 @@ class AppWrapper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<AuthProvider>(
-      builder: (context, authProvider, child) {
-        // Show splash while loading
-        if (authProvider.loading) {
-          return const SplashScreen();
-        }
-        
-        // If not logged in, show login screen
-        if (!authProvider.isLoggedIn) {
-          return const LoginScreen();
-        }
-        
-        // If logged in but user data is not loaded yet, show splash
-        if (authProvider.currentAppUser == null) {
-          return const SplashScreen();
-        }
-        
-        // Route based on user role
-        final userRole = authProvider.userRole;
-        
-        if (userRole == 'admin') {
-          return const admin.Dashboard();
-        } else if (userRole == 'farmer') {
-          // Check if farmer is approved
-          if (authProvider.currentAppUser?.approved == true) {
-            return const farmer.Dashboard();
-          } else {
-            return const _PendingApprovalScreen();
+    return ErrorBoundary(
+      child: Consumer<AuthProvider>(
+        builder: (context, authProvider, child) {
+          
+          // Show splash while loading
+          if (authProvider.loading) {
+            return const SplashScreen();
           }
-        }
-        
-        // Fallback to splash if role is unknown
-        return const SplashScreen();
-      },
+          
+          // If not logged in, show login screen (with any errors)
+          if (!authProvider.isLoggedIn) {
+            return const LoginScreen();
+          }
+          
+          // If logged in but user data is not loaded yet, show splash
+          if (authProvider.currentAppUser == null) {
+            return const SplashScreen();
+          }
+          
+          // Route based on user role
+          final userRole = authProvider.userRole;
+          
+          if (userRole == 'admin') {
+            return const admin.Dashboard();
+          } else if (userRole == 'farmer') {
+            // Check if farmer is approved
+            if (authProvider.currentAppUser?.approved == true) {
+              return const farmer.Dashboard();
+            } else {
+              return const _PendingApprovalScreen();
+            }
+          }
+          
+          // Fallback to splash if role is unknown
+          return const SplashScreen();
+        },
+      ),
     );
   }
 }

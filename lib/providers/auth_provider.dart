@@ -5,17 +5,17 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../services/auth_service.dart';
 import '../services/messaging_service.dart';
 import '../services/notification_service.dart';
+import '../services/error_handler_service.dart';
 import '../repositories/users_repo.dart';
 import '../models/user.dart';
 import '../utils/logger.dart';
 
-class AuthProvider extends ChangeNotifier {
+class AuthProvider extends ChangeNotifier with ErrorHandlerMixin {
   final AuthService auth;
   final UsersRepo usersRepo;
   final MessagingService messaging;
   final NotificationService? notificationService;
   bool loading = false;
-  String? error;
   User? _currentUser;
   AppUser? _currentAppUser;
   bool _rememberMe = false;
@@ -39,11 +39,6 @@ class AuthProvider extends ChangeNotifier {
           AppLogger.debug('AuthProvider: Auth state changed - user: ${user?.uid}');
           _currentUser = user;
           if (user != null) {
-            if (!_rememberMe) {
-              AppLogger.debug('AuthProvider: rememberMe=false → signing out on init');
-              signOut();
-              return;
-            }
             loading = true;
             notifyListeners();
             _loadUserData(user.uid);
@@ -56,7 +51,7 @@ class AuthProvider extends ChangeNotifier {
         },
         onError: (error) {
           AppLogger.debug('AuthProvider: Auth state error: $error');
-          this.error = error.toString();
+          handleError(error, context: 'Auth state change');
           loading = false;
           notifyListeners();
         },
@@ -69,6 +64,8 @@ class AuthProvider extends ChangeNotifier {
       loading = true;
       notifyListeners();
       AppLogger.debug('AuthProvider: Loading user data for uid: $uid');
+      AppLogger.debug('AuthProvider: rememberMe status: $_rememberMe');
+      
       _currentAppUser = await usersRepo.getUser(uid);
       
       // Subscribe to announcements topic for all users
@@ -95,10 +92,20 @@ class AuthProvider extends ChangeNotifier {
       AppLogger.debug('AuthProvider: User data loaded successfully');
       AppLogger.debug('AuthProvider: User approved status: ${_currentAppUser?.approved}');
       AppLogger.debug('AuthProvider: User role: ${_currentAppUser?.role}');
+      AppLogger.debug('AuthProvider: User name: ${_currentAppUser?.name}');
+      AppLogger.debug('AuthProvider: User email: ${_currentAppUser?.email}');
+      
+      // Check remember me preference after loading user data
+      if (!_rememberMe) {
+        AppLogger.debug('AuthProvider: rememberMe=false → signing out after data load');
+        await signOut();
+        return;
+      }
+      
       notifyListeners();
     } catch (e) {
       AppLogger.debug('AuthProvider: Error loading user data: $e');
-      error = e.toString();
+      handleError(e, context: 'Loading user data');
       loading = false; // Set loading to false even on error
       notifyListeners();
     }
@@ -108,7 +115,7 @@ class AuthProvider extends ChangeNotifier {
 
   Future<void> signIn(String email, String password, {bool rememberMe = false}) async {
     loading = true;
-    error = null;
+    clearError();
     notifyListeners();
     try {
       // Save remember-me preference immediately for this session
@@ -135,7 +142,7 @@ class AuthProvider extends ChangeNotifier {
         });
       }
     } catch (e) {
-      error = e.toString();
+      handleError(e, context: 'Sign in');
     }
     loading = false;
     notifyListeners();
@@ -143,7 +150,7 @@ class AuthProvider extends ChangeNotifier {
 
   Future<void> register(String email, String password, String name, {String? membershipId}) async {
     loading = true;
-    error = null;
+    clearError();
     notifyListeners();
     try {
       AppLogger.debug('AuthProvider: Starting registration for $email');
@@ -181,7 +188,7 @@ class AuthProvider extends ChangeNotifier {
       }
     } catch (e) {
       AppLogger.debug('AuthProvider: Error during registration: $e');
-      error = e.toString();
+      handleError(e, context: 'Registration');
     }
     loading = false;
     notifyListeners();
@@ -201,12 +208,12 @@ class AuthProvider extends ChangeNotifier {
 
   Future<void> sendPasswordReset(String email) async {
     loading = true;
-    error = null;
+    clearError();
     notifyListeners();
     try {
       await auth.sendPasswordResetEmail(email);
     } catch (e) {
-      error = e.toString();
+      handleError(e, context: 'Password reset');
     }
     loading = false;
     notifyListeners();

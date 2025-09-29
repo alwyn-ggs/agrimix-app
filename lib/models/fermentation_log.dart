@@ -68,7 +68,7 @@ class FermentationLog {
   final bool alertsEnabled;
   final DateTime createdAt;
 
-  const FermentationLog({
+  FermentationLog({
     required this.id,
     required this.ownerUid,
     this.recipeId,

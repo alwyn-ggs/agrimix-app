@@ -25,12 +25,19 @@ class UsersRepo {
 
   Future<AppUser?> getUser(String uid) async {
     try {
+      AppLogger.debug('UsersRepo: Getting user with uid: $uid');
       final doc = await _fs.db.collection('users').doc(uid).get();
+      AppLogger.debug('UsersRepo: Document exists: ${doc.exists}');
       if (doc.exists) {
-        return AppUser.fromMap(doc.id, doc.data()!);
+        final userData = AppUser.fromMap(doc.id, doc.data()!);
+        AppLogger.debug('UsersRepo: User data loaded - name: ${userData.name}, role: ${userData.role}, approved: ${userData.approved}');
+        return userData;
+      } else {
+        AppLogger.warning('UsersRepo: User document does not exist for uid: $uid');
+        return null;
       }
-      return null;
     } catch (e) {
+      AppLogger.error('UsersRepo: Error getting user: $e', e);
       throw Exception('Failed to get user: $e');
     }
   }

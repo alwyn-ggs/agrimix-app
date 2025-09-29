@@ -11,7 +11,7 @@ class Ingredient {
   final NutrientProfile? nutrientProfile; // Nutritional and plant benefit data
   final DateTime createdAt;
 
-  const Ingredient({
+  Ingredient({
     required this.id,
     required this.name,
     required this.category,

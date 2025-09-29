@@ -11,6 +11,8 @@ import '../../providers/auth_provider.dart';
 import '../../theme/theme.dart';
 import '../../services/fermentation_guide_service.dart';
 import '../../services/notification_service.dart';
+import '../../services/error_handler_service.dart';
+import '../../ui/common/widgets/index.dart';
 import 'fermentation_guide_screen.dart';
 import 'recipe_analytics_widget.dart';
 

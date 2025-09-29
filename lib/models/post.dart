@@ -15,7 +15,7 @@ class Post {
   final String? recipeId;
   final String? recipeName;
 
-  const Post({
+  Post({
     required this.id,
     required this.ownerUid,
     this.ownerName,

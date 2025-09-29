@@ -9,7 +9,7 @@ class Comment {
   final DateTime createdAt;
   final DateTime? updatedAt;
 
-  const Comment({
+  Comment({
     required this.id,
     required this.postId,
     required this.authorId,

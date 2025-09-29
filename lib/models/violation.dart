@@ -19,7 +19,7 @@ class Violation {
   final DateTime createdAt;
   final DateTime? resolvedAt;
 
-  const Violation({
+  Violation({
     required this.id,
     required this.targetType,
     required this.targetId,

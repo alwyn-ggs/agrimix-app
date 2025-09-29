@@ -81,7 +81,7 @@ class Recipe {
   final DateTime createdAt;
   final DateTime updatedAt;
 
-  const Recipe({
+  Recipe({
     required this.id,
     required this.ownerUid,
     required this.name,

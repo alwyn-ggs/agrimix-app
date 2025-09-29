@@ -8,7 +8,7 @@ class RecipeRating {
   final String? comment;
   final DateTime createdAt;
 
-  const RecipeRating({
+  RecipeRating({
     required this.id,
     required this.recipeId,
     required this.userUid,

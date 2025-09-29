@@ -10,7 +10,7 @@ class AppUser {
   final DateTime createdAt;
   final List<String> fcmTokens;
 
-  const AppUser({
+  AppUser({
     required this.uid,
     required this.name,
     required this.email,

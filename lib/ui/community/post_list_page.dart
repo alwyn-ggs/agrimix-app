@@ -74,7 +74,7 @@ class _PostListPageState extends State<PostListPage> {
                   onRefresh: () => provider.loadPosts(refresh: true),
                   child: ListView.builder(
                     controller: _scrollController,
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
                     itemCount: posts.length + (provider.hasMorePosts ? 1 : 0),
                     itemBuilder: (context, index) {
                       if (index >= posts.length) {
@@ -259,56 +259,106 @@ class PostCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 16),
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header
-              Row(
+    return Container(
+      margin: const EdgeInsets.only(bottom: 20, left: 16, right: 16),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            NatureColors.pureWhite,
+            Color(0xFFFAFBFA),
+          ],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: NatureColors.textDark.withValues(alpha: 0.08),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          ),
+          BoxShadow(
+            color: NatureColors.primaryGreen.withValues(alpha: 0.05),
+            blurRadius: 25,
+            offset: const Offset(0, 15),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  CircleAvatar(
-                    backgroundColor: NatureColors.primaryGreen,
-                    child: Text(
-                      (post.ownerName?.isNotEmpty == true
-                          ? post.ownerName![0]
-                          : (post.ownerUid.isNotEmpty ? post.ownerUid[0] : 'U'))
-                          .toUpperCase(),
-                      style: const TextStyle(
-                        color: NatureColors.pureWhite,
-                        fontWeight: FontWeight.bold,
+                  // Enhanced Header
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(2),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(20),
+                          gradient: const LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              NatureColors.primaryGreen,
+                              NatureColors.lightGreen,
+                            ],
+                          ),
+                        ),
+                        child: CircleAvatar(
+                          radius: 22,
+                          backgroundColor: Colors.transparent,
+                          child: Text(
+                            (post.ownerName?.isNotEmpty == true
+                                ? post.ownerName![0]
+                                : (post.ownerUid.isNotEmpty ? post.ownerUid[0] : 'U'))
+                                .toUpperCase(),
+                            style: const TextStyle(
+                              color: NatureColors.pureWhite,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          post.ownerName?.isNotEmpty == true ? post.ownerName! : post.ownerUid,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w600,
-                            color: NatureColors.darkGray,
-                          ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              post.ownerName?.isNotEmpty == true ? post.ownerName! : post.ownerUid,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: NatureColors.darkGray,
+                                fontSize: 16,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: NatureColors.lightGreen.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                _formatDate(post.createdAt),
+                                style: const TextStyle(
+                                  color: NatureColors.mediumGray,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                        Text(
-                          _formatDate(post.createdAt),
-                          style: const TextStyle(
-                            color: NatureColors.mediumGray,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                      ),
                   Consumer<AuthProvider>(
                     builder: (context, authProvider, child) {
                       final currentUser = authProvider.currentUser;
@@ -352,64 +402,128 @@ class PostCard extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
-              
-              // Title
-              Text(
-                post.title,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: NatureColors.darkGray,
-                ),
-              ),
-              const SizedBox(height: 8),
-              
-              // Body preview
-              Text(
-                post.body,
-                style: const TextStyle(
-                  color: NatureColors.darkGray,
-                  height: 1.4,
-                ),
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 12),
-              
-              // Images preview
-              if (post.images.isNotEmpty) ...[
-                SizedBox(
-                  height: 120,
-                  child: ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: post.images.length > 3 ? 3 : post.images.length,
-                    itemBuilder: (context, index) {
-                      return Container(
-                        margin: const EdgeInsets.only(right: 8),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: Image.network(
-                            post.images[index],
-                            width: 120,
-                            height: 120,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Container(
-                                width: 120,
-                                height: 120,
-                                color: NatureColors.lightGray,
-                                child: const Icon(Icons.image_not_supported),
-                              );
-                            },
+                  const SizedBox(height: 16),
+                  
+                  // Enhanced Post Content
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          NatureColors.primaryGreen.withValues(alpha: 0.03),
+                          NatureColors.lightGreen.withValues(alpha: 0.05),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: NatureColors.lightGreen.withValues(alpha: 0.15),
+                        width: 1,
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Enhanced Title
+                        Text(
+                          post.title,
+                          style: const TextStyle(
+                            fontSize: 19,
+                            fontWeight: FontWeight.bold,
+                            color: NatureColors.darkGray,
+                            letterSpacing: 0.3,
                           ),
                         ),
-                      );
-                    },
+                        const SizedBox(height: 10),
+                        
+                        // Enhanced Body preview
+                        Text(
+                          post.body,
+                          style: const TextStyle(
+                            color: NatureColors.darkGray,
+                            height: 1.5,
+                            fontSize: 15,
+                          ),
+                          maxLines: 3,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                const SizedBox(height: 12),
-              ],
+              const SizedBox(height: 12),
+              
+                  // Enhanced Images preview
+                  if (post.images.isNotEmpty) ...[
+                    const SizedBox(height: 16),
+                    Container(
+                      height: 140,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: NatureColors.lightGreen.withValues(alpha: 0.2),
+                          width: 1,
+                        ),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(16),
+                        child: ListView.builder(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: post.images.length > 3 ? 3 : post.images.length,
+                          itemBuilder: (context, index) {
+                            return Container(
+                              margin: EdgeInsets.only(
+                                left: index == 0 ? 0 : 8,
+                                right: index == (post.images.length > 3 ? 3 : post.images.length) - 1 ? 0 : 8,
+                              ),
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(12),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: NatureColors.textDark.withValues(alpha: 0.1),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
+                                ),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: Image.network(
+                                    post.images[index],
+                                    width: 120,
+                                    height: 120,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return Container(
+                                        width: 120,
+                                        height: 120,
+                                        decoration: BoxDecoration(
+                                          gradient: LinearGradient(
+                                            colors: [
+                                              NatureColors.lightGray,
+                                              NatureColors.mediumGray,
+                                            ],
+                                          ),
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                        child: const Icon(
+                                          Icons.image_not_supported,
+                                          color: NatureColors.pureWhite,
+                                          size: 32,
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
               
               
               // Actions
@@ -473,9 +587,11 @@ class PostCard extends StatelessWidget {
                     icon: const Icon(Icons.comment_outlined, color: NatureColors.mediumGray),
                     onPressed: onTap,
                   ),
+                  ],
+                ),
                 ],
               ),
-            ],
+            ),
           ),
         ),
       ),

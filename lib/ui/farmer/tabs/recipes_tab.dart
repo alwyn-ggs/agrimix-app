@@ -16,79 +16,146 @@ class RecipesTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: NatureColors.natureBackground,
       appBar: AppBar(
         title: const Text('Recipes', style: TextStyle(color: Colors.white)),
+        backgroundColor: NatureColors.primaryGreen,
+        elevation: 0,
       ),
       body: Column(
         children: [
-          // Search and Filter Section
-          Padding(
-            padding: const EdgeInsets.all(12),
+          // Enhanced Search Section
+          Container(
+            margin: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  NatureColors.pureWhite,
+                  Color(0xFFFAFBFA),
+                ],
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: NatureColors.textDark.withValues(alpha: 0.08),
+                  blurRadius: 15,
+                  offset: const Offset(0, 8),
+                ),
+                BoxShadow(
+                  color: NatureColors.primaryGreen.withValues(alpha: 0.05),
+                  blurRadius: 25,
+                  offset: const Offset(0, 15),
+                ),
+              ],
+            ),
             child: TextField(
               style: const TextStyle(
-                color: Colors.black,
+                color: NatureColors.textDark,
                 fontSize: 16,
+                fontWeight: FontWeight.w500,
               ),
-              decoration: const InputDecoration(
-                hintText: 'Search by crop or ingredient',
-                hintStyle: TextStyle(
+              decoration: InputDecoration(
+                hintText: '🔍 Search by crop or ingredient',
+                hintStyle: const TextStyle(
                   color: NatureColors.mediumGray,
                   fontSize: 16,
                 ),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.all(Radius.circular(12)),
-                  borderSide: BorderSide(color: NatureColors.mediumGray),
+                  borderRadius: BorderRadius.circular(20),
+                  borderSide: BorderSide.none,
                 ),
                 enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.all(Radius.circular(12)),
-                  borderSide: BorderSide(color: NatureColors.mediumGray),
+                  borderRadius: BorderRadius.circular(20),
+                  borderSide: BorderSide.none,
                 ),
                 focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.all(Radius.circular(12)),
-                  borderSide: BorderSide(color: NatureColors.primaryGreen, width: 2),
+                  borderRadius: BorderRadius.circular(20),
+                  borderSide: const BorderSide(
+                    color: NatureColors.primaryGreen,
+                    width: 2,
+                  ),
                 ),
                 filled: true,
-                fillColor: Colors.white,
-                contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                isDense: true,
+                fillColor: Colors.transparent,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                prefixIcon: Container(
+                  padding: const EdgeInsets.all(12),
+                  child: const Icon(
+                    Icons.search,
+                    color: NatureColors.primaryGreen,
+                    size: 24,
+                  ),
+                ),
               ),
               onChanged: (_) => (context as Element).markNeedsBuild(),
             ),
           ),
-          const Divider(height: 1),
           
           // Recipe List with Standard Recipes
           Expanded(
             child: ListView(
               children: [
-                // Standard Recipes Header
+                // Enhanced Standard Recipes Header
                 Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: NatureColors.lightGreen.withAlpha((0.1 * 255).round()),
-                    border: Border(
-                      bottom: BorderSide(
-                        color: NatureColors.lightGreen.withAlpha((0.3 * 255).round()),
-                        width: 1,
-                      ),
+                    gradient: const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        NatureColors.primaryGreen,
+                        NatureColors.lightGreen,
+                      ],
                     ),
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: NatureColors.primaryGreen.withValues(alpha: 0.2),
+                        blurRadius: 12,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
                   ),
                   child: Row(
                     children: [
-                      const Icon(
-                        Icons.star,
-                        color: NatureColors.primaryGreen,
-                        size: 20,
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: NatureColors.pureWhite.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(
+                          Icons.star,
+                          color: NatureColors.pureWhite,
+                          size: 24,
+                        ),
                       ),
-                      const SizedBox(width: 8),
-                      const Text(
-                        'Standard Recipes',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: NatureColors.darkGray,
+                      const SizedBox(width: 16),
+                      const Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Standard Recipes',
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: NatureColors.pureWhite,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                            SizedBox(height: 4),
+                            Text(
+                              'Verified organic fertilizer recipes',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: NatureColors.offWhite,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
@@ -96,24 +163,67 @@ class RecipesTab extends StatelessWidget {
                 ),
                 const _StandardRecipesList(),
                 
-                // Divider between standard and other recipes
-                Container(
-                  height: 1,
-                  color: Colors.grey[300],
-                  margin: const EdgeInsets.symmetric(horizontal: 16),
-                ),
+                const SizedBox(height: 24),
                 
-                // Other Recipes Header
+                // Enhanced Other Recipes Header
                 Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  child: const Text(
-                    'Other Recipes',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: NatureColors.darkGray,
+                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        NatureColors.lightGreen.withValues(alpha: 0.1),
+                        NatureColors.primaryGreen.withValues(alpha: 0.05),
+                      ],
                     ),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: NatureColors.lightGreen.withValues(alpha: 0.2),
+                      width: 1,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: NatureColors.primaryGreen.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(
+                          Icons.people,
+                          color: NatureColors.primaryGreen,
+                          size: 24,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      const Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Community Recipes',
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: NatureColors.darkGray,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                            SizedBox(height: 4),
+                            Text(
+                              'Shared by fellow farmers',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: NatureColors.mediumGray,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 
@@ -130,8 +240,7 @@ class RecipesTab extends StatelessWidget {
     );
   }
 
-  
-
+  // ignore: unused_element
   Widget _buildStandardRecipeCard({
     required BuildContext context,
     required RecipeMethod method,
@@ -346,6 +455,7 @@ class _StandardRecipesList extends StatelessWidget {
     );
   }
 
+  // ignore: unused_element
   Future<void> _useStandardRecipe(BuildContext context, Recipe standard, String uid) async {
     try {
       final repo = context.read<RecipesRepo>();
@@ -468,255 +578,369 @@ class _InteractiveRecipeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
-      elevation: 3,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Colors.white,
-              NatureColors.lightGray.withAlpha((0.1 * 255).round()),
-            ],
-          ),
+    return Container(
+      margin: const EdgeInsets.only(left: 16, right: 16, bottom: 20),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            NatureColors.pureWhite,
+            Color(0xFFFAFBFA),
+          ],
         ),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(16),
-          onTap: () {
-            Navigator.of(context).pushNamed(
-              Routes.recipeDetail,
-              arguments: {'id': recipe.id},
-            );
-          },
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Header with image and basic info
-                Row(
+        boxShadow: [
+          BoxShadow(
+            color: NatureColors.textDark.withValues(alpha: 0.08),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          ),
+          BoxShadow(
+            color: NatureColors.primaryGreen.withValues(alpha: 0.05),
+            blurRadius: 25,
+            offset: const Offset(0, 15),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: Material(
+          color: Colors.transparent,
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  NatureColors.pureWhite,
+                  Color(0xFFFAFBFA),
+                ],
+              ),
+            ),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(20),
+              onTap: () {
+                Navigator.of(context).pushNamed(
+                  Routes.recipeDetail,
+                  arguments: {'id': recipe.id},
+                );
+              },
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Enhanced thumbnail
-                    Container(
-                      width: 80,
-                      height: 80,
-                      decoration: BoxDecoration(
-                        color: NatureColors.lightGray,
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withAlpha((0.1 * 255).round()),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
+                    // Header with image and basic info
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Enhanced thumbnail with gradient border
+                        Container(
+                          padding: const EdgeInsets.all(3),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(16),
+                            gradient: const LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                NatureColors.primaryGreen,
+                                NatureColors.lightGreen,
+                              ],
+                            ),
                           ),
-                        ],
-                      ),
-                      child: recipe.imageUrls.isNotEmpty
-                          ? ClipRRect(
-                              borderRadius: BorderRadius.circular(12),
-                              child: Image.network(
-                                recipe.imageUrls.first,
-                                fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) => const Icon(Icons.restaurant_menu, color: NatureColors.mediumGray, size: 32),
-                              ),
-                            )
-                          : const Icon(Icons.restaurant_menu, color: NatureColors.mediumGray, size: 32),
-                    ),
-                    const SizedBox(width: 16),
-                    // Title and author info
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  recipe.name,
-                                  style: const TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    color: NatureColors.darkGreen,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
+                          child: Container(
+                            width: 90,
+                            height: 90,
+                            decoration: BoxDecoration(
+                              color: NatureColors.lightGray,
+                              borderRadius: BorderRadius.circular(13),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: NatureColors.textDark.withValues(alpha: 0.1),
+                                  blurRadius: 12,
+                                  offset: const Offset(0, 6),
                                 ),
-                              ),
-                              const SizedBox(width: 8),
-                              _buildVisibilityChip(recipe),
-                            ],
+                              ],
+                            ),
+                            child: recipe.imageUrls.isNotEmpty
+                                ? ClipRRect(
+                                    borderRadius: BorderRadius.circular(13),
+                                    child: Image.network(
+                                      recipe.imageUrls.first,
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (_, __, ___) => Container(
+                                        decoration: BoxDecoration(
+                                          gradient: const LinearGradient(
+                                            colors: [
+                                              NatureColors.lightGray,
+                                              NatureColors.mediumGray,
+                                            ],
+                                          ),
+                                          borderRadius: BorderRadius.circular(13),
+                                        ),
+                                        child: const Icon(
+                                          Icons.restaurant_menu,
+                                          color: NatureColors.pureWhite,
+                                          size: 36,
+                                        ),
+                                      ),
+                                    ),
+                                  )
+                                : Container(
+                                    decoration: BoxDecoration(
+                                      gradient: const LinearGradient(
+                                        colors: [
+                                          NatureColors.lightGray,
+                                          NatureColors.mediumGray,
+                                        ],
+                                      ),
+                                      borderRadius: BorderRadius.circular(13),
+                                    ),
+                                    child: const Icon(
+                                      Icons.restaurant_menu,
+                                      color: NatureColors.pureWhite,
+                                      size: 36,
+                                    ),
+                                  ),
                           ),
-                          const SizedBox(height: 6),
-                          // Author information
-                          StreamBuilder<AppUser?>(
-                            stream: usersRepo.watchUser(recipe.ownerUid),
-                            builder: (context, userSnap) {
-                              final author = userSnap.data;
-                              final hasName = author != null && author.name.trim().isNotEmpty;
-                              final ownerUid = recipe.ownerUid;
-                              if (hasName) {
-                                _authorNameCache[ownerUid] = author.name;
-                              }
-                              final cachedName = _authorNameCache[ownerUid];
-                              final nameToShow = hasName ? author.name : (cachedName ?? '');
-                              if (nameToShow.trim().isEmpty) return const SizedBox.shrink();
-                              return Row(
+                        ),
+                        const SizedBox(width: 16),
+                        // Title and author info
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
                                 children: [
-                                  const CircleAvatar(
-                                    radius: 12,
-                                    backgroundColor: NatureColors.primaryGreen,
-                                    child: Icon(Icons.person, size: 14, color: Colors.white),
+                                  Expanded(
+                                    child: Text(
+                                      recipe.name,
+                                      style: const TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                        color: NatureColors.darkGreen,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
                                   ),
                                   const SizedBox(width: 8),
-                                  Text(
-                                    'by: $nameToShow',
-                                    style: const TextStyle(
-                                      fontSize: 14,
-                                      color: NatureColors.darkGray,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
+                                  _buildVisibilityChip(recipe),
                                 ],
-                              );
-                            },
-                          ),
-                          if (recipe.description.isNotEmpty) ...[
-                            const SizedBox(height: 8),
-                            Text(
-                              recipe.description,
-                              style: const TextStyle(fontSize: 14, color: NatureColors.darkGray),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                // Enhanced info chips
-                Wrap(
-                  spacing: 12,
-                  runSpacing: 8,
-                  children: [
-                    _buildEnhancedChip(Icons.local_dining, recipe.method.name.toUpperCase(), NatureColors.primaryGreen),
-                    _buildEnhancedChip(Icons.eco, recipe.cropTarget, NatureColors.lightGreen),
-                    if (!recipe.isStandard) ...[
-                      StreamBuilder<List<Map<String, dynamic>>>(
-                        stream: recipesRepo.watchRecipeRatingsRaw(recipe.id),
-                        builder: (context, snapshot) {
-                          double avg = recipe.avgRating;
-                          int count = recipe.totalRatings;
-                          if (snapshot.hasData) {
-                            final ratings = snapshot.data!;
-                            if (ratings.isNotEmpty) {
-                              final total = ratings
-                                  .map((m) => (m['rating'] as num?)?.toDouble() ?? 0.0)
-                                  .fold<double>(0.0, (a, b) => a + b);
-                              count = ratings.length;
-                              avg = total / count;
-                            }
-                          }
-                          return _buildEnhancedChip(
-                            Icons.star,
-                            '${avg.toStringAsFixed(1)} ($count)',
-                            Colors.amber[700]!,
-                          );
-                        },
-                      ),
-                      _buildEnhancedChip(Icons.favorite, '${recipe.likes}', Colors.red[400]!),
-                    ],
-                  ],
-                ),
-                const SizedBox(height: 16),
-                // Interactive rating and favorites section
-                if (!recipe.isStandard) ...[
-                  Row(
-                    children: [
-                      // Rating section
-                      Expanded(
-                        child: _buildRatingSection(recipe),
-                      ),
-                      const SizedBox(width: 16),
-                      // Favorites button
-                      _buildFavoritesButton(recipe),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                ],
-                // Action buttons
-                LayoutBuilder(
-                  builder: (context, constraints) {
-                    final isCompact = constraints.maxWidth < 400;
-                    if (isCompact) {
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Updated: ${_formatDate(recipe.updatedAt)}',
-                            style: const TextStyle(fontSize: 12, color: NatureColors.mediumGray),
-                          ),
-                          const SizedBox(height: 12),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: ElevatedButton.icon(
-                                  onPressed: () {
-                                    Navigator.of(context).pushNamed(
-                                      Routes.recipeDetail,
-                                      arguments: {'id': recipe.id},
-                                    );
-                                  },
-                                  icon: const Icon(Icons.visibility, size: 18),
-                                  label: const Text('View Recipe'),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: NatureColors.primaryGreen,
-                                    foregroundColor: Colors.white,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                  ),
-                                ),
                               ),
+                              const SizedBox(height: 6),
+                              // Enhanced Author information
+                              StreamBuilder<AppUser?>(
+                                stream: usersRepo.watchUser(recipe.ownerUid),
+                                builder: (context, userSnap) {
+                                  final author = userSnap.data;
+                                  final hasName = author != null && author.name.trim().isNotEmpty;
+                                  final ownerUid = recipe.ownerUid;
+                                  if (hasName) {
+                                    _authorNameCache[ownerUid] = author.name;
+                                  }
+                                  final cachedName = _authorNameCache[ownerUid];
+                                  final nameToShow = hasName ? author.name : (cachedName ?? '');
+                                  if (nameToShow.trim().isEmpty) return const SizedBox.shrink();
+                                  return Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                    decoration: BoxDecoration(
+                                      color: NatureColors.lightGreen.withValues(alpha: 0.1),
+                                      borderRadius: BorderRadius.circular(20),
+                                      border: Border.all(
+                                        color: NatureColors.lightGreen.withValues(alpha: 0.2),
+                                        width: 1,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.all(4),
+                                          decoration: BoxDecoration(
+                                            color: NatureColors.primaryGreen,
+                                            borderRadius: BorderRadius.circular(10),
+                                          ),
+                                          child: const Icon(
+                                            Icons.person,
+                                            size: 12,
+                                            color: NatureColors.pureWhite,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          'by $nameToShow',
+                                          style: const TextStyle(
+                                            fontSize: 13,
+                                            color: NatureColors.darkGray,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                },
+                              ),
+                              if (recipe.description.isNotEmpty) ...[
+                                const SizedBox(height: 8),
+                                Text(
+                                  recipe.description,
+                                  style: const TextStyle(fontSize: 14, color: NatureColors.darkGray),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
                             ],
-                          ),
-                        ],
-                      );
-                    }
-                    return Row(
-                      children: [
-                        Text(
-                          'Updated: ${_formatDate(recipe.updatedAt)}',
-                          style: const TextStyle(fontSize: 12, color: NatureColors.mediumGray),
-                        ),
-                        const Spacer(),
-                        ElevatedButton.icon(
-                          onPressed: () {
-                            Navigator.of(context).pushNamed(
-                              Routes.recipeDetail,
-                              arguments: {'id': recipe.id},
-                            );
-                          },
-                          icon: const Icon(Icons.visibility, size: 18),
-                          label: const Text('View Recipe'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: NatureColors.primaryGreen,
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
                           ),
                         ),
                       ],
-                    );
-                  },
+                    ),
+                    const SizedBox(height: 16),
+                    // Enhanced info chips
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 8,
+                      children: [
+                        _buildEnhancedChip(Icons.local_dining, recipe.method.name.toUpperCase(), NatureColors.primaryGreen),
+                        _buildEnhancedChip(Icons.eco, recipe.cropTarget, NatureColors.lightGreen),
+                        if (!recipe.isStandard) ...[
+                          StreamBuilder<List<Map<String, dynamic>>>(
+                            stream: recipesRepo.watchRecipeRatingsRaw(recipe.id),
+                            builder: (context, snapshot) {
+                              double avg = recipe.avgRating;
+                              int count = recipe.totalRatings;
+                              if (snapshot.hasData) {
+                                final ratings = snapshot.data!;
+                                if (ratings.isNotEmpty) {
+                                  final total = ratings
+                                      .map((m) => (m['rating'] as num?)?.toDouble() ?? 0.0)
+                                      .fold<double>(0.0, (a, b) => a + b);
+                                  count = ratings.length;
+                                  avg = total / count;
+                                }
+                              }
+                              return _buildEnhancedChip(
+                                Icons.star,
+                                '${avg.toStringAsFixed(1)} ($count)',
+                                Colors.amber[700]!,
+                              );
+                            },
+                          ),
+                          _buildEnhancedChip(Icons.favorite, '${recipe.likes}', Colors.red[400]!),
+                        ],
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    // Interactive rating and favorites section
+                    if (!recipe.isStandard) ...[
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          final isTight = constraints.maxWidth < 360;
+                          if (isTight) {
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _buildRatingSection(recipe),
+                                const SizedBox(height: 12),
+                                Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: _buildFavoritesButton(recipe),
+                                ),
+                              ],
+                            );
+                          }
+                          return Row(
+                            children: [
+                              // Rating section
+                              Expanded(
+                                child: _buildRatingSection(recipe),
+                              ),
+                              const SizedBox(width: 16),
+                              // Favorites button
+                              Flexible(
+                                fit: FlexFit.loose,
+                                child: Align(
+                                  alignment: Alignment.centerRight,
+                                  child: _buildFavoritesButton(recipe),
+                                ),
+                              ),
+                            ],
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                    // Action buttons
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        final isCompact = constraints.maxWidth < 400;
+                        if (isCompact) {
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Updated: ${_formatDate(recipe.updatedAt)}',
+                                style: const TextStyle(fontSize: 12, color: NatureColors.mediumGray),
+                              ),
+                              const SizedBox(height: 12),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: ElevatedButton.icon(
+                                      onPressed: () {
+                                        Navigator.of(context).pushNamed(
+                                          Routes.recipeDetail,
+                                          arguments: {'id': recipe.id},
+                                        );
+                                      },
+                                      icon: const Icon(Icons.visibility, size: 18),
+                                      label: const Text('View Recipe'),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: NatureColors.primaryGreen,
+                                        foregroundColor: Colors.white,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          );
+                        }
+                        return Row(
+                          children: [
+                            Text(
+                              'Updated: ${_formatDate(recipe.updatedAt)}',
+                              style: const TextStyle(fontSize: 12, color: NatureColors.mediumGray),
+                            ),
+                            const Spacer(),
+                            ElevatedButton.icon(
+                              onPressed: () {
+                                Navigator.of(context).pushNamed(
+                                  Routes.recipeDetail,
+                                  arguments: {'id': recipe.id},
+                                );
+                              },
+                              icon: const Icon(Icons.visibility, size: 18),
+                              label: const Text('View Recipe'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: NatureColors.primaryGreen,
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
         ),
@@ -724,26 +948,54 @@ class _InteractiveRecipeCard extends StatelessWidget {
     );
   }
 
-
   Widget _buildEnhancedChip(IconData icon, String text, Color color) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       decoration: BoxDecoration(
-        color: color.withAlpha((0.1 * 255).round()),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withAlpha((0.3 * 255).round()), width: 1),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            color.withValues(alpha: 0.1),
+            color.withValues(alpha: 0.05),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: color.withValues(alpha: 0.2),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: color.withValues(alpha: 0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 16, color: color),
-          const SizedBox(width: 6),
+          Container(
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(
+              icon,
+              size: 14,
+              color: NatureColors.pureWhite,
+            ),
+          ),
+          const SizedBox(width: 8),
           Text(
             text,
             style: TextStyle(
               fontSize: 13,
               color: color,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 0.3,
             ),
           ),
         ],

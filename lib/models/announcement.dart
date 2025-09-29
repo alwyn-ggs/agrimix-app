@@ -10,7 +10,7 @@ class Announcement {
   final List<String> cropTargets; // Optional crop targeting
   final bool pushSent; // Track if push notification was sent
 
-  const Announcement({
+  Announcement({
     required this.id,
     required this.title,
     required this.body,

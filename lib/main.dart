@@ -7,6 +7,8 @@ import 'firebase_options.dart';
 import 'app.dart';
 import 'services/notification_service.dart';
 import 'services/messaging_service.dart';
+import 'services/error_handler_service.dart';
+import 'ui/common/widgets/app_error.dart';
 import 'utils/logger.dart';
 
 // Top-level function to handle background messages
@@ -80,27 +82,14 @@ Future<void> main() async {
     
     runApp(const AgriMixAppRoot());
   } catch (e) {
-    AppLogger.error('Firebase initialization error: $e', e);
+    ErrorHandlerService.handleError(e, context: 'Firebase initialization');
     // If Firebase fails to initialize, show error screen
     runApp(MaterialApp(
-      home: Scaffold(
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.error, size: 64, color: Colors.red),
-              const SizedBox(height: 16),
-              const Text('Failed to initialize Firebase'),
-              const SizedBox(height: 8),
-              Text('Error: $e'),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () => main(),
-                child: const Text('Retry'),
-              ),
-            ],
-          ),
-        ),
+      home: AppErrorPage(
+        title: 'Initialization Error',
+        message: ErrorHandlerService.getUserFriendlyMessage(e, null),
+        onRetry: () => main(),
+        icon: Icons.error_outline,
       ),
     ));
   }
