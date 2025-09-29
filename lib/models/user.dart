@@ -6,6 +6,7 @@ class AppUser {
   final String email;
   final String role; // 'farmer' or 'admin'
   final String? membershipId;
+  final String? photoUrl;
   final bool approved;
   final DateTime createdAt;
   final List<String> fcmTokens;
@@ -16,6 +17,7 @@ class AppUser {
     required this.email,
     required this.role,
     this.membershipId,
+    this.photoUrl,
     required this.approved,
     required this.createdAt,
     this.fcmTokens = const [],
@@ -30,6 +32,7 @@ class AppUser {
         email: map['email'] ?? '',
         role: map['role'] ?? 'farmer',
         membershipId: map['membershipId'],
+        photoUrl: map['photoUrl'],
         approved: _parseBool(map['approved']),
         createdAt: map['createdAt'] is Timestamp
             ? (map['createdAt'] as Timestamp).toDate()
@@ -49,6 +52,7 @@ class AppUser {
         'email': email,
         'role': role,
         'membershipId': membershipId,
+        'photoUrl': photoUrl,
         'approved': approved,
         'createdAt': Timestamp.fromDate(createdAt),
         'fcmTokens': fcmTokens,
@@ -59,6 +63,7 @@ class AppUser {
     String? email,
     String? role,
     String? membershipId,
+    String? photoUrl,
     bool? approved,
     DateTime? createdAt,
     List<String>? fcmTokens,
@@ -68,6 +73,7 @@ class AppUser {
         email: email ?? this.email,
         role: role ?? this.role,
         membershipId: membershipId ?? this.membershipId,
+        photoUrl: photoUrl ?? this.photoUrl,
         approved: approved ?? this.approved,
         createdAt: createdAt ?? this.createdAt,
         fcmTokens: fcmTokens ?? this.fcmTokens,
@@ -83,13 +89,14 @@ class AppUser {
           email == other.email &&
           role == other.role &&
           membershipId == other.membershipId &&
+          photoUrl == other.photoUrl &&
           approved == other.approved &&
           createdAt == other.createdAt &&
           _listEquals(fcmTokens, other.fcmTokens);
 
   @override
   int get hashCode => Object.hash(
-      uid, name, email, role, membershipId, approved, createdAt, Object.hashAll(fcmTokens));
+      uid, name, email, role, membershipId, photoUrl, approved, createdAt, Object.hashAll(fcmTokens));
 
   static bool _listEquals(List a, List b) {
     if (identical(a, b)) return true;

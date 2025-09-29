@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
 import '../../../providers/auth_provider.dart';
 import '../../../services/messaging_service.dart';
+import '../../../services/storage_service.dart';
 import '../../../theme/theme.dart';
 
 class ProfileTab extends StatefulWidget {
@@ -17,7 +20,10 @@ class _ProfileTabState extends State<ProfileTab> {
   late TextEditingController _emailController;
   late TextEditingController _membershipController;
   bool _saving = false;
+  bool _uploadingPhoto = false;
+  bool _removingPhoto = false;
   String? _status;
+  File? _localPhoto;
 
   @override
   void initState() {
@@ -56,12 +62,88 @@ class _ProfileTabState extends State<ProfileTab> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-          const Text(
-            'My Profile',
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-              color: NatureColors.darkGray,
+          // Header card with avatar and basic info
+          Card(
+            color: Colors.white,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      CircleAvatar(
+                        radius: 36,
+                        backgroundColor: NatureColors.primaryGreen.withAlpha((0.15 * 255).round()),
+                        backgroundImage: _localPhoto != null
+                            ? FileImage(_localPhoto!)
+                            : (user.photoUrl != null && user.photoUrl!.isNotEmpty)
+                                ? NetworkImage(user.photoUrl!) as ImageProvider
+                                : null,
+                        child: (user.photoUrl == null || user.photoUrl!.isEmpty) && _localPhoto == null
+                            ? const Icon(Icons.person, size: 36, color: Colors.white)
+                            : null,
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              user.name.isEmpty ? 'Unnamed User' : user.name,
+                              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.black87),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              user.email,
+                              style: const TextStyle(fontSize: 14, color: Colors.black54),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      OutlinedButton.icon(
+                        onPressed: _uploadingPhoto ? null : () => _pickAndUploadPhoto(context),
+                        icon: _uploadingPhoto
+                            ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                            : const Icon(Icons.camera_alt_rounded, size: 18),
+                        label: const Text('Change photo'),
+                        style: OutlinedButton.styleFrom(
+                          visualDensity: VisualDensity.compact,
+                          foregroundColor: NatureColors.primaryGreen,
+                          side: BorderSide(color: NatureColors.primaryGreen.withAlpha((0.4 * 255).round())),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      OutlinedButton.icon(
+                        onPressed: _removingPhoto || ((user.photoUrl == null || user.photoUrl!.isEmpty) && _localPhoto == null)
+                            ? null
+                            : () => _removePhoto(context),
+                        icon: _removingPhoto
+                            ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                            : const Icon(Icons.delete_outline, size: 18),
+                        label: const Text('Remove'),
+                        style: OutlinedButton.styleFrom(
+                          visualDensity: VisualDensity.compact,
+                          foregroundColor: Colors.red,
+                          side: BorderSide(color: Colors.red.withAlpha((0.4 * 255).round())),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
           const SizedBox(height: 16),
@@ -74,6 +156,14 @@ class _ProfileTabState extends State<ProfileTab> {
                 key: _formKey,
                 child: Column(
                   children: [
+                    const Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        'Account Details',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.black87),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
                     TextFormField(
                       controller: _nameController,
                       style: const TextStyle(color: Colors.black),
@@ -191,6 +281,14 @@ class _ProfileTabState extends State<ProfileTab> {
               padding: const EdgeInsets.all(16),
               child: Column(
                 children: [
+                  const Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      'Notifications & Device',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.black87),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
                   // First row - buttons that can wrap
                   LayoutBuilder(
                     builder: (context, constraints) {
@@ -313,6 +411,75 @@ class _ProfileTabState extends State<ProfileTab> {
     } catch (e) {
       if (mounted) {
         setState(() { _status = 'Permission request failed: $e'; });
+      }
+    }
+  }
+
+  Future<void> _pickAndUploadPhoto(BuildContext context) async {
+    final auth = context.read<AuthProvider>();
+    final picker = ImagePicker();
+    try {
+      final xFile = await picker.pickImage(source: ImageSource.gallery, maxWidth: 1024, imageQuality: 85);
+      if (xFile == null) return;
+      final file = File(xFile.path);
+      if (mounted) {
+        setState(() { _localPhoto = file; _uploadingPhoto = true; _status = null; });
+      }
+
+      final storage = context.read<StorageService>();
+      final uid = auth.currentUser?.uid;
+      if (uid == null) throw Exception('No user');
+      final url = await storage.uploadProfileImage(imageFile: file, userId: uid);
+
+      final u = auth.currentAppUser!;
+      final updated = u.copyWith(photoUrl: url);
+      await context.read<AuthProvider>().usersRepo.updateUser(updated);
+      await auth.refreshCurrentUser();
+      if (mounted) {
+        setState(() { _status = 'Profile photo updated.'; });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() { _status = 'Photo upload failed: $e'; });
+      }
+    } finally {
+      if (mounted) {
+        setState(() { _uploadingPhoto = false; });
+      }
+    }
+  }
+
+  Future<void> _removePhoto(BuildContext context) async {
+    final auth = context.read<AuthProvider>();
+    try {
+      if (mounted) {
+        setState(() { _removingPhoto = true; _status = null; });
+      }
+
+      final storage = context.read<StorageService>();
+      final currentUrl = auth.currentAppUser?.photoUrl;
+      if (currentUrl != null && currentUrl.isNotEmpty) {
+        try {
+          await storage.deleteFileByUrl(currentUrl);
+        } catch (_) {
+          // Non-fatal: if deletion fails, still clear reference
+        }
+      }
+
+      final u = auth.currentAppUser!;
+      final updated = u.copyWith(photoUrl: null);
+      await context.read<AuthProvider>().usersRepo.updateUser(updated);
+      await auth.refreshCurrentUser();
+      if (mounted) {
+        setState(() { _localPhoto = null; _status = 'Profile photo removed.'; });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() { _status = 'Failed to remove photo: $e'; });
+      }
+    } finally {
+      if (mounted) {
+        setState(() { _removingPhoto = false; });
       }
     }
   }
