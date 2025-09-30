@@ -12,7 +12,6 @@ import '../../providers/auth_provider.dart';
 import '../../theme/theme.dart';
 import '../../services/fermentation_guide_service.dart';
 import '../../services/notification_service.dart';
-import 'fermentation_guide_screen.dart';
 import 'recipe_analytics_widget.dart';
 
 class FormulateRecipeFlow extends StatefulWidget {
@@ -30,6 +29,7 @@ class _FormulateRecipeFlowState extends State<FormulateRecipeFlow> {
   final TextEditingController _newIngCtrl = TextEditingController();
   final TextEditingController _nameCtrl = TextEditingController();
   bool _saving = false;
+  bool _stepByStepCompleted = false; // Track if step-by-step process is completed
   final Map<String, Ingredient> _localAdded = <String, Ingredient>{};
   // Shared cache for ingredient image URLs across steps
   final Map<String, String?> _imageUrlCache = <String, String?>{};
@@ -184,7 +184,6 @@ class _FormulateRecipeFlowState extends State<FormulateRecipeFlow> {
                       .toList(),
                 ),
                 const SizedBox(height: 16),
-                const _SafetyNote(),
               ],
             ),
           ),
@@ -234,14 +233,6 @@ class _FormulateRecipeFlowState extends State<FormulateRecipeFlow> {
         );
       case 2:
         final selectedIngredients = _resolveSelectedIngredients(context);
-        final recipeIngredients = selectedIngredients.map((ingredient) => 
-          RecipeIngredient(
-            ingredientId: ingredient.id,
-            name: ingredient.name,
-            amount: 1.0, // Default amount for analytics
-            unit: 'kg',
-          )
-        ).toList();
         
         return Padding(
           key: const ValueKey('step2'),
@@ -249,22 +240,17 @@ class _FormulateRecipeFlowState extends State<FormulateRecipeFlow> {
           child: SingleChildScrollView(
             child: Column(
               children: [
-                _RatiosAndSteps(
-                  method: _method,
-                  selected: selectedIngredients,
-                  batchSize: _selectedBatchSize,
-                ),
-                const SizedBox(height: 16),
                 
-                // Final Analytics Review
-                if (selectedIngredients.isNotEmpty)
-                  RecipeAnalyticsWidget(
-                    ingredients: recipeIngredients,
+                // Step-by-Step Process Display
+                _StepByStepProcessWidget(
+                  method: _method,
+                  selectedIngredients: selectedIngredients,
+                  batchSize: _selectedBatchSize,
                     cropTarget: _selectedCrop ?? 'General',
-                    onIngredientsUpdated: (updatedIngredients) {
-                      // Update the selected ingredients based on analytics suggestions
-                      final newSelectedIds = updatedIngredients.map((ri) => ri.ingredientId).toSet();
-                      setState(() => _selectedIds = newSelectedIds);
+                  onComplete: () {
+                    setState(() {
+                      _stepByStepCompleted = true;
+                    });
                     },
                   ),
                 
@@ -284,50 +270,286 @@ class _FormulateRecipeFlowState extends State<FormulateRecipeFlow> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Recipe Summary', style: TextStyle(fontWeight: FontWeight.w600, color: Colors.black)),
-                      const SizedBox(height: 8),
-                      Text('Method: ${_method.name}', style: const TextStyle(color: Colors.black87)),
-                    Text('Batch Size: ${_selectedBatchSize}kg', style: const TextStyle(color: Colors.black87)),
-                    if ((_selectedCrop ?? '').isNotEmpty)
-                      Text('Crop target: ${_selectedCrop!}', style: const TextStyle(color: Colors.black87)),
-                      const SizedBox(height: 8),
-                    const Text('Selected ingredients:', style: TextStyle(color: Colors.black)),
-                    const SizedBox(height: 8),
+                      // Header Section
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: NatureColors.lightGreen.withAlpha((0.1 * 255).round()),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: NatureColors.lightGreen.withAlpha((0.3 * 255).round()),
+                            width: 2,
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: NatureColors.lightGreen,
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Icon(
+                                    _method == RecipeMethod.ffj ? Icons.local_fire_department : Icons.eco,
+                                    color: Colors.white,
+                                    size: 28,
+                                  ),
+                                ),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Recipe Summary',
+                                        style: const TextStyle(
+                                          fontSize: 24,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.black87,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        'Review your ${_method.name} recipe before starting fermentation',
+                                        style: const TextStyle(
+                                          fontSize: 14,
+                                          color: Colors.black54,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      
+                      const SizedBox(height: 24),
+                      
+                      // Recipe Details Card
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: Colors.grey.withAlpha((0.2 * 255).round()),
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.grey.withAlpha((0.1 * 255).round()),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Recipe Details',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black87,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            
+                            // Method
+                            _buildSummaryItem(
+                              icon: Icons.science,
+                              label: 'Method',
+                              value: _method.name,
+                              color: NatureColors.lightGreen,
+                            ),
+                            
+                            const SizedBox(height: 12),
+                            
+                            // Batch Size
+                            _buildSummaryItem(
+                              icon: Icons.scale,
+                              label: 'Batch Size',
+                              value: '${_selectedBatchSize}kg',
+                              color: Colors.blue,
+                            ),
+                            
+                            if ((_selectedCrop ?? '').isNotEmpty) ...[
+                              const SizedBox(height: 12),
+                              _buildSummaryItem(
+                                icon: Icons.eco,
+                                label: 'Crop Target',
+                                value: _selectedCrop!,
+                                color: Colors.green,
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                      
+                      const SizedBox(height: 24),
+                      
+                      // Ingredients Section
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: Colors.grey.withAlpha((0.2 * 255).round()),
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.grey.withAlpha((0.1 * 255).round()),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.inventory_2,
+                                  color: NatureColors.lightGreen,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 8),
+                                const Text(
+                                  'Selected Ingredients',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black87,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
                     _SelectedIngredientGrid(
                       ingredients: _resolveSelectedIngredients(context),
                       cache: _imageUrlCache,
                     ),
-                      const SizedBox(height: 16),
-                      // Info box about automatic fermentation
+                          ],
+                        ),
+                      ),
+                      
+                      const SizedBox(height: 24),
+                      
+                      // Action Info Card
                       Container(
-                        padding: const EdgeInsets.all(12),
+                        padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
-                          color: Colors.blue.withAlpha((0.1 * 255).round()),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.blue.withAlpha((0.3 * 255).round())),
+                          color: NatureColors.lightGreen.withAlpha((0.05 * 255).round()),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: NatureColors.lightGreen.withAlpha((0.2 * 255).round()),
+                          ),
                         ),
                         child: Row(
                           children: [
-                            Icon(Icons.info_outline, color: Colors.blue.shade700, size: 20),
-                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: NatureColors.lightGreen,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Icon(
+                                Icons.info_outline,
+                                color: Colors.white,
+                                size: 24,
+                              ),
+                            ),
+                            const SizedBox(width: 16),
                             Expanded(
-                              child: Text(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Ready to Start?',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.black87,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  const Text(
                                 'Click "Start Fermentation" to automatically create a fermentation log and begin tracking your fermentation process.',
                                 style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.blue.shade700,
+                                      fontSize: 14,
+                                      color: Colors.black54,
+                                      height: 1.4,
                                 ),
+                                  ),
+                                ],
                               ),
                             ),
                           ],
                         ),
                       ),
+                      
                       const SizedBox(height: 100), // padding for bottom bar
                     ],
                   ),
                 ),
         );
     }
+  }
+
+  Widget _buildSummaryItem({
+    required IconData icon,
+    required String label,
+    required String value,
+    required Color color,
+  }) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: color.withAlpha((0.1 * 255).round()),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(
+            icon,
+            color: color,
+            size: 20,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: Colors.black54,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 16,
+                  color: Colors.black87,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
   }
 
   Widget _buildBottomBar(BuildContext context) {
@@ -360,6 +582,11 @@ class _FormulateRecipeFlowState extends State<FormulateRecipeFlow> {
           ],
         ),
       );
+    }
+
+    // Step 2 (step-by-step process): Hide bottom navigation until step-by-step is completed
+    if (_step == 2 && !_stepByStepCompleted) {
+      return const SizedBox.shrink(); // Hide the bottom navigation completely
     }
 
     return Container(
@@ -760,219 +987,6 @@ class _FormulateRecipeFlowState extends State<FormulateRecipeFlow> {
   }
 }
 
-class _RatiosAndSteps extends StatelessWidget {
-  final RecipeMethod method;
-  final List<Ingredient> selected;
-  final double batchSize;
-  const _RatiosAndSteps({required this.method, required this.selected, required this.batchSize});
-
-  @override
-  Widget build(BuildContext context) {
-    final totalWeight = batchSize; // Use selected batch size
-    // Both FFJ and FPJ use 1:1 ratio (batch size = material weight, sugar = equal weight)
-    final double materialWeight = totalWeight; // Batch size represents material weight
-    final double sugarWeight = totalWeight; // Equal weight to material
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Automatic Recipe Generation',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Colors.black,
-          ),
-        ),
-        const SizedBox(height: 12),
-        
-        // Recipe overview
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: NatureColors.lightGreen.withAlpha((0.1 * 255).round()),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: NatureColors.lightGreen.withAlpha((0.3 * 255).round())),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '${method.name} Recipe Overview',
-                style: const TextStyle(
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black87,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                method == RecipeMethod.fpj 
-                    ? 'Plant Material: ${totalWeight.toStringAsFixed(1)} kg (Total: ${(totalWeight * 2).toStringAsFixed(1)} kg)'
-                    : 'Fruit Material: ${totalWeight.toStringAsFixed(1)} kg (Total: ${(totalWeight * 2).toStringAsFixed(1)} kg)',
-                style: const TextStyle(color: Colors.black87),
-              ),
-              Text(
-                '${method == RecipeMethod.fpj ? 'Plant' : 'Fruit'} Materials: ${materialWeight.toStringAsFixed(1)} kg (50%)',
-                style: const TextStyle(color: Colors.black87),
-              ),
-              Text(
-                'Brown Sugar: ${sugarWeight.toStringAsFixed(1)} kg (50%)',
-                style: const TextStyle(color: Colors.black87),
-              ),
-            ],
-          ),
-        ),
-        
-        const SizedBox(height: 16),
-        
-        // Selected ingredients preview
-        if (selected.isNotEmpty) ...[
-          Text(
-            'Selected Ingredients (${selected.length})',
-            style: const TextStyle(
-              fontWeight: FontWeight.w600,
-              color: Colors.black87,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              for (final ingredient in selected)
-                Chip(
-                  label: Text(
-                    ingredient.name,
-                    style: const TextStyle(fontSize: 12),
-                  ),
-                  backgroundColor: NatureColors.lightGreen.withAlpha((0.2 * 255).round()),
-                ),
-            ],
-          ),
-          const SizedBox(height: 16),
-        ],
-        
-        // Method-specific information
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: method == RecipeMethod.ffj 
-                ? Colors.orange.withAlpha((0.1 * 255).round())
-                : Colors.green.withAlpha((0.1 * 255).round()),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Icon(
-                    method == RecipeMethod.ffj ? Icons.local_fire_department : Icons.eco,
-                    color: method == RecipeMethod.ffj ? Colors.orange : Colors.green,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    method == RecipeMethod.ffj ? 'FFJ (Fermented Fruit Juice)' : 'FPJ (Fermented Plant Juice)',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black87,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Text(
-                method == RecipeMethod.ffj
-                    ? '• Uses ripe fruits rich in natural sugars\n'
-                      '• Provides energy and nutrients to plants\n'
-                      '• Best for fruiting and flowering plants\n'
-                      '• Fermentation time: 7-10 days'
-                    : '• Uses young plant materials rich in growth hormones\n'
-                      '• Stimulates plant growth and development\n'
-                      '• Best for vegetative growth and seedlings\n'
-                      '• Fermentation time: 7 days',
-                style: const TextStyle(color: Colors.black87),
-              ),
-            ],
-          ),
-        ),
-        
-        const SizedBox(height: 16),
-        
-        // Fermentation tips
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Colors.blue.withAlpha((0.1 * 255).round()),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: const Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Icon(Icons.lightbulb_outline, color: Colors.blue),
-                  SizedBox(width: 8),
-                  Text(
-                    'Fermentation Tips',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black87,
-                    ),
-                  ),
-                ],
-              ),
-              SizedBox(height: 8),
-              Text(
-                '• Temperature: 20-25°C (room temperature)\n'
-                '• Location: Cool, dark place away from direct sunlight\n'
-                '• Stirring: 2-3 times daily for first 3 days\n'
-                '• Cover: Use breathable material (paper/cloth), not airtight\n'
-                '• Storage: Can be stored in refrigerator for up to 6 months',
-                style: TextStyle(color: Colors.black87),
-              ),
-            ],
-          ),
-        ),
-        
-        const SizedBox(height: 16),
-        
-        // Step-by-step guide button
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton.icon(
-            onPressed: () => _openStepByStepGuide(context, method, selected),
-            icon: const Icon(Icons.timeline),
-            label: const Text('View Step-by-Step Guide'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: method == RecipeMethod.ffj 
-                  ? Colors.orange 
-                  : Colors.green,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 12),
-            ),
-          ),
-        ),
-        
-        const SizedBox(height: 16),
-        const _SafetyNote(),
-      ],
-    );
-  }
-  
-  void _openStepByStepGuide(BuildContext context, RecipeMethod method, List<Ingredient> selected) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => FermentationGuideScreen(
-          method: method,
-          ingredients: selected,
-          cropTarget: 'Selected crops',
-          totalWeight: batchSize,
-        ),
-      ),
-    );
-  }
-}
 
 class _IngredientSelectionWidget extends StatefulWidget {
   final List<Ingredient> allIngredients;
@@ -1344,7 +1358,7 @@ class _IngredientSelectionWidgetState extends State<_IngredientSelectionWidget> 
               border: Border.all(color: NatureColors.lightGreen.withAlpha((0.4 * 255).round())),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: Colors.black.withAlpha((0.05 * 255).round()),
                   blurRadius: 6,
                   offset: const Offset(0, 2),
                 ),
@@ -1733,24 +1747,343 @@ class _SelectedIngredientGrid extends StatelessWidget {
   }
 }
 
-class _SafetyNote extends StatelessWidget {
-  const _SafetyNote();
+class _StepByStepProcessWidget extends StatefulWidget {
+  final RecipeMethod method;
+  final List<Ingredient> selectedIngredients;
+  final double batchSize;
+  final String cropTarget;
+  final VoidCallback? onComplete;
+
+  const _StepByStepProcessWidget({
+    required this.method,
+    required this.selectedIngredients,
+    required this.batchSize,
+    required this.cropTarget,
+    this.onComplete,
+  });
+
+  @override
+  State<_StepByStepProcessWidget> createState() => _StepByStepProcessWidgetState();
+}
+
+class _StepByStepProcessWidgetState extends State<_StepByStepProcessWidget> {
+  int _currentStepIndex = 0;
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    // Generate the fermentation guide
+    final guide = FermentationGuideService.generateGuide(
+      method: widget.method,
+      ingredients: widget.selectedIngredients,
+      cropTarget: widget.cropTarget,
+      totalWeight: widget.batchSize,
+    );
+
+    final currentStep = guide.steps[_currentStepIndex];
+    final isLastStep = _currentStepIndex == guide.steps.length - 1;
+
+    return SingleChildScrollView(
+      controller: _scrollController,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+        // Header - Farmer-friendly
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: NatureColors.lightGreen.withAlpha((0.1 * 255).round()),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: NatureColors.lightGreen.withAlpha((0.3 * 255).round()),
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: NatureColors.lightGreen,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  widget.method == RecipeMethod.ffj ? Icons.local_fire_department : Icons.eco,
+                  color: Colors.white,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Step-by-Step Process for ${widget.method.name}',
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Step ${_currentStepIndex + 1} of ${guide.steps.length}',
+                      style: const TextStyle(
+                        color: Colors.black54,
+                        fontSize: 14,
+                        height: 1.3,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        
+        // Progress Indicator
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.grey.withAlpha((0.05 * 255).round()),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: LinearProgressIndicator(
+                  value: (_currentStepIndex + 1) / guide.steps.length,
+                  backgroundColor: Colors.grey.withAlpha((0.2 * 255).round()),
+                  valueColor: const AlwaysStoppedAnimation<Color>(
+                    NatureColors.lightGreen,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                '${_currentStepIndex + 1}/${guide.steps.length}',
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        
+        // Current Step Only
+        Container(
+          key: ValueKey('step_$_currentStepIndex'),
+          child: _buildStepCard(currentStep, _currentStepIndex + 1, guide.steps.length),
+        ),
+        
+        const SizedBox(height: 16),
+        
+        // Navigation Button - Always show at bottom
+        const SizedBox(height: 20),
+        SizedBox(
       width: double.infinity,
+          child: FilledButton(
+            onPressed: () {
+              if (_currentStepIndex < guide.steps.length - 1) {
+                setState(() {
+                  _currentStepIndex++;
+                });
+                // Auto-scroll to top when moving to next step
+                Future.delayed(const Duration(milliseconds: 100), () {
+                  _scrollController.animateTo(
+                    0.0,
+                    duration: const Duration(milliseconds: 600),
+                    curve: Curves.easeInOut,
+                  );
+                });
+              } else {
+                // Last step reached, call onComplete to show main navigation
+                widget.onComplete?.call();
+              }
+            },
+            style: FilledButton.styleFrom(
+              backgroundColor: NatureColors.lightGreen,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+            ),
+            child: Text(
+              isLastStep ? 'Complete' : 'Next',
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStepCard(GuideStep step, int stepNumber, int totalSteps) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 20),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: NatureColors.lightGreen.withAlpha((0.3 * 255).round()),
+          width: 2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withAlpha((0.1 * 255).round()),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Step Number and Phase - Farmer-friendly header
+          Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: const BoxDecoration(
+                  color: NatureColors.lightGreen,
+                  shape: BoxShape.circle,
+                ),
+                child: Center(
+                  child: Text(
+                    '$stepNumber',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      step.phase,
+                      style: const TextStyle(
+                        color: NatureColors.lightGreen,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      step.title,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          
+          const SizedBox(height: 16),
+          
+          // Description
+          Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: NatureColors.lightGreen.withAlpha((0.15 * 255).round()),
+              color: Colors.grey.withAlpha((0.05 * 255).round()),
         borderRadius: BorderRadius.circular(8),
       ),
-      child: const Text(
-        'Safety: Use clean tools, avoid contaminated materials, and keep mixtures away from direct sunlight. If unsure, consult local guidelines.',
-        style: TextStyle(color: Colors.black87),
+            child: Text(
+              step.description,
+              style: const TextStyle(
+                fontSize: 15,
+                color: Colors.black87,
+                height: 1.4,
+              ),
+            ),
+          ),
+          
+          const SizedBox(height: 16),
+          
+          // Instructions - Clear and simple for farmers
+          const Text(
+            'Instructions:',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 12),
+          ...step.details.asMap().entries.map((entry) {
+            final index = entry.key;
+            final detail = entry.value;
+            return Container(
+              margin: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.grey.withAlpha((0.2 * 255).round())),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 24,
+                    height: 24,
+                    decoration: const BoxDecoration(
+                      color: NatureColors.lightGreen,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Center(
+                      child: Text(
+                        '${index + 1}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      detail,
+                      style: const TextStyle(
+                        color: Colors.black87,
+                        fontSize: 14,
+                        height: 1.4,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }),
+          
+        ],
       ),
     );
   }
 }
+
 
 
