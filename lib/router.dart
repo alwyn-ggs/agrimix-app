@@ -16,6 +16,9 @@ import 'ui/community/post_detail_page.dart';
 import 'ui/community/new_post_page.dart';
 import 'ui/fermentation/new_log_page.dart';
 import 'ui/fermentation/log_detail_page.dart';
+import 'ui/common/legal/terms_page.dart';
+import 'ui/common/legal/privacy_page.dart';
+import 'ui/common/help/help_page.dart';
 import 'providers/auth_provider.dart';
 import 'models/post.dart';
 import 'theme/theme.dart';
@@ -37,6 +40,9 @@ class Routes {
   static const newLog = '/new-log';
   static const logDetail = '/log-detail';
   static const ingredientManagement = '/ingredient-management';
+  static const terms = '/terms';
+  static const privacy = '/privacy';
+  static const help = '/help';
 }
 
 class AppRouter {
@@ -133,6 +139,12 @@ class AppRouter {
           requiredRole: 'admin',
           settings: settings,
         );
+      case Routes.terms:
+        return MaterialPageRoute(builder: (_) => const TermsPage());
+      case Routes.privacy:
+        return MaterialPageRoute(builder: (_) => const PrivacyPage());
+      case Routes.help:
+        return MaterialPageRoute(builder: (_) => const HelpPage());
       default:
         return MaterialPageRoute(
           builder: (_) => const Scaffold(

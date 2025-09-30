@@ -18,6 +18,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _password = TextEditingController();
   final _confirmPassword = TextEditingController();
   final _membershipId = TextEditingController();
+  bool _acceptedTerms = false;
 
   @override
   Widget build(BuildContext context) {
@@ -332,9 +333,47 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           ),
                           const SizedBox(height: 24),
                           
+                          // Accept Terms & Privacy
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Checkbox(
+                                value: _acceptedTerms,
+                                onChanged: (v) => setState(() => _acceptedTerms = v ?? false),
+                                side: const BorderSide(color: Colors.black, width: 2),
+                                fillColor: const WidgetStatePropertyAll(Colors.transparent),
+                                checkColor: Colors.black,
+                                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              ),
+                              Expanded(
+                                child: Wrap(
+                                  children: [
+                                    const Text('I agree to the ', style: TextStyle(fontSize: 12, color: NatureColors.darkGray)),
+                                    InkWell(
+                                      onTap: () => Navigator.pushNamed(context, '/terms'),
+                                      child: const Padding(
+                                        padding: EdgeInsets.symmetric(horizontal: 2),
+                                        child: Text('Terms of Service', style: TextStyle(fontSize: 12, color: NatureColors.primaryGreen, decoration: TextDecoration.underline)),
+                                      ),
+                                    ),
+                                    const Text(' and ', style: TextStyle(fontSize: 12, color: NatureColors.darkGray)),
+                                    InkWell(
+                                      onTap: () => Navigator.pushNamed(context, '/privacy'),
+                                      child: const Padding(
+                                        padding: EdgeInsets.symmetric(horizontal: 2),
+                                        child: Text('Privacy Policy', style: TextStyle(fontSize: 12, color: NatureColors.primaryGreen, decoration: TextDecoration.underline)),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+
                           // Create Account Button
                           FilledButton(
-                            onPressed: auth.loading
+                            onPressed: (auth.loading || !_acceptedTerms)
                                 ? null
                                 : () async {
                                     if (!_formKey.currentState!.validate()) return;
@@ -385,6 +424,32 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               foregroundColor: NatureColors.primaryGreen,
                             ),
                             child: const Text('Already have an account? Sign In', style: TextStyle(fontSize: 12)),
+                          ),
+
+                          const SizedBox(height: 8),
+                          // Agreement
+                          Wrap(
+                            alignment: WrapAlignment.center,
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            children: [
+                              const Text('By registering, you agree to the ', style: TextStyle(fontSize: 12, color: NatureColors.darkGray)),
+                              InkWell(
+                                onTap: () => Navigator.pushNamed(context, '/terms'),
+                                child: const Padding(
+                                  padding: EdgeInsets.symmetric(horizontal: 2),
+                                  child: Text('Terms of Service', style: TextStyle(fontSize: 12, color: NatureColors.primaryGreen, decoration: TextDecoration.underline)),
+                                ),
+                              ),
+                              const Text(' and ', style: TextStyle(fontSize: 12, color: NatureColors.darkGray)),
+                              InkWell(
+                                onTap: () => Navigator.pushNamed(context, '/privacy'),
+                                child: const Padding(
+                                  padding: EdgeInsets.symmetric(horizontal: 2),
+                                  child: Text('Privacy Policy', style: TextStyle(fontSize: 12, color: NatureColors.primaryGreen, decoration: TextDecoration.underline)),
+                                ),
+                              ),
+                              const Text('.', style: TextStyle(fontSize: 12, color: NatureColors.darkGray)),
+                            ],
                           ),
                           
                           // Error Message

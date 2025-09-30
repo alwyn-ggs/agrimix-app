@@ -1,9 +1,8 @@
-import 'package:flutter/material.dart' hide TimeOfDay;
-import 'package:flutter/material.dart' as material show TimeOfDay;
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
-import '../../services/notification_preferences_service.dart';
 import '../../models/notification_preferences.dart';
+import '../../services/notification_preferences_service.dart' show NotificationPreferencesService;
 import '../../theme/theme.dart';
 
 class NotificationPreferencesPage extends StatefulWidget {
@@ -235,7 +234,7 @@ class _NotificationPreferencesPageState extends State<NotificationPreferencesPag
                   });
                 },
               );
-            }).toList(),
+            }),
           ],
         ),
       ),
@@ -267,7 +266,7 @@ class _NotificationPreferencesPageState extends State<NotificationPreferencesPag
                   });
                 },
               );
-            }).toList(),
+            }),
           ],
         ),
       ),
@@ -587,8 +586,8 @@ class _NotificationPreferencesPageState extends State<NotificationPreferencesPag
         final picked = await showTimePicker(
           context: context,
           initialTime: time != null 
-              ? material.TimeOfDay.fromDateTime(time)
-              : const material.TimeOfDay(hour: 22, minute: 0),
+              ? TimeOfDay.fromDateTime(time)
+              : const TimeOfDay(hour: 22, minute: 0),
         );
         if (picked != null) {
           final now = DateTime.now();
@@ -710,7 +709,7 @@ class _NotificationPreferencesPageState extends State<NotificationPreferencesPag
       trailing: const Icon(Icons.access_time),
       onTap: () async {
         final timeParts = _preferences!.digestTime.split(':');
-        final initialTime = material.TimeOfDay(
+        final initialTime = TimeOfDay(
           hour: int.parse(timeParts[0]),
           minute: int.parse(timeParts[1]),
         );

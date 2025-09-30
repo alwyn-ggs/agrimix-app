@@ -370,29 +370,49 @@ class _DashboardState extends State<Dashboard> {
             Text('Settings'),
           ],
         ),
-        content: const Column(
+        content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            ListTile(
+            const ListTile(
               leading: Icon(Icons.notifications_outlined),
               title: Text('Notifications'),
               subtitle: Text('Manage notification preferences'),
             ),
-            ListTile(
+            const ListTile(
               leading: Icon(Icons.palette_outlined),
               title: Text('Theme'),
               subtitle: Text('Change app appearance'),
             ),
-            ListTile(
+            const ListTile(
               leading: Icon(Icons.language_outlined),
               title: Text('Language'),
               subtitle: Text('Select your preferred language'),
             ),
             ListTile(
-              leading: Icon(Icons.help_outline),
-              title: Text('Help & Support'),
-              subtitle: Text('Get help and contact support'),
+              leading: const Icon(Icons.help_outline),
+              title: const Text('Help & Support'),
+              subtitle: const Text('Get help and contact support'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, '/help');
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.article_outlined),
+              title: const Text('Terms of Service'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, '/terms');
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.privacy_tip_outlined),
+              title: const Text('Privacy Policy'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, '/privacy');
+              },
             ),
           ],
         ),

@@ -5,7 +5,6 @@ import '../../../providers/auth_provider.dart';
 import '../../../models/fermentation_log.dart';
 import '../../fermentation/new_log_page.dart';
 import '../../fermentation/log_detail_page.dart';
-import '../../../utils/logger.dart';
 
 class FermentationTab extends StatefulWidget {
   const FermentationTab({super.key});
@@ -387,7 +386,7 @@ class _FermentationTabState extends State<FermentationTab> with TickerProviderSt
           child: Container(
             padding: const EdgeInsets.all(4),
             decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.1),
+              color: Colors.black.withAlpha((0.1 * 255).round()),
               borderRadius: BorderRadius.circular(4),
             ),
             child: const Icon(
@@ -504,7 +503,6 @@ class _FermentationTabState extends State<FermentationTab> with TickerProviderSt
   }
 
   void _editFermentationLog(BuildContext context, FermentationLog log) {
-    // Navigate to the detail page where editing can be done
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -540,24 +538,21 @@ class _FermentationTabState extends State<FermentationTab> with TickerProviderSt
 
   Future<void> _deleteFermentationLog(BuildContext context, FermentationLog log) async {
     try {
-      // Show immediate feedback with SnackBar
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Deleting "${log.title}"...'),
-            backgroundColor: Colors.orange,
-            duration: const Duration(seconds: 2),
-          ),
-        );
-      }
+      // Show loading indicator
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
 
-      AppLogger.info('DEBUG: Starting delete for log ID: ${log.id}');
-      
-      // Delete the fermentation log (optimized - no loading dialog)
+      // Delete the fermentation log
       final provider = Provider.of<FermentationProvider>(context, listen: false);
       await provider.deleteFermentationLog(log.id);
-      
-      AppLogger.info('DEBUG: Delete completed for log ID: ${log.id}');
+
+      // Close loading dialog
+      if (context.mounted) Navigator.pop(context);
 
       // Show success message
       if (context.mounted) {
@@ -565,19 +560,19 @@ class _FermentationTabState extends State<FermentationTab> with TickerProviderSt
           SnackBar(
             content: Text('Fermentation log "${log.title}" deleted successfully'),
             backgroundColor: Colors.green,
-            duration: const Duration(seconds: 2),
           ),
         );
       }
     } catch (e) {
-      AppLogger.error('DEBUG: Delete error: $e');
+      // Close loading dialog
+      if (context.mounted) Navigator.pop(context);
+
       // Show error message
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to delete fermentation log: $e'),
             backgroundColor: Colors.red,
-            duration: const Duration(seconds: 3),
           ),
         );
       }

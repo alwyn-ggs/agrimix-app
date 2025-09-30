@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../utils/logger.dart';
+import '../utils/validation.dart';
 
 enum FermentationStatus { active, done, cancelled }
 enum FermentationMethod { ffj, fpj }
@@ -26,6 +27,36 @@ class FermentationStage {
         'label': label,
         'action': action,
       };
+
+  /// Validate fermentation stage
+  ValidationResult validate() {
+    final results = <ValidationResult>[];
+
+    // Validate day
+    results.add(ValidationUtils.validateNumberRange(day, 'Day', min: 0, max: 365));
+    
+    // Validate label
+    results.add(ValidationUtils.validateRequiredString(label, 'Label'));
+    results.add(ValidationUtils.validateStringLength(label, 'Label', minLength: 1, maxLength: 100));
+    
+    // Validate action
+    results.add(ValidationUtils.validateRequiredString(action, 'Action'));
+    results.add(ValidationUtils.validateStringLength(action, 'Action', minLength: 1, maxLength: 500));
+
+    return ValidationResult.combine(results);
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is FermentationStage &&
+          runtimeType == other.runtimeType &&
+          day == other.day &&
+          label == other.label &&
+          action == other.action;
+
+  @override
+  int get hashCode => Object.hash(day, label, action);
 }
 
 class FermentationIngredient {
@@ -50,6 +81,37 @@ class FermentationIngredient {
         'amount': amount,
         'unit': unit,
       };
+
+  /// Validate fermentation ingredient
+  ValidationResult validate() {
+    final results = <ValidationResult>[];
+
+    // Validate name
+    results.add(ValidationUtils.validateRequiredString(name, 'Ingredient name'));
+    results.add(ValidationUtils.validateStringLength(name, 'Ingredient name', minLength: 1, maxLength: 100));
+    
+    // Validate amount
+    results.add(ValidationUtils.validatePositiveNumber(amount, 'Amount'));
+    results.add(ValidationUtils.validateNumberRange(amount, 'Amount', min: 0.001, max: 10000));
+    
+    // Validate unit
+    results.add(ValidationUtils.validateRequiredString(unit, 'Unit'));
+    results.add(ValidationUtils.validateStringLength(unit, 'Unit', minLength: 1, maxLength: 20));
+
+    return ValidationResult.combine(results);
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is FermentationIngredient &&
+          runtimeType == other.runtimeType &&
+          name == other.name &&
+          amount == other.amount &&
+          unit == other.unit;
+
+  @override
+  int get hashCode => Object.hash(name, amount, unit);
 }
 
 class FermentationLog {
@@ -68,7 +130,7 @@ class FermentationLog {
   final bool alertsEnabled;
   final DateTime createdAt;
 
-  FermentationLog({
+  const FermentationLog({
     required this.id,
     required this.ownerUid,
     this.recipeId,
@@ -285,5 +347,183 @@ class FermentationLog {
       AppLogger.error('Error parsing photos list: $e', e);
       return const <String>[];
     }
+  }
+
+  /// Validate fermentation log
+  ValidationResult validate() {
+    final results = <ValidationResult>[];
+
+    // Validate ID
+    results.add(ValidationUtils.validateRequiredString(id, 'ID'));
+    results.add(ValidationUtils.validateUid(id));
+
+    // Validate owner UID
+    results.add(ValidationUtils.validateRequiredString(ownerUid, 'Owner UID'));
+    results.add(ValidationUtils.validateUid(ownerUid));
+
+    // Validate title
+    results.add(ValidationUtils.validateRequiredString(title, 'Title'));
+    results.add(ValidationUtils.validateStringLength(title, 'Title', minLength: 1, maxLength: 200));
+
+    // Validate method
+    results.add(ValidationUtils.validateEnum(method, FermentationMethod.values, 'Method'));
+
+    // Validate ingredients
+    results.add(ValidationUtils.validateNonEmptyList(ingredients, 'Ingredients'));
+    results.add(ValidationUtils.validateListLength(ingredients, 'Ingredients', maxLength: 50));
+    
+    // Validate each ingredient
+    for (int i = 0; i < ingredients.length; i++) {
+      final ingredientResult = ingredients[i].validate();
+      if (!ingredientResult.isValid) {
+        results.add(ValidationResult(
+          isValid: false,
+          errors: ingredientResult.errors.map((e) => 'Ingredient ${i + 1}: $e').toList(),
+        ));
+      }
+    }
+
+    // Validate start date
+    final now = DateTime.now();
+    final oneYearFromNow = now.add(const Duration(days: 365));
+    results.add(ValidationUtils.validateDateRange(startAt, 'Start date', 
+      maxDate: oneYearFromNow));
+
+    // Validate stages
+    results.add(ValidationUtils.validateNonEmptyList(stages, 'Stages'));
+    results.add(ValidationUtils.validateListLength(stages, 'Stages', maxLength: 100));
+    
+    // Validate each stage
+    for (int i = 0; i < stages.length; i++) {
+      final stageResult = stages[i].validate();
+      if (!stageResult.isValid) {
+        results.add(ValidationResult(
+          isValid: false,
+          errors: stageResult.errors.map((e) => 'Stage ${i + 1}: $e').toList(),
+        ));
+      }
+    }
+
+    // Validate current stage
+    results.add(ValidationUtils.validateNumberRange(currentStage, 'Current stage', 
+      min: 0, max: stages.length - 1));
+
+    // Validate status
+    results.add(ValidationUtils.validateEnum(status, FermentationStatus.values, 'Status'));
+
+    // Validate notes (optional)
+    if (notes != null && notes!.isNotEmpty) {
+      results.add(ValidationUtils.validateStringLength(notes!, 'Notes', maxLength: 2000));
+    }
+
+    // Validate photos
+    results.add(ValidationUtils.validateListLength(photos, 'Photos', maxLength: 20));
+    
+    // Validate each photo URL
+    for (int i = 0; i < photos.length; i++) {
+      final photoResult = ValidationUtils.validateUrl(photos[i]);
+      if (!photoResult.isValid) {
+        results.add(ValidationResult(
+          isValid: false,
+          errors: ['Photo ${i + 1}: Invalid URL format'],
+        ));
+      }
+    }
+
+    // Validate created date
+    results.add(ValidationUtils.validateDateRange(createdAt, 'Created date', 
+      maxDate: now));
+
+    // Business logic validations
+    if (status == FermentationStatus.done && currentStage < stages.length - 1) {
+      results.add(const ValidationResult(
+        isValid: false,
+        errors: ['Completed fermentation must be at the final stage'],
+      ));
+    }
+
+    if (startAt.isAfter(now)) {
+      results.add(const ValidationResult(
+        isValid: false,
+        errors: ['Start date cannot be in the future'],
+      ));
+    }
+
+    return ValidationResult.combine(results);
+  }
+
+  /// Check if fermentation log is valid (convenience method)
+  bool get isValid => validate().isValid;
+
+  /// Get validation errors (convenience method)
+  List<String> get validationErrors => validate().errors;
+
+  /// Get validation warnings (convenience method)
+  List<String> get validationWarnings => validate().warnings;
+
+  /// Data migration support for version differences
+  static FermentationLog fromMapWithMigration(String id, Map<String, dynamic> map) {
+    final version = _extractVersion(map);
+    const currentVersion = ModelVersion(1, 0, 0);
+    
+    if (!currentVersion.isCompatibleWith(version)) {
+      AppLogger.warning('Incompatible data version: $version, expected: $currentVersion');
+    }
+
+    // Apply migrations based on version
+    final migratedData = _applyMigrations(map, version, currentVersion);
+    
+    return FermentationLog.fromMap(id, migratedData);
+  }
+
+  /// Extract version from data
+  static ModelVersion _extractVersion(Map<String, dynamic> data) {
+    final versionString = data['_version'] as String? ?? '1.0.0';
+    return ModelVersion.fromString(versionString);
+  }
+
+  /// Apply data migrations
+  static Map<String, dynamic> _applyMigrations(
+    Map<String, dynamic> data, 
+    ModelVersion fromVersion, 
+    ModelVersion toVersion
+  ) {
+    final migratedData = Map<String, dynamic>.from(data);
+    
+    // Migration from 1.0.0 to 1.1.0 (example)
+    if (fromVersion.isNewerThan(const ModelVersion(1, 0, 0)) == false) {
+      // Add default values for new fields
+      migratedData['alertsEnabled'] ??= true;
+      migratedData['photos'] ??= <String>[];
+    }
+    
+    // Update version
+    migratedData['_version'] = toVersion.toString();
+    
+    return migratedData;
+  }
+
+  /// Enhanced fromMap with validation
+  factory FermentationLog.fromMapValidated(String id, Map<String, dynamic> map) {
+    final log = FermentationLog.fromMap(id, map);
+    final validation = log.validate();
+    
+    if (!validation.isValid) {
+      AppLogger.error('FermentationLog validation failed: ${validation.errors}');
+      // You might want to throw an exception or handle this differently
+    }
+    
+    if (validation.warnings.isNotEmpty) {
+      AppLogger.warning('FermentationLog validation warnings: ${validation.warnings}');
+    }
+    
+    return log;
+  }
+
+  /// Enhanced toMap with version
+  Map<String, dynamic> toMapWithVersion() {
+    final map = toMap();
+    map['_version'] = const ModelVersion(1, 0, 0).toString();
+    return map;
   }
 }

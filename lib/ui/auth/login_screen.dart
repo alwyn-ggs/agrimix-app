@@ -330,6 +330,28 @@ class _LoginScreenState extends State<LoginScreen> {
                                       ),
                                     ),
                                   ),
+                          const SizedBox(height: 12),
+
+                          // Footer links: Terms, Privacy, Help
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              TextButton(
+                                onPressed: () => Navigator.pushNamed(context, Routes.terms),
+                                child: const Text('Terms of Service', style: TextStyle(fontSize: 12)),
+                              ),
+                              const Text('·', style: TextStyle(color: NatureColors.darkGray)),
+                              TextButton(
+                                onPressed: () => Navigator.pushNamed(context, Routes.privacy),
+                                child: const Text('Privacy Policy', style: TextStyle(fontSize: 12)),
+                              ),
+                              const Text('·', style: TextStyle(color: NatureColors.darkGray)),
+                              TextButton(
+                                onPressed: () => Navigator.pushNamed(context, Routes.help),
+                                child: const Text('Help/Support', style: TextStyle(fontSize: 12)),
+                              ),
+                            ],
+                          ),
                                 ],
                               ),
                             ),
