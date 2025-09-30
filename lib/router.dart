@@ -16,6 +16,7 @@ import 'ui/community/post_detail_page.dart';
 import 'ui/community/new_post_page.dart';
 import 'ui/fermentation/new_log_page.dart';
 import 'ui/fermentation/log_detail_page.dart';
+import 'ui/common/onboarding_screen.dart';
 import 'ui/common/legal/terms_page.dart';
 import 'ui/common/legal/privacy_page.dart';
 import 'ui/common/help/help_page.dart';
@@ -43,6 +44,7 @@ class Routes {
   static const terms = '/terms';
   static const privacy = '/privacy';
   static const help = '/help';
+  static const onboarding = '/onboarding';
 }
 
 class AppRouter {
@@ -139,6 +141,8 @@ class AppRouter {
           requiredRole: 'admin',
           settings: settings,
         );
+      case Routes.onboarding:
+        return MaterialPageRoute(builder: (_) => const OnboardingScreen());
       case Routes.terms:
         return MaterialPageRoute(builder: (_) => const TermsPage());
       case Routes.privacy:

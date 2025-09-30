@@ -10,6 +10,7 @@ import '../repositories/users_repo.dart';
 import '../models/user.dart';
 import '../utils/logger.dart';
 
+
 class AuthProvider extends ChangeNotifier with ErrorHandlerMixin {
   final AuthService auth;
   final UsersRepo usersRepo;
@@ -67,6 +68,17 @@ class AuthProvider extends ChangeNotifier with ErrorHandlerMixin {
       AppLogger.debug('AuthProvider: rememberMe status: $_rememberMe');
       
       _currentAppUser = await usersRepo.getUser(uid);
+      
+      // Check if user document exists
+      if (_currentAppUser == null) {
+        AppLogger.warning('AuthProvider: User document not found for uid: $uid');
+        
+        
+        // Double check after creation
+        if (_currentAppUser == null) {
+          throw Exception('User account still not found after creation attempt.');
+        }
+      }
       
       // Subscribe to announcements topic for all users
       try {

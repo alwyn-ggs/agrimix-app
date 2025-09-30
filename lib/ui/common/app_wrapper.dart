@@ -8,9 +8,16 @@ import 'widgets/error_boundary.dart';
 import '../auth/login_screen.dart';
 import '../admin/dashboard.dart' as admin;
 import '../farmer/dashboard.dart' as farmer;
+import 'package:shared_preferences/shared_preferences.dart';
+import '../../router.dart';
 
 class AppWrapper extends StatelessWidget {
   const AppWrapper({super.key});
+
+  Future<bool> _hasSeenOnboarding() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool('seen_onboarding') == true;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -35,9 +42,21 @@ class AppWrapper extends StatelessWidget {
             return const SplashScreen();
           }
           
-          // If not logged in, show login screen
+          // If not logged in, show onboarding once then login
           if (!authProvider.isLoggedIn) {
-            return const LoginScreen();
+            return FutureBuilder<bool>(
+              future: _hasSeenOnboarding(),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) return const SplashScreen();
+                final seen = snapshot.data == true;
+                if (seen) return const LoginScreen();
+                // Navigate to onboarding and show splash meanwhile
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  Navigator.of(context).pushReplacementNamed(Routes.onboarding);
+                });
+                return const SplashScreen();
+              },
+            );
           }
           
           // If logged in but user data is not loaded yet, show splash

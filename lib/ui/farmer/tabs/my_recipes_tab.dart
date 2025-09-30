@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../theme/theme.dart';
 import '../../../router.dart';
 import '../../../providers/auth_provider.dart';
@@ -549,7 +548,6 @@ class _MyRecipesTabState extends State<MyRecipesTab> with TickerProviderStateMix
                 ],
               ),
               const SizedBox(height: 12),
-              // Start Fermenting button is shown inside the draft detail view, not here
               Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [

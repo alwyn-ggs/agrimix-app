@@ -67,6 +67,7 @@ class NotificationAnalyticsService {
     Map<String, dynamic>? metadata,
   }) async {
     try {
+      
       await _recordEngagementEvent(
         userId: userId,
         notificationId: notificationId,
