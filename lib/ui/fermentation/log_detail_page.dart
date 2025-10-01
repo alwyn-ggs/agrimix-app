@@ -10,9 +10,6 @@ import '../../models/recipe.dart';
 import '../../models/user.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/notification_service.dart';
-import '../../services/stage_management_service.dart';
-import '../../services/storage_service.dart';
-import '../../models/stage_completion.dart';
 
 class LogDetailPage extends StatelessWidget {
   const LogDetailPage({super.key});
@@ -175,8 +172,8 @@ class _DetailState extends State<_Detail> {
                         }
                         final recipe = recipeSnap.data;
                         if (recipe == null) {
-                          return Row(
-                            children: const [
+                          return const Row(
+                            children: [
                               Icon(Icons.restaurant_menu, size: 16, color: Colors.grey),
                               SizedBox(width: 8),
                               Text('Linked to recipe: unavailable')
@@ -417,9 +414,7 @@ class _DetailState extends State<_Detail> {
             child: Card(
               elevation: isCurrent ? 4 : 1,
               color: isCurrent ? Colors.blue[50] : null,
-              child: InkWell(
-                onTap: () => _showStageDetails(context, index, stage),
-                child: Padding(
+              child: Padding(
                 padding: const EdgeInsets.all(12),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -491,158 +486,13 @@ class _DetailState extends State<_Detail> {
                         ),
                       ),
                     ],
-                    ],
-                  ),
+                  ],
                 ),
               ),
             ),
           ),
         ],
       ),
-    );
-  }
-
-  Future<void> _showStageDetails(BuildContext context, int index, FermentationStage stage) async {
-    final service = StageManagementService();
-    final storage = context.read<StorageService>();
-    final uid = context.read<AuthProvider>().currentUser?.uid ?? '';
-
-    final completion = await service.getStageCompletionByIndex(
-      fermentationLogId: _log.id,
-      stageIndex: index,
-    );
-
-    final notesController = TextEditingController(text: completion?.notes ?? '');
-
-    await showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
-      builder: (context) {
-        return DraggableScrollableSheet(
-          expand: false,
-          initialChildSize: 0.8,
-          minChildSize: 0.5,
-          maxChildSize: 0.95,
-          builder: (context, scrollController) {
-            final photos = completion?.photos ?? const <String>[];
-            return Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          'Stage Details • Day ${stage.day} • ${stage.label}',
-                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-                        ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.close),
-                        onPressed: () => Navigator.pop(context),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Text(stage.action, style: TextStyle(color: Colors.grey[700])),
-                  if (completion?.duration != null) ...[
-                    const SizedBox(height: 8),
-                    Text('Duration: ${completion!.duration!.inHours}h ${completion.duration!.inMinutes % 60}m',
-                        style: TextStyle(color: Colors.grey[600], fontSize: 12)),
-                  ],
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      const Text('Photos', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-                      const Spacer(),
-                      TextButton.icon(
-                        onPressed: completion == null ? null : () async {
-                          final picker = ImagePicker();
-                          final picked = await picker.pickImage(source: ImageSource.camera);
-                          if (picked != null) {
-                            final url = await storage.uploadFile(
-                              file: File(picked.path),
-                              userId: uid,
-                              folder: 'fermentation_stage',
-                            );
-                            await service.addPhotosToStage(stageId: completion.id, photoUrls: [url]);
-                            // Refresh modal by closing and reopening with updated data
-                            if (context.mounted) {
-                              Navigator.pop(context);
-                              _showStageDetails(context, index, stage);
-                            }
-                          }
-                        },
-                        icon: const Icon(Icons.add_a_photo),
-                        label: const Text('Add Photo'),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  if (photos.isEmpty)
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 16),
-                      child: Text('No photos yet', style: TextStyle(color: Colors.grey)),
-                    )
-                  else
-                    SizedBox(
-                      height: 100,
-                      child: ListView.separated(
-                        controller: scrollController,
-                        scrollDirection: Axis.horizontal,
-                        itemCount: photos.length,
-                        separatorBuilder: (_, __) => const SizedBox(width: 8),
-                        itemBuilder: (context, i) {
-                          final url = photos[i];
-                          return GestureDetector(
-                            onTap: () => _showPhotoDialog(context, url),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(8),
-                              child: Image.network(
-                                url,
-                                width: 100,
-                                height: 100,
-                                fit: BoxFit.cover,
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  const SizedBox(height: 16),
-                  const Text('Notes', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: notesController,
-                    minLines: 3,
-                    maxLines: 5,
-                    decoration: const InputDecoration(
-                      border: OutlineInputBorder(),
-                      hintText: 'Add notes for this stage...'
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  SizedBox(
-                    width: double.infinity,
-                    child: FilledButton.icon(
-                      onPressed: completion == null ? null : () async {
-                        await service.updateStageNotes(stageId: completion.id, notes: notesController.text.trim());
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Stage notes saved.')));
-                        }
-                      },
-                      icon: const Icon(Icons.save),
-                      label: const Text('Save Notes'),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
     );
   }
 
@@ -769,44 +619,31 @@ class _DetailState extends State<_Detail> {
     showDialog(
       context: context,
       builder: (context) => Dialog(
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            // Constrain dialog size to avoid overflow on small screens
-            maxHeight: MediaQuery.of(context).size.height * 0.85,
-            maxWidth: MediaQuery.of(context).size.width * 0.95,
-            minHeight: 200,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              AppBar(
-                title: const Text('Photo'),
-                actions: [
-                  IconButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      _removePhoto(context, photoUrl);
-                    },
-                    icon: const Icon(Icons.delete),
-                  ),
-                ],
-              ),
-              Flexible(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(8),
-                  child: Center(
-                    child: Image.network(
-                      photoUrl,
-                      fit: BoxFit.contain,
-                      errorBuilder: (context, error, stackTrace) => const Center(
-                        child: Text('Failed to load image'),
-                      ),
-                    ),
-                  ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AppBar(
+              title: const Text('Photo'),
+              actions: [
+                IconButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    _removePhoto(context, photoUrl);
+                  },
+                  icon: const Icon(Icons.delete),
+                ),
+              ],
+            ),
+            Expanded(
+              child: Image.network(
+                photoUrl,
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) => const Center(
+                  child: Text('Failed to load image'),
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

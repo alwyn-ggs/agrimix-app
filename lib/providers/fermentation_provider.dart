@@ -228,9 +228,6 @@ class FermentationProvider extends ChangeNotifier {
       AppLogger.info('DEBUG: Calling _repo.deleteFermentationLog for ID: $logId');
       await _repo.deleteFermentationLog(logId);
       AppLogger.info('DEBUG: Repository delete completed for ID: $logId');
-      // Remove from local list immediately to update UI
-      myLogs = myLogs.where((l) => l.id != logId).toList();
-      notifyListeners();
       
       // Cancel notifications in background (non-blocking)
       _notifs.cancelFermentationNotifications(logId).catchError((e) {
@@ -286,4 +283,8 @@ class FermentationProvider extends ChangeNotifier {
     _error = null;
     notifyListeners();
   }
+}
+
+extension on NotificationService {
+  Future<void> scheduleSingleFermentationStageNotification({required String logId, required String title, required Map<String, dynamic> stage, required DateTime startDate, required int index}) async {}
 }

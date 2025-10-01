@@ -43,10 +43,10 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
-    - assets/onboarding/identity.png
-    - assets/onboarding/logs.png
-    - assets/onboarding/recipes.png
-    - assets/onboarding/alerts.png
+    - assets/onboarding/identity.jpg
+    - assets/onboarding/logs.jpg
+    - assets/onboarding/recipes.jpg
+    - assets/onboarding/alerts.jpg
 
 flutter_icons:
   android: true
