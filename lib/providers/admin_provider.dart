@@ -341,17 +341,15 @@ class AdminProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> rejectUser(String uid) async {
+  Future<void> rejectUser(String uid, {String? reason}) async {
     try {
       AppLogger.debug('AdminProvider: Rejecting user with UID: $uid');
       final user = _users.firstWhere((u) => u.uid == uid);
       AppLogger.debug('AdminProvider: Found user: ${user.name} (${user.email})');
       
-      final updatedUser = user.copyWith(approved: false);
-      AppLogger.debug('AdminProvider: Updating user approval status to: ${updatedUser.approved}');
-      
-      await usersRepo.updateUser(updatedUser);
-      AppLogger.debug('AdminProvider: User rejected successfully in Firestore');
+      // Write rejection status; Cloud Function will email then delete the user record
+      await usersRepo.setRejected(user.uid, reason: reason);
+      AppLogger.debug('AdminProvider: setRejected write completed');
       
       // Log admin action
       final currentUser = authService.currentUser;
@@ -359,13 +357,10 @@ class AdminProvider extends ChangeNotifier {
         // Admin action completed
       }
       
-      // Update local list immediately
-      final index = _users.indexWhere((u) => u.uid == uid);
-      if (index != -1) {
-        _users[index] = updatedUser;
-        AppLogger.debug('AdminProvider: Updated local user list');
-        notifyListeners();
-      }
+      // Remove from local list immediately so it disappears from UI
+      _users = _users.where((u) => u.uid != uid).toList();
+      AppLogger.debug('AdminProvider: Removed rejected user from local list');
+      notifyListeners();
       
       // Force UI update
       Future.microtask(() {

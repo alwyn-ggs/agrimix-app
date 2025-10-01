@@ -29,6 +29,21 @@ class _ErrorBoundaryState extends State<ErrorBoundary> {
     super.initState();
     // Set up global error handling
     FlutterError.onError = (FlutterErrorDetails details) {
+      // Ignore a noisy framework assertion seen on some Android devices when no mouse is present.
+      // Assertion example:
+      // 'package:flutter/src/rendering/mouse_tracker.dart': Failed assertion: line 224 pos 12:
+      // '(event is PointerAddedEvent) == (lastEvent is PointerRemovedEvent)': is not true.
+      final asString = details.exceptionAsString();
+      final isPointerOrderAssertion = asString.contains('mouse_tracker.dart') &&
+          asString.contains('PointerAddedEvent') &&
+          asString.contains('PointerRemovedEvent');
+
+      if (isPointerOrderAssertion) {
+        // Log but do not surface a blocking error UI
+        FlutterError.presentError(details);
+        return;
+      }
+
       if (mounted) {
         setState(() {
           _error = details.exception;

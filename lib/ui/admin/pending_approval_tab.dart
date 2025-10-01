@@ -321,6 +321,7 @@ class _PendingUserCard extends StatelessWidget {
   }
 
   void _rejectUser(BuildContext context) {
+    final controller = TextEditingController();
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -329,9 +330,26 @@ class _PendingUserCard extends StatelessWidget {
           'Reject User',
           style: TextStyle(color: NatureColors.darkGreen),
         ),
-        content: Text(
-          'Are you sure you want to reject ${user.name}?',
-          style: const TextStyle(color: NatureColors.darkGray),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Are you sure you want to reject ${user.name}?',
+              style: const TextStyle(color: NatureColors.darkGray),
+            ),
+            const SizedBox(height: 12),
+            const Text('Reason (optional)', style: TextStyle(color: NatureColors.darkGreen, fontWeight: FontWeight.w600)),
+            const SizedBox(height: 6),
+            TextField(
+              controller: controller,
+              maxLines: 3,
+              decoration: const InputDecoration(
+                hintText: 'Enter a reason to include in the email',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
         ),
         actions: [
           TextButton(
@@ -340,7 +358,8 @@ class _PendingUserCard extends StatelessWidget {
           ),
           FilledButton(
             onPressed: () {
-              context.read<AdminProvider>().rejectUser(user.uid);
+              final reason = controller.text.trim().isEmpty ? null : controller.text.trim();
+              context.read<AdminProvider>().rejectUser(user.uid, reason: reason);
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(

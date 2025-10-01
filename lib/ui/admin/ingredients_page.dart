@@ -579,12 +579,56 @@ class _IngredientsPageState extends State<IngredientsPage> {
               final extraImages =
                   List<String>.from(ingredientData['extraImages'] ?? []);
 
-              return Card(
+              return Material(
                 elevation: 4,
-                shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                clipBehavior: Clip.antiAlias,
+                child: InkWell(
                   borderRadius: BorderRadius.circular(12),
-                ),
-                child: Column(
+                  onTap: () {
+                    showDialog(
+                      context: context,
+                      builder: (_) => AlertDialog(
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        title: Text(
+                          ingredientData['name'] ?? 'Unknown Ingredient',
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        content: SingleChildScrollView(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildInfoRow("Category", ingredientData['category']),
+                              _buildInfoRow("Description", ingredientData['description']),
+                              if (ingredientData['nutrientProfile'] != null) ...[
+                                const SizedBox(height: 16),
+                                const Text(
+                                  "Nutrient Profile:",
+                                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                ),
+                                const SizedBox(height: 8),
+                                _buildNutrientInfo(ingredientData['nutrientProfile'], ingredientData['category']),
+                              ],
+                            ],
+                          ),
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.of(context).pop(),
+                            child: const Text("Close"),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              Navigator.of(context).pop();
+                              _showEditIngredientDialog(context, ingredient.id, ingredientData);
+                            },
+                            child: const Text("Edit"),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                  child: Column(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -805,6 +849,7 @@ class _IngredientsPageState extends State<IngredientsPage> {
                     ),
                   ],
                 ),
+                ),
               );
             },
           );
@@ -840,15 +885,7 @@ class _IngredientsPageState extends State<IngredientsPage> {
           _buildNutrientRow("Potassium (K)", nutrientProfile['potassium']?.toString() ?? '0'),
           _buildNutrientRow("Magnesium (Mg)", nutrientProfile['magnesium']?.toString() ?? '0'),
         ],
-        const SizedBox(height: 8),
-        const Text(
-          "Plant Benefits:",
-          style: TextStyle(fontWeight: FontWeight.w600),
-        ),
-        _buildNutrientRow("Flowering", "${(nutrientProfile['floweringPromotion'] * 100)?.toStringAsFixed(1) ?? '0'}%"),
-        _buildNutrientRow("Fruiting", "${(nutrientProfile['fruitingPromotion'] * 100)?.toStringAsFixed(1) ?? '0'}%"),
-        _buildNutrientRow("Root Development", "${(nutrientProfile['rootDevelopment'] * 100)?.toStringAsFixed(1) ?? '0'}%"),
-        _buildNutrientRow("Leaf Growth", "${(nutrientProfile['leafGrowth'] * 100)?.toStringAsFixed(1) ?? '0'}%"),
+        // Removed Plant Benefits section per request
       ],
     );
   }

@@ -18,6 +18,7 @@ import 'services/storage_service.dart';
 import 'services/messaging_service.dart';
 import 'services/notification_service.dart';
 import 'services/fcm_message_handler.dart';
+import 'services/navigation_service.dart';
 import 'services/fcm_push_service.dart';
 import 'services/audit_service.dart';
 import 'repositories/users_repo.dart';
@@ -29,6 +30,7 @@ import 'repositories/comments_repo.dart';
 import 'repositories/violations_repo.dart';
 import 'repositories/announcements_repo.dart';
 import 'repositories/audit_repo.dart';
+import 'services/analytics_service.dart';
 
 class AgriMixAppRoot extends StatelessWidget {
   const AgriMixAppRoot({super.key});
@@ -54,6 +56,7 @@ class AgriMixAppRoot extends StatelessWidget {
     final commentsRepo = CommentsRepo(firestoreService);
     final violationsRepo = ViolationsRepo(firestoreService);
     final announcementsRepo = AnnouncementsRepo(firestoreService);
+    final analyticsService = AnalyticsService(ingredientsRepo);
 
     return MultiProvider(
       providers: [
@@ -80,6 +83,7 @@ class AgriMixAppRoot extends StatelessWidget {
         Provider(create: (_) => fcmMessageHandler),
         Provider(create: (_) => fcmPushService),
         Provider(create: (_) => auditService),
+        Provider(create: (_) => analyticsService),
       ],
       child: Builder(
         builder: (context) {
@@ -91,6 +95,7 @@ class AgriMixAppRoot extends StatelessWidget {
             themeMode: ThemeMode.light,
             theme: theme,
             darkTheme: darkTheme,
+            navigatorKey: NavigationService.navigatorKey,
             home: const AppWrapper(), // Use AppWrapper for initial navigation
             onGenerateRoute: AppRouter.onGenerateRoute,
           );

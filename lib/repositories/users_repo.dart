@@ -120,6 +120,24 @@ class UsersRepo {
     }
   }
 
+  Future<void> setRejected(String uid, {String? reason}) async {
+    try {
+      AppLogger.debug('UsersRepo: setRejected -> uid: $uid, reason: $reason');
+      final Map<String, dynamic> update = {
+        'approved': false,
+        'status': 'rejected',
+      };
+      if (reason != null && reason.trim().isNotEmpty) {
+        update['rejectionReason'] = reason.trim();
+      }
+      await _fs.db.collection('users').doc(uid).update(update);
+      AppLogger.info('UsersRepo: setRejected write completed');
+    } catch (e) {
+      AppLogger.error('UsersRepo: Error in setRejected: $e', e);
+      throw Exception('Failed to reject user: $e');
+    }
+  }
+
   Future<void> deleteUser(String uid) async {
     try {
       await _fs.db.collection('users').doc(uid).delete();

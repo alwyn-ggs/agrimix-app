@@ -147,7 +147,9 @@ class FermentationRepo {
       final entry = {
         'stageIndex': stageIndex,
         'note': note,
-        'createdAt': FieldValue.serverTimestamp(),
+        // Firestore does not support FieldValue.serverTimestamp() inside arrays
+        // Use client timestamp instead to avoid write failure
+        'createdAt': Timestamp.fromDate(DateTime.now()),
       };
       await _fs.db
           .collection(FermentationLog.collectionPath)
@@ -163,7 +165,9 @@ class FermentationRepo {
               {
                 'stageIndex': stageIndex,
                 'note': note,
-                'createdAt': FieldValue.serverTimestamp(),
+                // Firestore does not support FieldValue.serverTimestamp() inside arrays
+                // Use client timestamp instead
+                'createdAt': Timestamp.fromDate(DateTime.now()),
               }
             ]}, SetOptions(merge: true));
       } catch (e2) {

@@ -20,6 +20,92 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _membershipId = TextEditingController();
   bool _acceptedTerms = false;
 
+  void _showUnderReviewDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          contentPadding: const EdgeInsets.all(24),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Icon
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.orange.shade100,
+                  borderRadius: BorderRadius.circular(50),
+                ),
+                child: Icon(
+                  Icons.pending_actions,
+                  size: 48,
+                  color: Colors.orange.shade600,
+                ),
+              ),
+              const SizedBox(height: 20),
+              
+              // Title
+              const Text(
+                'Account Under Review',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: NatureColors.darkGreen,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 12),
+              
+              // Message
+              const Text(
+                'Your account is already registered and is currently under review. Please wait for administrator approval before you can access the app.',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: NatureColors.darkGray,
+                  height: 1.4,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              
+              // OK Button
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: () {
+                    // Ensure user is signed out so we return to login screen
+                    context.read<AuthProvider>().signOut();
+                    Navigator.of(context).pop(); // Close dialog
+                    Navigator.of(context).pop(); // Go back to login screen
+                  },
+                  style: FilledButton.styleFrom(
+                    backgroundColor: NatureColors.primaryGreen,
+                    foregroundColor: NatureColors.pureWhite,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: const Text(
+                    'OK',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
@@ -377,7 +463,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 ? null
                                 : () async {
                                     if (!_formKey.currentState!.validate()) return;
-                                    await context.read<AuthProvider>().register(
+                                    final provider = context.read<AuthProvider>();
+                                    await provider.register(
                                           _email.text.trim(), 
                                           _password.text.trim(),
                                           _name.text.trim(),
@@ -386,8 +473,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                               : _membershipId.text.trim(),
                                         );
                                     if (!mounted) return;
-                                    if (auth.error == null) {
-                                      Navigator.of(context).pop(); // back to login without dialog
+                                    final currentError = provider.error;
+                                    if (currentError == null) {
+                                      // Registration success path: show under-review popup
+                                      provider.clearError();
+                                      _showUnderReviewDialog(context);
+                                    } else if (currentError.contains('under review')) {
+                                      // Show popup dialog for under review message
+                                      provider.clearError();
+                                      _showUnderReviewDialog(context);
                                     }
                                   },
                             style: FilledButton.styleFrom(
@@ -458,19 +552,35 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               margin: const EdgeInsets.only(top: 16),
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
-                                color: Colors.red.shade50,
+                                color: auth.error!.contains('under review') 
+                                    ? Colors.orange.shade50 
+                                    : Colors.red.shade50,
                                 borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: Colors.red.shade200),
+                                border: Border.all(
+                                  color: auth.error!.contains('under review') 
+                                      ? Colors.orange.shade200 
+                                      : Colors.red.shade200,
+                                ),
                               ),
                               child: Row(
                                 children: [
-                                  Icon(Icons.error_outline, color: Colors.red.shade600, size: 20),
+                                  Icon(
+                                    auth.error!.contains('under review') 
+                                        ? Icons.pending_actions 
+                                        : Icons.error_outline, 
+                                    color: auth.error!.contains('under review') 
+                                        ? Colors.orange.shade600 
+                                        : Colors.red.shade600, 
+                                    size: 20,
+                                  ),
                                   const SizedBox(width: 8),
                                   Expanded(
                                     child: Text(
                                       auth.error!,
                                       style: TextStyle(
-                                        color: Colors.red.shade700,
+                                        color: auth.error!.contains('under review') 
+                                            ? Colors.orange.shade700 
+                                            : Colors.red.shade700,
                                         fontSize: 14,
                                       ),
                                     ),

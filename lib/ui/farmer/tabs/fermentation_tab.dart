@@ -542,6 +542,7 @@ class _FermentationTabState extends State<FermentationTab> with TickerProviderSt
       showDialog(
         context: context,
         barrierDismissible: false,
+        useRootNavigator: true,
         builder: (context) => const Center(
           child: CircularProgressIndicator(),
         ),
@@ -551,8 +552,18 @@ class _FermentationTabState extends State<FermentationTab> with TickerProviderSt
       final provider = Provider.of<FermentationProvider>(context, listen: false);
       await provider.deleteFermentationLog(log.id);
 
-      // Close loading dialog
-      if (context.mounted) Navigator.pop(context);
+      // Close loading dialog (ensure we target the root navigator)
+      if (context.mounted) {
+        final nav = Navigator.of(context, rootNavigator: true);
+        if (nav.canPop()) nav.pop();
+        // Extra safety pop on next frame in case of nested routes
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (context.mounted) {
+            final nav2 = Navigator.of(context, rootNavigator: true);
+            if (nav2.canPop()) nav2.pop();
+          }
+        });
+      }
 
       // Show success message
       if (context.mounted) {
@@ -564,8 +575,17 @@ class _FermentationTabState extends State<FermentationTab> with TickerProviderSt
         );
       }
     } catch (e) {
-      // Close loading dialog
-      if (context.mounted) Navigator.pop(context);
+      // Close loading dialog (ensure we target the root navigator)
+      if (context.mounted) {
+        final nav = Navigator.of(context, rootNavigator: true);
+        if (nav.canPop()) nav.pop();
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (context.mounted) {
+            final nav2 = Navigator.of(context, rootNavigator: true);
+            if (nav2.canPop()) nav2.pop();
+          }
+        });
+      }
 
       // Show error message
       if (context.mounted) {

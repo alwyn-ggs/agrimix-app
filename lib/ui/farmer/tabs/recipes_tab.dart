@@ -834,40 +834,20 @@ class _InteractiveRecipeCard extends StatelessWidget {
                     const SizedBox(height: 16),
                     // Interactive rating and favorites section
                     if (!recipe.isStandard) ...[
-                      LayoutBuilder(
-                        builder: (context, constraints) {
-                          final isTight = constraints.maxWidth < 360;
-                          if (isTight) {
-                            return Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                _buildRatingSection(recipe),
-                                const SizedBox(height: 12),
-                                Align(
-                                  alignment: Alignment.centerLeft,
-                                  child: _buildFavoritesButton(recipe),
-                                ),
-                              ],
-                            );
-                          }
-                          return Row(
-                            children: [
-                              // Rating section
-                              Expanded(
-                                child: _buildRatingSection(recipe),
-                              ),
-                              const SizedBox(width: 16),
-                              // Favorites button
-                              Flexible(
-                                fit: FlexFit.loose,
-                                child: Align(
-                                  alignment: Alignment.centerRight,
-                                  child: _buildFavoritesButton(recipe),
-                                ),
-                              ),
-                            ],
-                          );
-                        },
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          // Rating section
+                          Expanded(
+                            child: _buildRatingSection(recipe),
+                          ),
+                          const SizedBox(width: 8),
+                          // Favorites button (flexible to avoid overflow)
+                          Flexible(
+                            fit: FlexFit.loose,
+                            child: _buildFavoritesButton(recipe),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 16),
                     ],
@@ -1044,11 +1024,11 @@ class _InteractiveRecipeCard extends StatelessWidget {
                 return GestureDetector(
                   onTap: () => _rateRecipe(context, recipe, starIndex),
                   child: Container(
-                    margin: const EdgeInsets.only(right: 4),
+                    margin: const EdgeInsets.only(right: 2),
                     child: Icon(
                       isFilled ? Icons.star : Icons.star_border,
                       color: isFilled ? Colors.amber[600] : Colors.grey[400],
-                      size: 24,
+                      size: 20,
                     ),
                   ),
                 );
@@ -1074,13 +1054,20 @@ class _InteractiveRecipeCard extends StatelessWidget {
           onPressed: () => _toggleFavorite(context, recipe),
           icon: Icon(
             isFavorite ? Icons.favorite : Icons.favorite_border,
-            size: 18,
+            size: 16,
           ),
-          label: Text(isFavorite ? 'Saved' : 'Save'),
+          label: Text(
+            isFavorite ? 'Saved' : 'Save',
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
+            softWrap: false,
+          ),
           style: ElevatedButton.styleFrom(
             backgroundColor: isFavorite ? Colors.red[50] : Colors.grey[50],
             foregroundColor: isFavorite ? Colors.red[600] : Colors.grey[600],
             elevation: 0,
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            minimumSize: const Size(0, 36),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
               side: BorderSide(

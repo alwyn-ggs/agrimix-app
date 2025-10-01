@@ -13,6 +13,65 @@ class StageManagementService {
 
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
+  /// Get a single stage completion by fermentation and stage index
+  Future<StageCompletion?> getStageCompletionByIndex({
+    required String fermentationLogId,
+    required int stageIndex,
+  }) async {
+    try {
+      final snap = await _firestore
+          .collection(StageCompletion.collectionPath)
+          .where('fermentationLogId', isEqualTo: fermentationLogId)
+          .where('stageIndex', isEqualTo: stageIndex)
+          .limit(1)
+          .get();
+      if (snap.docs.isEmpty) return null;
+      final doc = snap.docs.first;
+      return StageCompletion.fromMap(doc.id, doc.data());
+    } catch (e, stackTrace) {
+      AppLogger.error('Error getting stage completion by index: $e', e, stackTrace);
+      return null;
+    }
+  }
+
+  /// Append photos to a stage completion
+  Future<void> addPhotosToStage({
+    required String stageId,
+    required List<String> photoUrls,
+  }) async {
+    try {
+      await _firestore
+          .collection(StageCompletion.collectionPath)
+          .doc(stageId)
+          .update({
+        'photos': FieldValue.arrayUnion(photoUrls),
+        'updatedAt': Timestamp.fromDate(DateTime.now()),
+      });
+    } catch (e, stackTrace) {
+      AppLogger.error('Error adding photos to stage: $e', e, stackTrace);
+      rethrow;
+    }
+  }
+
+  /// Replace notes for a stage completion
+  Future<void> updateStageNotes({
+    required String stageId,
+    required String? notes,
+  }) async {
+    try {
+      await _firestore
+          .collection(StageCompletion.collectionPath)
+          .doc(stageId)
+          .update({
+        'notes': notes,
+        'updatedAt': Timestamp.fromDate(DateTime.now()),
+      });
+    } catch (e, stackTrace) {
+      AppLogger.error('Error updating stage notes: $e', e, stackTrace);
+      rethrow;
+    }
+  }
+
   /// Start a stage (mark as in progress)
   Future<StageCompletion> startStage({
     required String fermentationLogId,

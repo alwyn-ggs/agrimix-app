@@ -29,7 +29,9 @@ class ErrorHandlerService {
         errorString.contains('forbidden') ||
         errorString.contains('invalid-credential') ||
         errorString.contains('user-not-found') ||
-        errorString.contains('wrong-password')) {
+        errorString.contains('wrong-password') ||
+        errorString.contains('email-already-in-use') ||
+        errorString.contains('email address is already in use')) {
       return AppErrorType.authentication;
     }
 
@@ -89,6 +91,10 @@ class ErrorHandlerService {
         }
         if (errorString.contains('user-not-found')) {
           return 'No account found with this email address.';
+        }
+        if (errorString.contains('email-already-in-use') ||
+            errorString.contains('email address is already in use')) {
+          return 'Account already exists and is under review. Please wait for administrator approval.';
         }
         if (errorString.contains('permission') ||
             errorString.contains('unauthorized')) {

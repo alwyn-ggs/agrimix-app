@@ -219,6 +219,7 @@ class _FormulateRecipeFlowState extends State<FormulateRecipeFlow> {
                   RecipeAnalyticsWidget(
                     ingredients: recipeIngredients,
                     cropTarget: _selectedCrop ?? 'General',
+                    batchSizeKg: _selectedBatchSize,
                     onIngredientsUpdated: (updatedIngredients) {
                       // Update the selected ingredients based on analytics suggestions
                       final newSelectedIds = updatedIngredients.map((ri) => ri.ingredientId).toSet();

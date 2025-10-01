@@ -50,7 +50,7 @@ class HomeTab extends StatelessWidget {
             child: Stack(
               children: [
                 // Background Pattern
-                Positioned(
+                const Positioned(
                   right: -20,
                   top: -20,
                   child: Opacity(
@@ -87,7 +87,7 @@ class HomeTab extends StatelessWidget {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
+                                const Text(
                                   'Welcome back!',
                                   style: TextStyle(
                                     fontSize: 14,
@@ -136,36 +136,17 @@ class HomeTab extends StatelessWidget {
           ),
           const SizedBox(height: 24),
           
-          // Quick Actions Section Header
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: NatureColors.lightGreen.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(
-                  Icons.flash_on,
-                  color: NatureColors.primaryGreen,
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 12),
-              const Text(
-                'Quick Actions',
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: NatureColors.textDark,
-                  letterSpacing: 0.3,
-                ),
-              ),
-            ],
+          // Quick Actions
+          const Text(
+            'Quick Actions',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: NatureColors.textDark,
+            ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
           
-          // Enhanced Action Cards Grid
           Row(
             children: [
               Expanded(
@@ -174,7 +155,6 @@ class HomeTab extends StatelessWidget {
                   title: 'Browse Recipes',
                   subtitle: 'Find what to make',
                   color: NatureColors.lightGreen,
-                  emoji: '📖',
                   onTap: () {
                     if (onTapBrowseRecipes != null) {
                       onTapBrowseRecipes!.call();
@@ -184,32 +164,32 @@ class HomeTab extends StatelessWidget {
                   },
                 ),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: 12),
               Expanded(
                 child: _buildActionCard(
                   icon: Icons.bubble_chart,
-                  title: 'Start Ferment',
-                  subtitle: 'Log new batch',
+                  title: 'Start Fermentation',
+                  subtitle: 'Log a new batch',
                   color: NatureColors.accentGreen,
-                  emoji: '🫧',
                   onTap: () => Navigator.of(context).pushNamed(Routes.newLog),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           
-          // Third action card - centered but same width as above
-          SizedBox(
-            width: (MediaQuery.of(context).size.width - 48) / 2,
-            child: _buildActionCard(
-              icon: Icons.groups,
-              title: 'New Post',
-              subtitle: 'Share with community',
-              color: NatureColors.primaryGreen,
-              emoji: '👥',
-              onTap: () => Navigator.of(context).pushNamed(Routes.newPost),
-            ),
+          Row(
+            children: [
+              Expanded(
+                child: _buildActionCard(
+                  icon: Icons.groups,
+                  title: 'New Post',
+                  subtitle: 'Share with community',
+                  color: NatureColors.primaryGreen,
+                  onTap: () => Navigator.of(context).pushNamed(Routes.newPost),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 24),
           
@@ -528,121 +508,54 @@ class HomeTab extends StatelessWidget {
     required String title,
     required String subtitle,
     required Color color,
-    String? emoji,
     VoidCallback? onTap,
   }) {
     return Card(
-      elevation: 8,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(12),
         child: Container(
-          height: 140, // Fixed height for consistent cards
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(18),
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                NatureColors.pureWhite,
-                color.withValues(alpha: 0.08),
-              ],
-            ),
-            border: Border.all(
-              color: color.withValues(alpha: 0.2),
-              width: 1.5,
-            ),
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              // Top section with icon
-              Stack(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          color,
-                          color.withValues(alpha: 0.85),
-                        ],
-                      ),
-                      borderRadius: BorderRadius.circular(14),
-                      boxShadow: [
-                        BoxShadow(
-                          color: color.withValues(alpha: 0.25),
-                          blurRadius: 10,
-                          offset: const Offset(0, 5),
-                        ),
-                      ],
-                    ),
-                    child: Icon(
-                      icon,
-                      color: NatureColors.pureWhite,
-                      size: 24,
-                    ),
-                  ),
-                  if (emoji != null)
-                    Positioned(
-                      top: -6,
-                      right: -6,
-                      child: Container(
-                        padding: const EdgeInsets.all(5),
-                        decoration: BoxDecoration(
-                          color: NatureColors.pureWhite,
-                          borderRadius: BorderRadius.circular(10),
-                          boxShadow: [
-                            BoxShadow(
-                              color: NatureColors.textDark.withValues(alpha: 0.15),
-                              blurRadius: 5,
-                              offset: const Offset(0, 3),
-                            ),
-                          ],
-                        ),
-                        child: Text(
-                          emoji,
-                          style: const TextStyle(fontSize: 12),
-                        ),
-                      ),
-                    ),
-                ],
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withAlpha((0.25 * 255).round()), width: 1),
+          color: NatureColors.pureWhite,
+        ),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: color,
+                borderRadius: BorderRadius.circular(8),
               ),
-              // Bottom section with text
-              Column(
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: NatureColors.textDark,
-                      letterSpacing: 0.3,
-                    ),
-                    textAlign: TextAlign.center,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    subtitle,
-                    style: const TextStyle(
-                      fontSize: 11,
-                      color: NatureColors.mediumGray,
-                      height: 1.2,
-                    ),
-                    textAlign: TextAlign.center,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
+              child: Icon(
+                icon,
+                color: NatureColors.pureWhite,
+                size: 24,
               ),
-            ],
-          ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: NatureColors.textDark,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              subtitle,
+              style: const TextStyle(
+                fontSize: 12,
+                color: NatureColors.mediumGray,
+              ),
+            ),
+          ],
+        ),
         ),
       ),
     );
