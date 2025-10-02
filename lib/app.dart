@@ -30,7 +30,6 @@ import 'repositories/comments_repo.dart';
 import 'repositories/violations_repo.dart';
 import 'repositories/announcements_repo.dart';
 import 'repositories/audit_repo.dart';
-import 'services/analytics_service.dart';
 
 class AgriMixAppRoot extends StatelessWidget {
   const AgriMixAppRoot({super.key});
@@ -56,7 +55,6 @@ class AgriMixAppRoot extends StatelessWidget {
     final commentsRepo = CommentsRepo(firestoreService);
     final violationsRepo = ViolationsRepo(firestoreService);
     final announcementsRepo = AnnouncementsRepo(firestoreService);
-    final analyticsService = AnalyticsService(ingredientsRepo);
 
     return MultiProvider(
       providers: [
@@ -83,7 +81,6 @@ class AgriMixAppRoot extends StatelessWidget {
         Provider(create: (_) => fcmMessageHandler),
         Provider(create: (_) => fcmPushService),
         Provider(create: (_) => auditService),
-        Provider(create: (_) => analyticsService),
       ],
       child: Builder(
         builder: (context) {

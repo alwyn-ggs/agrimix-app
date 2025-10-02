@@ -108,11 +108,13 @@ class AuthProvider extends ChangeNotifier with ErrorHandlerMixin {
       AppLogger.debug('AuthProvider: User email: ${_currentAppUser?.email}');
       
       // Check remember me preference after loading user data
+      AppLogger.debug('AuthProvider: Final rememberMe check: $_rememberMe');
       if (!_rememberMe) {
         AppLogger.debug('AuthProvider: rememberMe=false → signing out after data load');
         await signOut();
         return;
       }
+      AppLogger.debug('AuthProvider: rememberMe=true → proceeding with login');
       
       notifyListeners();
     } catch (e) {
@@ -132,10 +134,14 @@ class AuthProvider extends ChangeNotifier with ErrorHandlerMixin {
     try {
       // Save remember-me preference immediately for this session
       _rememberMe = rememberMe;
+      AppLogger.debug('AuthProvider: Setting remember_me to: $rememberMe');
       try {
         final prefs = await SharedPreferences.getInstance();
         await prefs.setBool('remember_me', rememberMe);
-      } catch (_) {}
+        AppLogger.debug('AuthProvider: Successfully saved remember_me preference');
+      } catch (e) {
+        AppLogger.debug('AuthProvider: Error saving remember_me preference: $e');
+      }
 
       await auth.signIn(email, password);
       final uid = auth.currentUser?.uid;
@@ -207,6 +213,7 @@ class AuthProvider extends ChangeNotifier with ErrorHandlerMixin {
   }
 
   Future<void> signOut() async {
+    AppLogger.debug('AuthProvider: Signing out user');
     await auth.signOut();
     _currentUser = null;
     _currentAppUser = null;
@@ -214,7 +221,10 @@ class AuthProvider extends ChangeNotifier with ErrorHandlerMixin {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool('remember_me', false);
-    } catch (_) {}
+      AppLogger.debug('AuthProvider: Cleared remember_me preference');
+    } catch (e) {
+      AppLogger.debug('AuthProvider: Error clearing remember_me preference: $e');
+    }
     notifyListeners();
   }
 
@@ -242,7 +252,9 @@ class AuthProvider extends ChangeNotifier with ErrorHandlerMixin {
     try {
       final prefs = await SharedPreferences.getInstance();
       _rememberMe = prefs.getBool('remember_me') ?? false;
-    } catch (_) {
+      AppLogger.debug('AuthProvider: Loaded remember_me preference: $_rememberMe');
+    } catch (e) {
+      AppLogger.debug('AuthProvider: Error loading remember_me preference: $e');
       _rememberMe = false;
     }
   }

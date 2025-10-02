@@ -10,6 +10,7 @@ import '../admin/dashboard.dart' as admin;
 import '../farmer/dashboard.dart' as farmer;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../router.dart';
+import '../../utils/logger.dart';
 
 class AppWrapper extends StatelessWidget {
   const AppWrapper({super.key});
@@ -66,14 +67,20 @@ class AppWrapper extends StatelessWidget {
           
           // Route based on user role
           final userRole = authProvider.userRole;
+          final isApproved = authProvider.currentAppUser?.approved;
+          
+          AppLogger.debug('AppWrapper: User role: $userRole, approved: $isApproved');
           
           if (userRole == 'admin') {
+            AppLogger.debug('AppWrapper: Routing to admin dashboard');
             return const admin.Dashboard();
           } else if (userRole == 'farmer') {
             // Check if farmer is approved
-            if (authProvider.currentAppUser?.approved == true) {
+            if (isApproved == true) {
+              AppLogger.debug('AppWrapper: Routing to farmer dashboard (approved)');
               return const farmer.Dashboard();
             } else {
+              AppLogger.debug('AppWrapper: Routing to pending approval screen (not approved)');
               return const _PendingApprovalScreen();
             }
           }

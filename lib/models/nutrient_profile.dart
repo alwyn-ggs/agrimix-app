@@ -190,13 +190,13 @@ class NutrientProfile {
     organicAcids: organicAcids + other.organicAcids,
     sugars: sugars + other.sugars,
     
-    // Plant benefits (average them)
-    floweringPromotion: (floweringPromotion + other.floweringPromotion) / 2.0,
-    fruitingPromotion: (fruitingPromotion + other.fruitingPromotion) / 2.0,
-    rootDevelopment: (rootDevelopment + other.rootDevelopment) / 2.0,
-    leafGrowth: (leafGrowth + other.leafGrowth) / 2.0,
-    diseaseResistance: (diseaseResistance + other.diseaseResistance) / 2.0,
-    pestResistance: (pestResistance + other.pestResistance) / 2.0,
+    // Plant benefits (add them up, will be normalized later)
+    floweringPromotion: floweringPromotion + other.floweringPromotion,
+    fruitingPromotion: fruitingPromotion + other.fruitingPromotion,
+    rootDevelopment: rootDevelopment + other.rootDevelopment,
+    leafGrowth: leafGrowth + other.leafGrowth,
+    diseaseResistance: diseaseResistance + other.diseaseResistance,
+    pestResistance: pestResistance + other.pestResistance,
   );
 
   /// Multiply nutrient profile by a factor (for scaling by amount)

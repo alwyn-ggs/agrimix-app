@@ -29,7 +29,7 @@ class StageCompletion {
   final DateTime createdAt;
   final DateTime updatedAt;
 
-  StageCompletion({
+  const StageCompletion({
     required this.id,
     required this.fermentationLogId,
     required this.stageIndex,

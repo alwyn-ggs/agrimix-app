@@ -85,44 +85,48 @@ class _RecipesPageState extends State<RecipesPage> with TickerProviderStateMixin
           ),
           const SizedBox(height: 12),
           // Filter Row
-          Row(
-            children: [
-              Expanded(
-                child: DropdownButtonFormField<RecipeMethod?>(
-                  value: _selectedMethod,
-                  decoration: const InputDecoration(
-                    labelText: 'Filter by Method',
-                    border: OutlineInputBorder(),
-                  ),
-                  items: [
-                    const DropdownMenuItem<RecipeMethod?>(
-                      value: null,
-                      child: Text('All Methods'),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 320,
+                  child: DropdownButtonFormField<RecipeMethod?>(
+                    value: _selectedMethod,
+                    decoration: const InputDecoration(
+                      labelText: 'Filter by Method',
+                      border: OutlineInputBorder(),
                     ),
-                    ...RecipeMethod.values.map((method) => DropdownMenuItem(
-                      value: method,
-                      child: Text(method.name),
-                    )),
-                  ],
-                  onChanged: (value) {
-                    setState(() {
-                      _selectedMethod = value;
-                    });
-                  },
-                ),
-              ),
-              const SizedBox(width: 12),
-              if (_tabController.index == 1)
-                FilledButton.icon(
-                  onPressed: _createStandardRecipe,
-                  style: FilledButton.styleFrom(
-                    backgroundColor: NatureColors.primaryGreen,
-                    foregroundColor: Colors.white,
+                    items: [
+                      const DropdownMenuItem<RecipeMethod?>(
+                        value: null,
+                        child: Text('All Methods'),
+                      ),
+                      ...RecipeMethod.values.map((method) => DropdownMenuItem(
+                        value: method,
+                        child: Text(method.name),
+                      )),
+                    ],
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedMethod = value;
+                      });
+                    },
                   ),
-                  icon: const Icon(Icons.add, size: 18),
-                  label: const Text('New Standard'),
                 ),
-            ],
+                const SizedBox(width: 12),
+                if (_tabController.index == 1)
+                  FilledButton.icon(
+                    onPressed: _createStandardRecipe,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: NatureColors.primaryGreen,
+                      foregroundColor: Colors.white,
+                    ),
+                    icon: const Icon(Icons.add, size: 18),
+                    label: const Text('New Standard'),
+                  ),
+              ],
+            ),
           ),
         ],
       ),
@@ -363,37 +367,8 @@ class _RecipesPageState extends State<RecipesPage> with TickerProviderStateMixin
           );
         }
 
-        final recipes = adminProvider.standardRecipes.where(_matchesFilters).toList();
-        return ListView(
-          padding: const EdgeInsets.only(bottom: 16),
-          children: [
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              color: NatureColors.pureWhite,
-              child: Row(
-                children: [
-                  const Icon(Icons.star, color: NatureColors.primaryGreen, size: 20),
-                  const SizedBox(width: 8),
-                  const Text(
-                    'Standard Recipes',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: NatureColors.darkGray),
-                  ),
-                  const SizedBox(width: 8),
-                  _buildBadge('${recipes.length}', Colors.white, NatureColors.primaryGreen),
-                ],
-              ),
-            ),
-            const SizedBox(height: 8),
-            if (recipes.isEmpty)
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: Text('No standard recipes', style: TextStyle(color: NatureColors.mediumGray)),
-              )
-            else
-              ...recipes.map(_buildRecipeCard),
-          ],
-        );
+        final recipes = adminProvider.standardRecipes;
+        return _buildRecipesList(recipes);
       },
     );
   }
@@ -656,28 +631,24 @@ class _RecipesPageState extends State<RecipesPage> with TickerProviderStateMixin
                 children: [
                   _buildEnhancedChip(Icons.local_dining, recipe.method.name.toUpperCase(), NatureColors.primaryGreen),
                   _buildEnhancedChip(Icons.eco, recipe.cropTarget, NatureColors.lightGreen),
-                  if (!recipe.isStandard) ...[
-                    _buildEnhancedChip(Icons.star, '${recipe.avgRating.toStringAsFixed(1)} (${recipe.totalRatings})', Colors.amber[700]!),
-                    _buildEnhancedChip(Icons.favorite, '${recipe.likes}', Colors.red[400]!),
-                  ],
+                  _buildEnhancedChip(Icons.star, '${recipe.avgRating.toStringAsFixed(1)} (${recipe.totalRatings})', Colors.amber[700]!),
+                  _buildEnhancedChip(Icons.favorite, '${recipe.likes}', Colors.red[400]!),
                 ],
               ),
               const SizedBox(height: 16),
               // Interactive rating and favorites section
-              if (!recipe.isStandard) ...[
-                Row(
-                  children: [
-                    // Rating section
-                    Expanded(
-                      child: _buildRatingSection(recipe),
-                    ),
-                    const SizedBox(width: 16),
-                    // Favorites button
-                    _buildFavoritesButton(recipe),
-                  ],
-                ),
-                const SizedBox(height: 16),
-              ],
+              Row(
+                children: [
+                  // Rating section
+                  Expanded(
+                    child: _buildRatingSection(recipe),
+                  ),
+                  const SizedBox(width: 16),
+                  // Favorites button
+                  _buildFavoritesButton(recipe),
+                ],
+              ),
+              const SizedBox(height: 16),
               // Action buttons
               LayoutBuilder(
                 builder: (context, constraints) {
