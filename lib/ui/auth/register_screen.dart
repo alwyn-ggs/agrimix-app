@@ -19,6 +19,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _confirmPassword = TextEditingController();
   final _membershipId = TextEditingController();
   bool _acceptedTerms = false;
+  bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
 
   void _showUnderReviewDialog(BuildContext context) {
     showDialog(
@@ -295,6 +297,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 Icons.lock_outlined,
                                 color: NatureColors.pureBlack,
                               ),
+                              suffixIcon: IconButton(
+                                icon: Icon(
+                                  _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                                  color: NatureColors.mediumGray,
+                                ),
+                                onPressed: () {
+                                  setState(() {
+                                    _obscurePassword = !_obscurePassword;
+                                  });
+                                },
+                              ),
                               filled: true,
                               fillColor: NatureColors.offWhite.withAlpha((0.8 * 255).round()),
                               border: OutlineInputBorder(
@@ -322,7 +335,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 color: NatureColors.darkGray,
                               ),
                             ),
-                            obscureText: true,
+                            obscureText: _obscurePassword,
                             validator: (v) => Validators.minLength(v, 6, label: 'Password'),
                           ),
                           const SizedBox(height: 16),
@@ -340,6 +353,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 Icons.lock_outline,
                                 color: NatureColors.pureBlack,
                               ),
+                              suffixIcon: IconButton(
+                                icon: Icon(
+                                  _obscureConfirmPassword ? Icons.visibility_off : Icons.visibility,
+                                  color: NatureColors.mediumGray,
+                                ),
+                                onPressed: () {
+                                  setState(() {
+                                    _obscureConfirmPassword = !_obscureConfirmPassword;
+                                  });
+                                },
+                              ),
                               filled: true,
                               fillColor: NatureColors.offWhite.withAlpha((0.8 * 255).round()),
                               border: OutlineInputBorder(
@@ -367,7 +391,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 color: NatureColors.darkGray,
                               ),
                             ),
-                            obscureText: true,
+                            obscureText: _obscureConfirmPassword,
                             validator: (v) {
                               if (v == null || v.isEmpty) return 'Confirm Password is required';
                               if (v != _password.text) return 'Passwords do not match';

@@ -538,32 +538,9 @@ class _FermentationTabState extends State<FermentationTab> with TickerProviderSt
 
   Future<void> _deleteFermentationLog(BuildContext context, FermentationLog log) async {
     try {
-      // Show loading indicator
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        useRootNavigator: true,
-        builder: (context) => const Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
-
-      // Delete the fermentation log
+      // Delete the fermentation log (no loading animation)
       final provider = Provider.of<FermentationProvider>(context, listen: false);
       await provider.deleteFermentationLog(log.id);
-
-      // Close loading dialog (ensure we target the root navigator)
-      if (context.mounted) {
-        final nav = Navigator.of(context, rootNavigator: true);
-        if (nav.canPop()) nav.pop();
-        // Extra safety pop on next frame in case of nested routes
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (context.mounted) {
-            final nav2 = Navigator.of(context, rootNavigator: true);
-            if (nav2.canPop()) nav2.pop();
-          }
-        });
-      }
 
       // Show success message
       if (context.mounted) {
@@ -571,28 +548,18 @@ class _FermentationTabState extends State<FermentationTab> with TickerProviderSt
           SnackBar(
             content: Text('Fermentation log "${log.title}" deleted successfully'),
             backgroundColor: Colors.green,
+            duration: const Duration(seconds: 2),
           ),
         );
       }
     } catch (e) {
-      // Close loading dialog (ensure we target the root navigator)
-      if (context.mounted) {
-        final nav = Navigator.of(context, rootNavigator: true);
-        if (nav.canPop()) nav.pop();
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (context.mounted) {
-            final nav2 = Navigator.of(context, rootNavigator: true);
-            if (nav2.canPop()) nav2.pop();
-          }
-        });
-      }
-
       // Show error message
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to delete fermentation log: $e'),
             backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
           ),
         );
       }

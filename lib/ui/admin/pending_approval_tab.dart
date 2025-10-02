@@ -100,7 +100,7 @@ class PendingApprovalTab extends StatelessWidget {
                     Text('Loading: ${adminProvider.loading}'),
                     Text('Error: ${adminProvider.error ?? 'None'}'),
                     const SizedBox(height: 8),
-                    Text('User breakdown:'),
+                    const Text('User breakdown:'),
                     ...adminProvider.users.map((user) => Text(
                       '  ${user.name} - ${user.role} - Approved: ${user.approved}',
                       style: const TextStyle(fontSize: 12),

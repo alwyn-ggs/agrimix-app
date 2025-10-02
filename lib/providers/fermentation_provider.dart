@@ -11,6 +11,9 @@ class FermentationProvider extends ChangeNotifier {
   List<FermentationLog> myLogs = [];
   bool _isLoading = false;
   String? _error;
+  
+  // Track recently deleted items to prevent stream from re-adding them
+  final Set<String> _recentlyDeleted = <String>{};
 
   FermentationProvider(this._repo, this._notifs);
 
@@ -20,7 +23,8 @@ class FermentationProvider extends ChangeNotifier {
   void watch(String userId) {
     _repo.watchMyLogs(userId).listen(
       (v) {
-        myLogs = v;
+        // Filter out recently deleted items to prevent them from reappearing
+        myLogs = v.where((log) => !_recentlyDeleted.contains(log.id)).toList();
         _error = null;
         notifyListeners();
       },
@@ -218,13 +222,20 @@ class FermentationProvider extends ChangeNotifier {
   }
 
   Future<void> deleteFermentationLog(String logId) async {
+    // Store original list for rollback if needed
+    final originalLogs = List<FermentationLog>.from(myLogs);
+    
     try {
       AppLogger.info('DEBUG: Starting deleteFermentationLog for ID: $logId');
-      _isLoading = true;
-      _error = null;
-      notifyListeners();
-
-      // Delete the log first (faster)
+      
+      // Mark as recently deleted to prevent stream from re-adding it
+      _recentlyDeleted.add(logId);
+      
+      // Optimistically remove from local list immediately (makes it disappear right away)
+      myLogs.removeWhere((log) => log.id == logId);
+      notifyListeners(); // Update UI immediately
+      
+      // Delete from database
       AppLogger.info('DEBUG: Calling _repo.deleteFermentationLog for ID: $logId');
       await _repo.deleteFermentationLog(logId);
       AppLogger.info('DEBUG: Repository delete completed for ID: $logId');
@@ -235,14 +246,21 @@ class FermentationProvider extends ChangeNotifier {
         AppLogger.warning('Failed to cancel notifications for log $logId: $e');
       });
       
+      // Clean up the recently deleted tracking after a delay
+      Future.delayed(const Duration(seconds: 3), () {
+        _recentlyDeleted.remove(logId);
+      });
+      
       AppLogger.info('DEBUG: deleteFermentationLog completed successfully for ID: $logId');
     } catch (e) {
       AppLogger.error('DEBUG: deleteFermentationLog failed for ID: $logId, error: $e');
+      
+      // If delete failed, remove from recently deleted and restore the original list
+      _recentlyDeleted.remove(logId);
+      myLogs = originalLogs;
       _error = e.toString();
-      rethrow;
-    } finally {
-      _isLoading = false;
       notifyListeners();
+      rethrow;
     }
   }
 

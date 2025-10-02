@@ -57,7 +57,7 @@ class _MyRecipesTabState extends State<MyRecipesTab> with TickerProviderStateMix
             Tab(icon: Icon(Icons.edit_note), text: 'Drafts'),
             Tab(icon: Icon(Icons.favorite), text: 'Favorites'),
             Tab(icon: Icon(Icons.history), text: 'History'),
-            Tab(icon: Icon(Icons.person), text: 'My Created'),
+            Tab(icon: Icon(Icons.public), text: 'Published'),
           ],
         ),
       ),
@@ -160,9 +160,11 @@ class _MyRecipesTabState extends State<MyRecipesTab> with TickerProviderStateMix
 
         if (!snapshot.hasData || snapshot.data!.isEmpty) {
           return _buildEmptyState(
-            icon: Icons.create,
-            title: 'No Created Recipes',
-            subtitle: 'Create your first recipe to see it here',
+            icon: Icons.public,
+            title: 'No Published Recipes',
+            subtitle: 'Share your draft recipes to see them here',
+            actionText: 'View Drafts',
+            onAction: () => _tabController.animateTo(0), // Go to Drafts tab
           );
         }
 
@@ -910,7 +912,8 @@ class _MyRecipesTabState extends State<MyRecipesTab> with TickerProviderStateMix
       final allRecipes = await recipesRepo.getAllRecipes();
       return allRecipes.where((recipe) => 
         recipe.ownerUid == userId && 
-        recipe.visibility == RecipeVisibility.public
+        recipe.visibility == RecipeVisibility.public &&
+        !recipe.isStandard // Exclude standard recipes (created by admin)
       ).toList();
     } catch (e) {
       return [];
