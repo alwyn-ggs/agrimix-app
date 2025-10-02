@@ -88,13 +88,31 @@ service cloud.firestore {
         // Users can read their own favorites
         allow read: if isSignedIn() && request.auth.uid == userId;
         
-        // Users can create/delete their own favorites
-        allow create, delete: if isSignedIn() && request.auth.uid == userId
+        // Users can create their own favorites
+        allow create: if isSignedIn() && request.auth.uid == userId
           && request.resource.data.recipeId is string
           && request.resource.data.createdAt is timestamp;
         
+        // Users can delete their own favorites (no data validation needed for delete)
+        allow delete: if isSignedIn() && request.auth.uid == userId;
+        
         // No updates allowed for favorites (only create/delete)
         allow update: if false;
+      }
+
+      // User activity subcollection: users/{userId}/activity/{activityId}
+      match /activity/{activityId} {
+        // Users can read their own activity
+        allow read: if isSignedIn() && request.auth.uid == userId;
+        
+        // Users can create/update their own activity (for tracking recipe views/actions)
+        allow create, update: if isSignedIn() && request.auth.uid == userId
+          && request.resource.data.recipeId is string
+          && request.resource.data.action is string
+          && request.resource.data.timestamp is timestamp;
+        
+        // Users can delete their own activity
+        allow delete: if isSignedIn() && request.auth.uid == userId;
       }
     }
 

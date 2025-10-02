@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../services/firestore_service.dart';
 import '../services/storage_service.dart';
 import '../models/recipe.dart';
+import '../utils/logger.dart';
 
 class RecipesRepo {
   final FirestoreService _fs;
@@ -44,6 +45,79 @@ class RecipesRepo {
       await _fs.deleteDocument(Recipe.collectionPath, recipeId);
     } catch (e) {
       throw Exception('Failed to delete recipe: $e');
+    }
+  }
+
+  // User Activity Tracking
+  Future<void> trackRecipeView(String userId, String recipeId, {String action = 'viewed'}) async {
+    try {
+      final userActivityRef = FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .collection('activity');
+      
+      await userActivityRef.doc('recipe_$recipeId').set({
+        'recipeId': recipeId,
+        'action': action,
+        'timestamp': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+    } catch (e) {
+      // Don't throw error for tracking failures
+      AppLogger.warning('Failed to track recipe activity ($action): $e');
+    }
+  }
+
+  Future<List<Recipe>> getRecentlyViewedRecipes(String userId, {int limit = 20}) async {
+    try {
+      final userActivityRef = FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .collection('activity');
+      
+      // Get all recipe activities (viewed, created, started)
+      final activityDocs = await userActivityRef
+          .orderBy('timestamp', descending: true)
+          .limit(limit)
+          .get();
+      
+      final recipes = <Recipe>[];
+      for (final doc in activityDocs.docs) {
+        final recipeId = doc.data()['recipeId'] as String;
+        final recipe = await getRecipe(recipeId);
+        if (recipe != null) {
+          recipes.add(recipe);
+        }
+      }
+      
+      return recipes;
+    } catch (e) {
+      AppLogger.error('Failed to get recently viewed recipes: $e', e);
+      return [];
+    }
+  }
+
+  // Clear recipe history
+  Future<void> clearRecipeHistory(String userId) async {
+    try {
+      final userActivityRef = FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .collection('activity');
+      
+      // Get all activity documents
+      final activityDocs = await userActivityRef.get();
+      
+      // Delete all activity documents in batches
+      final batch = FirebaseFirestore.instance.batch();
+      for (final doc in activityDocs.docs) {
+        batch.delete(doc.reference);
+      }
+      
+      await batch.commit();
+      AppLogger.warning('Recipe history cleared for user: $userId');
+    } catch (e) {
+      AppLogger.error('Failed to clear recipe history: $e', e);
+      throw Exception('Failed to clear recipe history: $e');
     }
   }
 

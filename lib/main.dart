@@ -68,15 +68,23 @@ Future<void> main() async {
             badge: true,
             sound: true,
           )
-          .then((_) {})
+          .then((_) {
+            AppLogger.info('Notification permissions granted');
+          })
           .timeout(
-            const Duration(seconds: 5),
+            const Duration(seconds: 10), // Increased timeout
             onTimeout: () {
               AppLogger.warning('Warning: Notification permission request timed out');
             },
           )
           .catchError((error) {
-            AppLogger.warning('Warning: Notification permission request failed: $error');
+            // Ignore Google Play Services errors - they're non-fatal
+            if (error.toString().contains('GoogleApiManager') || 
+                error.toString().contains('SecurityException')) {
+              AppLogger.info('Google Play Services warning (non-fatal): $error');
+            } else {
+              AppLogger.warning('Warning: Notification permission request failed: $error');
+            }
           });
     }
     

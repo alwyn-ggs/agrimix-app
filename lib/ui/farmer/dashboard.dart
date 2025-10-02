@@ -20,6 +20,7 @@ class Dashboard extends StatefulWidget {
 
 class _DashboardState extends State<Dashboard> {
   int _index = 0;
+  int? _myRecipesTabIndex;
 
   @override
   Widget build(BuildContext context) {
@@ -67,6 +68,14 @@ class _DashboardState extends State<Dashboard> {
       case 0:
         return HomeTab(
           onTapBrowseRecipes: () => setState(() => _index = 1),
+          onTapMyDrafts: () => setState(() {
+            _index = 4;
+            _myRecipesTabIndex = 0; // Drafts tab
+          }),
+          onTapFavorites: () => setState(() {
+            _index = 4;
+            _myRecipesTabIndex = 1; // Favorites tab
+          }),
         );
       case 1:
         return const RecipesTab();
@@ -75,7 +84,10 @@ class _DashboardState extends State<Dashboard> {
       case 3:
         return const CommunityTab();
       case 4:
-        return const MyRecipesTab();
+        final tab = MyRecipesTab(initialTabIndex: _myRecipesTabIndex);
+        // Reset the tab index after creating the widget
+        _myRecipesTabIndex = null;
+        return tab;
       case 5:
         return const ProfileTab();
       default:

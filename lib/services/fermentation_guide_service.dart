@@ -347,8 +347,6 @@ class FermentationGuideService {
         description: 'Select and prepare fruits for fermentation',
         details: [
           'Prepare the fruit, either picked or fallen',
-          'Use grapes only for grapes and citrus only for citrus',
-          'These fruits are not good when used on other crops due to their cold and sour characteristics',
           'Choose ripe, sweet fruits for best results',
           'Remove any damaged or rotten parts',
         ],

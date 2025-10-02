@@ -8,7 +8,8 @@ import '../../../repositories/recipes_repo.dart';
 import '../../../models/recipe.dart';
 
 class MyRecipesTab extends StatefulWidget {
-  const MyRecipesTab({super.key});
+  final int? initialTabIndex;
+  const MyRecipesTab({super.key, this.initialTabIndex});
 
   @override
   State<MyRecipesTab> createState() => _MyRecipesTabState();
@@ -23,7 +24,11 @@ class _MyRecipesTabState extends State<MyRecipesTab> with TickerProviderStateMix
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(
+      length: 4, 
+      vsync: this,
+      initialIndex: widget.initialTabIndex ?? 0,
+    );
   }
 
   @override
@@ -140,7 +145,7 @@ class _MyRecipesTabState extends State<MyRecipesTab> with TickerProviderStateMix
         }
 
         final history = snapshot.data!;
-        return _buildRecipeList(history, 'Recently Viewed');
+        return _buildRecipeListWithClear(history, 'Recently Viewed', userId);
       },
     );
   }
@@ -293,6 +298,134 @@ class _MyRecipesTabState extends State<MyRecipesTab> with TickerProviderStateMix
                   ),
                 ),
               ),
+            ],
+          ),
+        ),
+        
+        // Search and Filter
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  decoration: const InputDecoration(
+                    hintText: 'Search recipes...',
+                    border: OutlineInputBorder(),
+                    isDense: true,
+                    prefixIcon: Icon(Icons.search),
+                  ),
+                  onChanged: (value) => setState(() => _searchQuery = value),
+                ),
+              ),
+              const SizedBox(width: 12),
+              DropdownButton<RecipeMethod?>(
+                value: _selectedMethod,
+                hint: const Text('Method'),
+                items: const [
+                  DropdownMenuItem(value: null, child: Text('All')),
+                  DropdownMenuItem(value: RecipeMethod.ffj, child: Text('FFJ')),
+                  DropdownMenuItem(value: RecipeMethod.fpj, child: Text('FPJ')),
+                ],
+                onChanged: (value) => setState(() => _selectedMethod = value),
+              ),
+            ],
+          ),
+        ),
+        
+        // Recipe List
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            itemCount: filteredRecipes.length,
+            itemBuilder: (context, index) {
+              final recipe = filteredRecipes[index];
+              return _buildRecipeCard(recipe);
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRecipeListWithClear(List<Recipe> recipes, String title, String userId) {
+    // Filter recipes based on search query and selected method
+    final filteredRecipes = recipes.where((recipe) {
+      // Filter by search query
+      if (_searchQuery.isNotEmpty) {
+        final query = _searchQuery.toLowerCase();
+        final matchesSearch = recipe.name.toLowerCase().contains(query) ||
+            recipe.description.toLowerCase().contains(query) ||
+            recipe.ingredients.any((ing) => ing.name.toLowerCase().contains(query));
+        if (!matchesSearch) return false;
+      }
+      
+      // Filter by method
+      if (_selectedMethod != null && recipe.method != _selectedMethod) {
+        return false;
+      }
+      
+      return true;
+    }).toList();
+
+    return Column(
+      children: [
+        // Header with count and clear button
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: NatureColors.lightGreen.withAlpha((0.1 * 255).round()),
+            border: Border(
+              bottom: BorderSide(
+                color: NatureColors.lightGreen.withAlpha((0.3 * 255).round()),
+                width: 1,
+              ),
+            ),
+          ),
+          child: Row(
+            children: [
+              const Icon(
+                Icons.history,
+                color: NatureColors.primaryGreen,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: NatureColors.darkGray,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: NatureColors.primaryGreen,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  '${filteredRecipes.length}',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+              const Spacer(),
+              if (recipes.isNotEmpty)
+                TextButton.icon(
+                  onPressed: () => _confirmClearHistory(userId),
+                  icon: const Icon(Icons.clear_all, size: 16),
+                  label: const Text('Clear History'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: Colors.redAccent,
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  ),
+                ),
             ],
           ),
         ),
@@ -679,6 +812,48 @@ class _MyRecipesTabState extends State<MyRecipesTab> with TickerProviderStateMix
     }
   }
 
+  Future<void> _confirmClearHistory(String userId) async {
+    if (_deleting) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Clear History?'),
+        content: const Text('This will permanently clear all your recipe viewing history. This action cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(foregroundColor: Colors.redAccent),
+            child: const Text('Clear'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    try {
+      setState(() => _deleting = true);
+      final repo = context.read<RecipesRepo>();
+      await repo.clearRecipeHistory(userId);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('History cleared successfully')),
+      );
+      // Trigger refresh by reloading the current tab view
+      setState(() {});
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to clear history: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _deleting = false);
+    }
+  }
+
   String _formatDate(DateTime date) {
     final now = DateTime.now();
     final difference = now.difference(date);
@@ -721,9 +896,12 @@ class _MyRecipesTabState extends State<MyRecipesTab> with TickerProviderStateMix
   }
 
   Future<List<Recipe>> _getRecentlyViewedRecipes(String userId) async {
-    // This would need to be implemented with a viewing history system
-    // For now, return empty list
-    return [];
+    final recipesRepo = context.read<RecipesRepo>();
+    try {
+      return await recipesRepo.getRecentlyViewedRecipes(userId, limit: 20);
+    } catch (e) {
+      return [];
+    }
   }
 
   Future<List<Recipe>> _getMyCreatedRecipes(String userId) async {

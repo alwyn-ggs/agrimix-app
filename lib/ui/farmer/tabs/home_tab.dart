@@ -7,7 +7,14 @@ import '../../../models/announcement.dart';
 
 class HomeTab extends StatelessWidget {
   final VoidCallback? onTapBrowseRecipes;
-  const HomeTab({super.key, this.onTapBrowseRecipes});
+  final VoidCallback? onTapMyDrafts;
+  final VoidCallback? onTapFavorites;
+  const HomeTab({
+    super.key, 
+    this.onTapBrowseRecipes,
+    this.onTapMyDrafts,
+    this.onTapFavorites,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -213,13 +220,9 @@ class HomeTab extends StatelessWidget {
                 child: _buildActionCard(
                   icon: Icons.edit_note,
                   title: 'My Drafts',
-                  subtitle: 'Continue working',
+                  subtitle: '',
                   color: Colors.orange,
-                  onTap: () {
-                    // Navigate to My Recipes tab
-                    // Note: This would ideally switch to the My Recipes tab and select drafts
-                    // For now, just navigate to the tab
-                  },
+                  onTap: onTapMyDrafts,
                 ),
               ),
               const SizedBox(width: 12),
@@ -229,11 +232,7 @@ class HomeTab extends StatelessWidget {
                   title: 'Favorites',
                   subtitle: 'Liked recipes',
                   color: Colors.red,
-                  onTap: () {
-                    // Navigate to My Recipes tab
-                    // Note: This would ideally switch to the My Recipes tab and select favorites
-                    // For now, just navigate to the tab
-                  },
+                  onTap: onTapFavorites,
                 ),
               ),
             ],

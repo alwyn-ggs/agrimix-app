@@ -656,6 +656,9 @@ class _FormulateRecipeFlowState extends State<FormulateRecipeFlow> {
       final generated = _generateRecipe(ownerUid: owner);
       await recipesRepo.createRecipe(generated);
       
+      // Track recipe creation in history
+      await recipesRepo.trackRecipeView(owner, generated.id, action: 'created');
+      
       if (mounted) {
         setState(() => _saving = false);
         ScaffoldMessenger.of(context).showSnackBar(
@@ -701,6 +704,9 @@ class _FormulateRecipeFlowState extends State<FormulateRecipeFlow> {
       final generated = _generateRecipe(ownerUid: owner);
       final recipesRepo = context.read<RecipesRepo>();
       await recipesRepo.createRecipe(generated);
+
+      // Track recipe creation in history
+      await recipesRepo.trackRecipeView(owner, generated.id, action: 'started');
 
       // Create fermentation log automatically
       await _createAutoFermentationLog(context, generated, owner);
@@ -782,10 +788,10 @@ class _FormulateRecipeFlowState extends State<FormulateRecipeFlow> {
       totalWeight: _selectedBatchSize,
     );
     
-    // Convert GuideStep to RecipeStep
+    // Convert GuideStep to RecipeStep (exclude tips for draft)
     final recipeSteps = guide.steps.map((guideStep) => RecipeStep(
       order: guideStep.order,
-      text: '${guideStep.title}\n\n${guideStep.description}\n\nDetailed Instructions:\n${guideStep.details.map((detail) => '• $detail').join('\n')}${guideStep.tips.isNotEmpty ? '\n\nTips:\n${guideStep.tips.map((tip) => '• $tip').join('\n')}' : ''}',
+      text: '${guideStep.title}\n\n${guideStep.description}\n\nDetailed Instructions:\n${guideStep.details.map((detail) => '• $detail').join('\n')}',
     )).toList();
     
     return Recipe(
@@ -878,7 +884,13 @@ class _FormulateRecipeFlowState extends State<FormulateRecipeFlow> {
     final factor = totalWeight / totalCalculated;
     
     for (final key in weights.keys) {
-      weights[key] = (weights[key]! * factor).clamp(0.1, totalWeight * 0.8); // Min 0.1kg, max 80% of total
+      if (ingredients.length == 1) {
+        // For single ingredient, use full batch size
+        weights[key] = totalWeight;
+      } else {
+        // For multiple ingredients, normalize with reasonable limits
+        weights[key] = (weights[key]! * factor).clamp(0.1, totalWeight * 0.8); // Min 0.1kg, max 80% of total
+      }
     }
     
     return weights;

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
@@ -38,9 +39,24 @@ class AppWrapper extends StatelessWidget {
             );
           }
           
-          // Show splash while loading
+          // Show splash while loading with timeout fallback
           if (authProvider.loading) {
-            return const SplashScreen();
+            return FutureBuilder(
+              future: Future.delayed(const Duration(seconds: 20)),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.done) {
+                  // If still loading after 20 seconds, show error
+                  return AppErrorPage(
+                    title: 'Loading Timeout',
+                    message: 'The app is taking too long to load. Please try again.',
+                    onRetry: () {
+                      authProvider.refreshCurrentUser();
+                    },
+                  );
+                }
+                return const SplashScreen();
+              },
+            );
           }
           
           // If not logged in, show onboarding once then login

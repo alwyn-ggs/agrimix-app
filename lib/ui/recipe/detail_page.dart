@@ -35,11 +35,18 @@
   class _RecipeDetailBodyState extends State<_RecipeDetailBody> {
     late Future<Recipe?> _recipeFuture;
 
-    @override
-    void initState() {
-      super.initState();
-      _recipeFuture = context.read<RecipesRepo>().getRecipe(widget.recipeId);
+  @override
+  void initState() {
+    super.initState();
+    _recipeFuture = context.read<RecipesRepo>().getRecipe(widget.recipeId);
+    
+    // Track recipe view for history
+    final auth = context.read<AuthProvider>();
+    final userId = auth.currentUser?.uid;
+    if (userId != null) {
+      context.read<RecipesRepo>().trackRecipeView(userId, widget.recipeId);
     }
+  }
 
     @override
     Widget build(BuildContext context) {

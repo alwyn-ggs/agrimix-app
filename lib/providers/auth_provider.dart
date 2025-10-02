@@ -33,7 +33,7 @@ class AuthProvider extends ChangeNotifier with ErrorHandlerMixin {
 
   void _init() {
     AppLogger.debug('AuthProvider: Initializing...');
-    // Ensure remember-me preference is loaded BEFORE listening to auth changes
+    // Load remember-me preference and start listening to auth changes
     _loadRememberPreference().then((_) {
       auth.authStateChanges().listen(
         (User? user) {
@@ -57,6 +57,10 @@ class AuthProvider extends ChangeNotifier with ErrorHandlerMixin {
           notifyListeners();
         },
       );
+    }).catchError((error) {
+      AppLogger.error('AuthProvider: Failed to initialize: $error', error);
+      loading = false;
+      notifyListeners();
     });
   }
 
@@ -67,17 +71,27 @@ class AuthProvider extends ChangeNotifier with ErrorHandlerMixin {
       AppLogger.debug('AuthProvider: Loading user data for uid: $uid');
       AppLogger.debug('AuthProvider: rememberMe status: $_rememberMe');
       
-      _currentAppUser = await usersRepo.getUser(uid);
+      // Add timeout to prevent indefinite loading
+      _currentAppUser = await usersRepo.getUser(uid).timeout(
+        const Duration(seconds: 15),
+        onTimeout: () {
+          throw Exception('User data loading timed out');
+        },
+      );
       
       // Check if user document exists
       if (_currentAppUser == null) {
         AppLogger.warning('AuthProvider: User document not found for uid: $uid');
         
+        // This means the user exists in Firebase Auth but not in Firestore
+        // This can happen if the user was created outside the normal registration flow
+        // or if there was an error during registration
+        AppLogger.error('AuthProvider: User exists in Firebase Auth but not in Firestore');
+        AppLogger.error('AuthProvider: This user needs to be registered properly');
         
-        // Double check after creation
-        if (_currentAppUser == null) {
-          throw Exception('User account still not found after creation attempt.');
-        }
+        // Sign out the user since they don't have a proper account
+        await signOut();
+        throw Exception('Account not properly registered. Please register first.');
       }
       
       // Subscribe to announcements topic for all users
@@ -107,14 +121,8 @@ class AuthProvider extends ChangeNotifier with ErrorHandlerMixin {
       AppLogger.debug('AuthProvider: User name: ${_currentAppUser?.name}');
       AppLogger.debug('AuthProvider: User email: ${_currentAppUser?.email}');
       
-      // Check remember me preference after loading user data
-      AppLogger.debug('AuthProvider: Final rememberMe check: $_rememberMe');
-      if (!_rememberMe) {
-        AppLogger.debug('AuthProvider: rememberMe=false → signing out after data load');
-        await signOut();
-        return;
-      }
-      AppLogger.debug('AuthProvider: rememberMe=true → proceeding with login');
+      // User data loaded successfully, proceed with login
+      AppLogger.debug('AuthProvider: User data loaded, proceeding with login');
       
       notifyListeners();
     } catch (e) {
@@ -146,18 +154,8 @@ class AuthProvider extends ChangeNotifier with ErrorHandlerMixin {
       await auth.signIn(email, password);
       final uid = auth.currentUser?.uid;
       if (uid != null) {
-        try {
-          final token = await messaging.getToken();
-          if (token != null) {
-            await messaging.saveTokenToUser(uid, token);
-          }
-        } catch (e) {
-          // Non-fatal: permission may be blocked
-          AppLogger.warning('AuthProvider.signIn: skipping token save due to error: $e');
-        }
-        FirebaseMessaging.instance.onTokenRefresh.listen((newToken) {
-          messaging.saveTokenToUser(uid, newToken);
-        });
+        // Try to get and save FCM token, but don't let it block login
+        _handleFCMTokenSafely(uid);
       }
     } catch (e) {
       handleError(e, context: 'Sign in');
@@ -257,6 +255,47 @@ class AuthProvider extends ChangeNotifier with ErrorHandlerMixin {
       AppLogger.debug('AuthProvider: Error loading remember_me preference: $e');
       _rememberMe = false;
     }
+  }
+
+  /// Handle FCM token operations safely without blocking authentication
+  void _handleFCMTokenSafely(String uid) {
+    // Run in background, don't await
+    Future.delayed(Duration.zero, () async {
+      try {
+        final token = await messaging.getToken().timeout(
+          const Duration(seconds: 5),
+          onTimeout: () {
+            AppLogger.info('FCM token request timed out (non-fatal)');
+            return null;
+          },
+        );
+        
+        if (token != null) {
+          await messaging.saveTokenToUser(uid, token).timeout(
+            const Duration(seconds: 5),
+            onTimeout: () {
+              AppLogger.info('FCM token save timed out (non-fatal)');
+            },
+          );
+          AppLogger.debug('FCM token saved successfully');
+        }
+        
+        // Set up token refresh listener
+        FirebaseMessaging.instance.onTokenRefresh.listen((newToken) {
+          messaging.saveTokenToUser(uid, newToken).catchError((error) {
+            AppLogger.info('FCM token refresh save failed (non-fatal): $error');
+          });
+        });
+      } catch (e) {
+        // Log but don't throw - FCM issues shouldn't block authentication
+        if (e.toString().contains('GoogleApiManager') || 
+            e.toString().contains('SecurityException')) {
+          AppLogger.info('Google Play Services warning during FCM setup (non-fatal): $e');
+        } else {
+          AppLogger.warning('FCM token setup failed (non-fatal): $e');
+        }
+      }
+    });
   }
 
 }
