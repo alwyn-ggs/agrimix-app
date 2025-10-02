@@ -33,21 +33,40 @@ class AuthProvider extends ChangeNotifier with ErrorHandlerMixin {
 
   void _init() {
     AppLogger.debug('AuthProvider: Initializing...');
-    // Load remember-me preference and start listening to auth changes
-    _loadRememberPreference().then((_) {
+    // Immediate initialization with Firebase readiness check
+    _initializeWithReadinessCheck();
+  }
+
+  Future<void> _initializeWithReadinessCheck() async {
+    try {
+      AppLogger.debug('AuthProvider: Starting SIMPLIFIED initialization for fresh install...');
+      
+      // Load remember-me preference first
+      await _loadRememberPreference();
+      
+      // Set up auth state listener with simplified handling
+      AppLogger.debug('AuthProvider: Setting up SIMPLIFIED auth state listener...');
       auth.authStateChanges().listen(
         (User? user) {
           AppLogger.debug('AuthProvider: Auth state changed - user: ${user?.uid}');
           _currentUser = user;
-          if (user != null) {
-            loading = true;
-            notifyListeners();
-            _loadUserData(user.uid);
-          } else {
+          
+          if (user == null) {
+            // User signed out
             _currentAppUser = null;
             loading = false;
-            AppLogger.debug('AuthProvider: No user, setting loading to false');
+            AppLogger.debug('AuthProvider: User signed out, clearing state');
             notifyListeners();
+          } else {
+            // User is signed in - check if we need to load user data
+            if (_currentAppUser == null) {
+              AppLogger.debug('AuthProvider: User signed in but no app user data, loading...');
+              _loadUserDataDirectly(user.uid).catchError((e) {
+                AppLogger.error('AuthProvider: Failed to load user data in auth state listener: $e', e);
+                loading = false;
+                notifyListeners();
+              });
+            }
           }
         },
         onError: (error) {
@@ -57,111 +76,172 @@ class AuthProvider extends ChangeNotifier with ErrorHandlerMixin {
           notifyListeners();
         },
       );
-    }).catchError((error) {
+      
+      AppLogger.debug('AuthProvider: Simplified initialization completed');
+      
+    } catch (error) {
       AppLogger.error('AuthProvider: Failed to initialize: $error', error);
       loading = false;
       notifyListeners();
-    });
-  }
-
-  Future<void> _loadUserData(String uid) async {
-    try {
-      loading = true;
-      notifyListeners();
-      AppLogger.debug('AuthProvider: Loading user data for uid: $uid');
-      AppLogger.debug('AuthProvider: rememberMe status: $_rememberMe');
-      
-      // Add timeout to prevent indefinite loading
-      _currentAppUser = await usersRepo.getUser(uid).timeout(
-        const Duration(seconds: 15),
-        onTimeout: () {
-          throw Exception('User data loading timed out');
-        },
-      );
-      
-      // Check if user document exists
-      if (_currentAppUser == null) {
-        AppLogger.warning('AuthProvider: User document not found for uid: $uid');
-        
-        // This means the user exists in Firebase Auth but not in Firestore
-        // This can happen if the user was created outside the normal registration flow
-        // or if there was an error during registration
-        AppLogger.error('AuthProvider: User exists in Firebase Auth but not in Firestore');
-        AppLogger.error('AuthProvider: This user needs to be registered properly');
-        
-        // Sign out the user since they don't have a proper account
-        await signOut();
-        throw Exception('Account not properly registered. Please register first.');
-      }
-      
-      // Subscribe to announcements topic for all users
-      try {
-        await messaging.subscribeToTopic('announcements');
-        AppLogger.debug('AuthProvider: Subscribed to announcements topic');
-      } catch (e) {
-        AppLogger.debug('AuthProvider: Failed to subscribe to announcements topic: $e');
-        // Non-fatal error, continue
-      }
-      
-      // Deliver pending notifications when user logs in
-      try {
-        if (notificationService != null) {
-          await notificationService!.deliverPendingNotifications(uid);
-          AppLogger.debug('AuthProvider: Delivered pending notifications for user $uid');
-        }
-      } catch (e) {
-        AppLogger.debug('AuthProvider: Failed to deliver pending notifications: $e');
-        // Non-fatal error, continue
-      }
-      
-      loading = false; // Set loading to false when user data is loaded
-      AppLogger.debug('AuthProvider: User data loaded successfully');
-      AppLogger.debug('AuthProvider: User approved status: ${_currentAppUser?.approved}');
-      AppLogger.debug('AuthProvider: User role: ${_currentAppUser?.role}');
-      AppLogger.debug('AuthProvider: User name: ${_currentAppUser?.name}');
-      AppLogger.debug('AuthProvider: User email: ${_currentAppUser?.email}');
-      
-      // User data loaded successfully, proceed with login
-      AppLogger.debug('AuthProvider: User data loaded, proceeding with login');
-      
-      notifyListeners();
-    } catch (e) {
-      AppLogger.debug('AuthProvider: Error loading user data: $e');
-      handleError(e, context: 'Loading user data');
-      loading = false; // Set loading to false even on error
-      notifyListeners();
     }
   }
+
+
+
 
   Stream<User?> get currentUserStream => auth.authStateChanges();
 
   Future<void> signIn(String email, String password, {bool rememberMe = false}) async {
+    // Prevent multiple simultaneous login attempts
+    if (loading) {
+      AppLogger.debug('AuthProvider: Login already in progress, ignoring duplicate request');
+      return;
+    }
+    
     loading = true;
     clearError();
     notifyListeners();
+    
     try {
       // Save remember-me preference immediately for this session
       _rememberMe = rememberMe;
-      AppLogger.debug('AuthProvider: Setting remember_me to: $rememberMe');
+      AppLogger.debug('AuthProvider: Starting DIRECT sign in for fresh install...');
+      
       try {
         final prefs = await SharedPreferences.getInstance();
         await prefs.setBool('remember_me', rememberMe);
-        AppLogger.debug('AuthProvider: Successfully saved remember_me preference');
       } catch (e) {
         AppLogger.debug('AuthProvider: Error saving remember_me preference: $e');
       }
 
+      // DIRECT Firebase Auth sign in - no delays, no complex checks
+      AppLogger.debug('AuthProvider: Attempting Firebase Auth sign in...');
       await auth.signIn(email, password);
+      AppLogger.debug('AuthProvider: Firebase Auth sign in SUCCESS');
+      
       final uid = auth.currentUser?.uid;
       if (uid != null) {
-        // Try to get and save FCM token, but don't let it block login
+        AppLogger.debug('AuthProvider: Got user UID: $uid, loading user data DIRECTLY...');
+        
+        // DIRECT user data loading for fresh install
+        await _loadUserDataDirectly(uid);
+        
+        // Handle FCM token in background (non-blocking)
         _handleFCMTokenSafely(uid);
+      } else {
+        throw Exception('No user UID after successful sign in');
       }
+      
     } catch (e) {
+      AppLogger.error('AuthProvider: Sign in failed: $e', e);
       handleError(e, context: 'Sign in');
+      loading = false;
+      notifyListeners();
     }
-    loading = false;
-    notifyListeners();
+  }
+
+  /// Direct user data loading for fresh installs - no complex retry logic
+  Future<void> _loadUserDataDirectly(String uid) async {
+    try {
+      AppLogger.debug('AuthProvider: DIRECT user data loading for uid: $uid');
+      
+      // Try to get user data with reasonable timeout
+      _currentAppUser = await usersRepo.getUser(uid).timeout(
+        const Duration(seconds: 8),
+        onTimeout: () => null, // Return null instead of throwing
+      );
+      
+      if (_currentAppUser != null) {
+        AppLogger.debug('AuthProvider: User data found! Name: ${_currentAppUser!.name}, Role: ${_currentAppUser!.role}');
+        await _completeLoginProcess();
+        return;
+      }
+      
+      // If user document doesn't exist, create it immediately
+      AppLogger.debug('AuthProvider: User document not found, creating new user...');
+      await _createUserDocumentDirectly(uid);
+      
+    } catch (e) {
+      AppLogger.error('AuthProvider: Direct user data loading failed: $e');
+      // Don't throw - try to create user document as fallback
+      await _createUserDocumentDirectly(uid);
+    }
+  }
+
+  /// Create user document directly for fresh installs
+  Future<void> _createUserDocumentDirectly(String uid) async {
+    try {
+      final firebaseUser = _currentUser ?? auth.currentUser;
+      if (firebaseUser == null || firebaseUser.email == null) {
+        throw Exception('No valid Firebase user data');
+      }
+      
+      // Determine if admin based on email
+      final email = firebaseUser.email!.toLowerCase();
+      final isAdmin = email.contains('admin') || 
+                      email.endsWith('@agrimix.com') ||
+                      email.contains('administrator');
+      
+      final newUser = AppUser(
+        uid: firebaseUser.uid,
+        email: firebaseUser.email!,
+        name: firebaseUser.displayName ?? firebaseUser.email!.split('@')[0],
+        role: isAdmin ? 'admin' : 'farmer',
+        approved: isAdmin ? true : false, // Auto-approve admins
+        createdAt: DateTime.now(),
+      );
+      
+      AppLogger.debug('AuthProvider: Creating user - Email: ${newUser.email}, Role: ${newUser.role}, Approved: ${newUser.approved}');
+      
+      // Create user document with timeout
+      await usersRepo.createUser(newUser).timeout(const Duration(seconds: 8));
+      
+      // Small delay for Firestore consistency
+      await Future.delayed(const Duration(milliseconds: 300));
+      
+      // Verify creation
+      _currentAppUser = await usersRepo.getUser(uid).timeout(const Duration(seconds: 5));
+      
+      if (_currentAppUser != null) {
+        AppLogger.debug('AuthProvider: User created successfully! Role: ${_currentAppUser!.role}');
+        await _completeLoginProcess();
+      } else {
+        throw Exception('User creation verification failed');
+      }
+      
+    } catch (e) {
+      AppLogger.error('AuthProvider: User creation failed: $e');
+      loading = false;
+      notifyListeners();
+      handleError(Exception('Failed to set up your account. Please try again.'), context: 'User creation');
+    }
+  }
+
+  /// Complete the login process
+  Future<void> _completeLoginProcess() async {
+    try {
+      // Subscribe to announcements (non-blocking)
+      messaging.subscribeToTopic('announcements').catchError((e) {
+        AppLogger.debug('AuthProvider: Failed to subscribe to announcements (non-fatal): $e');
+      });
+      
+      // Deliver pending notifications (non-blocking)
+      if (notificationService != null && _currentAppUser != null) {
+        notificationService!.deliverPendingNotifications(_currentAppUser!.uid).catchError((e) {
+          AppLogger.debug('AuthProvider: Failed to deliver notifications (non-fatal): $e');
+        });
+      }
+      
+      AppLogger.debug('AuthProvider: LOGIN COMPLETED! User: ${_currentAppUser!.name}, Role: ${_currentAppUser!.role}');
+      
+      loading = false;
+      notifyListeners();
+      
+    } catch (e) {
+      AppLogger.warning('AuthProvider: Non-critical completion tasks failed: $e');
+      loading = false;
+      notifyListeners();
+    }
   }
 
   Future<void> register(String email, String password, String name, {String? membershipId}) async {
@@ -240,9 +320,50 @@ class AuthProvider extends ChangeNotifier with ErrorHandlerMixin {
   }
 
   Future<void> refreshCurrentUser() async {
+    AppLogger.debug('AuthProvider: Starting refresh - _currentUser: ${_currentUser?.uid}, Firebase user: ${auth.currentUser?.uid}');
+    
     if (_currentUser != null) {
       AppLogger.debug('AuthProvider: Refreshing current user data');
-      await _loadUserData(_currentUser!.uid);
+      await _loadUserDataDirectly(_currentUser!.uid);
+    } else {
+      AppLogger.debug('AuthProvider: No current user to refresh, checking auth state');
+      // Force check the current auth state
+      final currentFirebaseUser = auth.currentUser;
+      if (currentFirebaseUser != null) {
+        AppLogger.debug('AuthProvider: Found Firebase user, loading data');
+        _currentUser = currentFirebaseUser;
+        loading = true;
+        notifyListeners();
+        await _loadUserDataDirectly(currentFirebaseUser.uid);
+      } else {
+        AppLogger.debug('AuthProvider: No Firebase user found - user may need to log in again');
+        // Clear any stale app user data
+        _currentAppUser = null;
+        loading = false;
+        notifyListeners();
+        // Show error to user that they need to log in again
+        handleError(Exception('Your session has expired. Please log in again.'), context: 'Session refresh');
+      }
+    }
+  }
+
+  /// Force reset authentication state - useful for troubleshooting
+  Future<void> resetAuthState() async {
+    AppLogger.debug('AuthProvider: Resetting authentication state');
+    loading = false;
+    _currentUser = null;
+    _currentAppUser = null;
+    clearError();
+    notifyListeners();
+    
+    // Check current Firebase Auth state
+    final currentFirebaseUser = auth.currentUser;
+    if (currentFirebaseUser != null) {
+      AppLogger.debug('AuthProvider: Found Firebase user after reset, reloading');
+      _currentUser = currentFirebaseUser;
+      loading = true;
+      notifyListeners();
+      await _loadUserDataDirectly(currentFirebaseUser.uid);
     }
   }
 

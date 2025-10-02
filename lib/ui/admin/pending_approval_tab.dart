@@ -74,6 +74,64 @@ class PendingApprovalTab extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
+          // Debug info
+          Container(
+            padding: const EdgeInsets.all(16),
+            margin: const EdgeInsets.only(bottom: 20),
+            decoration: BoxDecoration(
+              color: Colors.blue[50],
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.blue[200]!),
+            ),
+            child: Consumer<AdminProvider>(
+              builder: (context, adminProvider, child) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Debug Info:',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blue[800],
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text('Total users: ${adminProvider.users.length}'),
+                    Text('Loading: ${adminProvider.loading}'),
+                    Text('Error: ${adminProvider.error ?? 'None'}'),
+                    const SizedBox(height: 8),
+                    Text('User breakdown:'),
+                    ...adminProvider.users.map((user) => Text(
+                      '  ${user.name} - ${user.role} - Approved: ${user.approved}',
+                      style: const TextStyle(fontSize: 12),
+                    )),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        ElevatedButton(
+                          onPressed: () {
+                            adminProvider.forceRefreshUsers();
+                          },
+                          child: const Text('Force Refresh'),
+                        ),
+                        const SizedBox(width: 8),
+                        ElevatedButton(
+                          onPressed: () {
+                            adminProvider.createTestUser();
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.orange,
+                          ),
+                          child: const Text('Create Test User'),
+                        ),
+                      ],
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+          // Original empty state
           Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(

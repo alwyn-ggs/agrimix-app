@@ -37,11 +37,15 @@ Future<void> main() async {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     ).timeout(
-      const Duration(seconds: 45),
+      const Duration(seconds: 60), // Increased timeout for fresh installs
       onTimeout: () {
         throw Exception('Firebase initialization timed out');
       },
     );
+    
+    // Additional delay for fresh installs to ensure all Firebase services are ready
+    AppLogger.info('Firebase initialized, waiting for services to be fully ready...');
+    await Future.delayed(const Duration(seconds: 2));
     
     // Initialize Firebase Messaging
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);

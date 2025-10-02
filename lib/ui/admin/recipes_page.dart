@@ -472,7 +472,7 @@ class _RecipesPageState extends State<RecipesPage> with TickerProviderStateMixin
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.only(bottom: 16),
       itemCount: filteredRecipes.length,
       itemBuilder: (context, index) => _buildRecipeCard(filteredRecipes[index]),
     );
