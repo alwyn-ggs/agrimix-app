@@ -20,6 +20,9 @@ import 'ui/common/onboarding_screen.dart';
 import 'ui/common/legal/terms_page.dart';
 import 'ui/common/legal/privacy_page.dart';
 import 'ui/common/help/help_page.dart';
+import 'ui/common/settings/theme_settings_page.dart';
+import 'ui/common/settings/language_settings_page.dart';
+import 'ui/admin/admin_settings_page.dart';
 import 'providers/auth_provider.dart';
 import 'models/post.dart';
 import 'theme/theme.dart';
@@ -44,6 +47,9 @@ class Routes {
   static const terms = '/terms';
   static const privacy = '/privacy';
   static const help = '/help';
+  static const themeSettings = '/settings/theme';
+  static const languageSettings = '/settings/language';
+  static const adminSettings = '/settings/admin';
   static const onboarding = '/onboarding';
 }
 
@@ -149,6 +155,16 @@ class AppRouter {
         return MaterialPageRoute(builder: (_) => const PrivacyPage());
       case Routes.help:
         return MaterialPageRoute(builder: (_) => const HelpPage());
+      case Routes.themeSettings:
+        return MaterialPageRoute(builder: (_) => const ThemeSettingsPage());
+      case Routes.languageSettings:
+        return MaterialPageRoute(builder: (_) => const LanguageSettingsPage());
+      case Routes.adminSettings:
+        return _guardedRoute(
+          builder: (_) => const AdminSettingsPage(),
+          requiredRole: 'admin',
+          settings: settings,
+        );
       default:
         return MaterialPageRoute(
           builder: (_) => const Scaffold(

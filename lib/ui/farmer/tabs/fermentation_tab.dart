@@ -5,6 +5,7 @@ import '../../../providers/auth_provider.dart';
 import '../../../models/fermentation_log.dart';
 import '../../fermentation/new_log_page.dart';
 import '../../fermentation/log_detail_page.dart';
+import '../../../l10n/app_localizations.dart';
 
 class FermentationTab extends StatefulWidget {
   const FermentationTab({super.key});
@@ -41,20 +42,22 @@ class _FermentationTabState extends State<FermentationTab> with TickerProviderSt
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
+    
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        title: const Text('Fermentation Tracker', style: TextStyle(color: Colors.white)),
+        title: Text(t.t('fermentation_tracker'), style: const TextStyle(color: Colors.white)),
         backgroundColor: Colors.green[700],
         bottom: TabBar(
           controller: _tabController,
           indicatorColor: Colors.white,
           labelColor: Colors.white,
           unselectedLabelColor: Colors.white70,
-          tabs: const [
-            Tab(text: 'Active', icon: Icon(Icons.timelapse)),
-            Tab(text: 'Completed', icon: Icon(Icons.check_circle)),
-            Tab(text: 'All', icon: Icon(Icons.list)),
+          tabs: [
+            Tab(text: t.t('active'), icon: const Icon(Icons.timelapse)),
+            Tab(text: t.t('completed'), icon: const Icon(Icons.check_circle)),
+            Tab(text: t.t('all_batches'), icon: const Icon(Icons.list)),
           ],
         ),
         actions: [
@@ -83,7 +86,7 @@ class _FermentationTabState extends State<FermentationTab> with TickerProviderSt
     return Consumer<FermentationProvider>(
       builder: (context, provider, child) {
         if (provider.myLogs.isEmpty) {
-          return _buildEmptyState(statusFilter);
+          return _buildEmptyState(context, statusFilter);
         }
 
         // Filter logs based on status and search query
@@ -142,18 +145,19 @@ class _FermentationTabState extends State<FermentationTab> with TickerProviderSt
     );
   }
 
-  Widget _buildEmptyState(FermentationStatus? statusFilter) {
+  Widget _buildEmptyState(BuildContext context, FermentationStatus? statusFilter) {
+    final t = AppLocalizations.of(context);
     String message;
     IconData icon;
     
     if (statusFilter == FermentationStatus.active) {
-      message = 'No active fermentations';
+      message = t.t('no_active_batches');
       icon = Icons.timelapse;
     } else if (statusFilter == FermentationStatus.done) {
-      message = 'No completed fermentations';
+      message = t.t('no_completed_batches');
       icon = Icons.check_circle;
     } else {
-      message = 'No fermentation logs yet';
+      message = t.t('no_batches');
       icon = Icons.science;
     }
 
@@ -183,7 +187,7 @@ class _FermentationTabState extends State<FermentationTab> with TickerProviderSt
           FilledButton.icon(
             onPressed: () => _showNewLogPage(context),
             icon: const Icon(Icons.add),
-            label: const Text('Create Fermentation Log'),
+            label: Text(AppLocalizations.of(context).t('start_new_batch')),
             style: FilledButton.styleFrom(
               backgroundColor: Colors.green[700],
               foregroundColor: Colors.white,

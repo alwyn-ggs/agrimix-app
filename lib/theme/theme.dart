@@ -238,15 +238,15 @@ ThemeData buildDarkTheme() {
     colorScheme: const ColorScheme.dark(
       primary: NatureColors.lightGreen,
       secondary: NatureColors.accentGreen,
-      surface: Color(0xFF1E1E1E), // Darker surface for better contrast
+      surface: Color(0xFF2A2A2A), // Lighter surface for better readability
       error: NatureColors.errorRed,
       onPrimary: NatureColors.pureBlack,
       onSecondary: NatureColors.pureBlack,
-      onSurface: NatureColors.offWhite,
+      onSurface: Color(0xFFE8E8E8), // Brighter text for better contrast
       onError: NatureColors.pureWhite,
       brightness: Brightness.dark,
     ),
-    scaffoldBackgroundColor: const Color(0xFF121212), // Darker background
+    scaffoldBackgroundColor: const Color(0xFF1A1A1A), // Slightly lighter background
     appBarTheme: const AppBarTheme(
       backgroundColor: NatureColors.darkGreen,
       foregroundColor: NatureColors.pureWhite,
@@ -254,120 +254,120 @@ ThemeData buildDarkTheme() {
       centerTitle: true,
       titleTextStyle: TextStyle(
         color: NatureColors.pureWhite,
-        fontSize: 18, // Reduced from 20 for mobile
+        fontSize: 18,
         fontWeight: FontWeight.w600,
       ),
     ),
     cardTheme: CardThemeData(
-      color: const Color(0xFF2D2D2D), // Darker card background
-      elevation: 2, // Reduced from 3 for mobile
+      color: const Color(0xFF3A3A3A), // Much lighter cards for better readability
+      elevation: 2,
       shadowColor: NatureColors.lightGreen.withAlpha((0.1 * 255).round()),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), // Reduced from 16
-      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), // Added margin for mobile
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
         backgroundColor: NatureColors.lightGreen,
         foregroundColor: NatureColors.pureBlack,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)), // Reduced from 12
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12), // Reduced padding
-        elevation: 1, // Reduced from 2
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        elevation: 1,
         shadowColor: NatureColors.lightGreen.withAlpha((0.3 * 255).round()),
-        minimumSize: const Size(120, 44), // Minimum touch target size
+        minimumSize: const Size(120, 44),
       ),
     ),
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
         backgroundColor: NatureColors.lightGreen,
         foregroundColor: NatureColors.pureBlack,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)), // Reduced from 12
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12), // Reduced padding
-        elevation: 1, // Reduced from 2
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        elevation: 1,
         shadowColor: NatureColors.lightGreen.withAlpha((0.3 * 255).round()),
-        minimumSize: const Size(120, 44), // Minimum touch target size
+        minimumSize: const Size(120, 44),
       ),
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
         foregroundColor: NatureColors.lightGreen,
         side: const BorderSide(color: NatureColors.lightGreen, width: 1.5),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)), // Reduced from 12
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12), // Reduced padding
-        minimumSize: const Size(120, 44), // Minimum touch target size
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        minimumSize: const Size(120, 44),
       ),
     ),
     textButtonTheme: TextButtonThemeData(
       style: TextButton.styleFrom(
         foregroundColor: NatureColors.lightGreen,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)), // Reduced from 8
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8), // Reduced padding
-        minimumSize: const Size(44, 44), // Minimum touch target size
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        minimumSize: const Size(44, 44),
       ),
     ),
     inputDecorationTheme: InputDecorationTheme(
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8), // Reduced from 12
-        borderSide: const BorderSide(color: NatureColors.mediumGray),
+        borderRadius: BorderRadius.circular(8),
+        borderSide: const BorderSide(color: Color(0xFF555555)), // Lighter border
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8), // Reduced from 12
-        borderSide: const BorderSide(color: NatureColors.mediumGray),
+        borderRadius: BorderRadius.circular(8),
+        borderSide: const BorderSide(color: Color(0xFF555555)),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8), // Reduced from 12
+        borderRadius: BorderRadius.circular(8),
         borderSide: const BorderSide(color: NatureColors.lightGreen, width: 2),
       ),
       errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8), // Reduced from 12
+        borderRadius: BorderRadius.circular(8),
         borderSide: const BorderSide(color: NatureColors.errorRed),
       ),
       focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8), // Reduced from 12
+        borderRadius: BorderRadius.circular(8),
         borderSide: const BorderSide(color: NatureColors.errorRed, width: 2),
       ),
       filled: true,
-      fillColor: const Color(0xFF2D2D2D),
-      labelStyle: const TextStyle(color: NatureColors.offWhite, fontSize: 14), // Added font size
-      hintStyle: const TextStyle(color: NatureColors.mediumGray, fontSize: 14), // Added font size
-      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16), // Added content padding
+      fillColor: const Color(0xFF3A3A3A), // Lighter input background
+      labelStyle: const TextStyle(color: Color(0xFFE8E8E8), fontSize: 14),
+      hintStyle: const TextStyle(color: Color(0xFF999999), fontSize: 14),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
     ),
     navigationBarTheme: const NavigationBarThemeData(
-      backgroundColor: Color(0xFF1E1E1E),
+      backgroundColor: Color(0xFF2A2A2A), // Lighter navigation bar
       indicatorColor: NatureColors.lightGreen,
       labelTextStyle: WidgetStatePropertyAll(
-        TextStyle(color: NatureColors.offWhite, fontWeight: FontWeight.w500, fontSize: 12), // Added font size
+        TextStyle(color: Color(0xFFE8E8E8), fontWeight: FontWeight.w500, fontSize: 12),
       ),
       iconTheme: WidgetStatePropertyAll(
-        IconThemeData(color: NatureColors.mediumGray, size: 24), // Added size
+        IconThemeData(color: Color(0xFF999999), size: 24),
       ),
-      height: 60, // Fixed height for mobile
+      height: 60,
     ),
     textTheme: const TextTheme(
-      // Display styles - reduced sizes for mobile
-      displayLarge: TextStyle(color: NatureColors.offWhite, fontWeight: FontWeight.bold, fontSize: 28),
-      displayMedium: TextStyle(color: NatureColors.offWhite, fontWeight: FontWeight.bold, fontSize: 24),
-      displaySmall: TextStyle(color: NatureColors.offWhite, fontWeight: FontWeight.bold, fontSize: 20),
+      // Display styles - brighter text
+      displayLarge: TextStyle(color: Color(0xFFE8E8E8), fontWeight: FontWeight.bold, fontSize: 28),
+      displayMedium: TextStyle(color: Color(0xFFE8E8E8), fontWeight: FontWeight.bold, fontSize: 24),
+      displaySmall: TextStyle(color: Color(0xFFE8E8E8), fontWeight: FontWeight.bold, fontSize: 20),
       
-      // Headline styles - reduced sizes for mobile
-      headlineLarge: TextStyle(color: NatureColors.offWhite, fontWeight: FontWeight.bold, fontSize: 22),
-      headlineMedium: TextStyle(color: NatureColors.offWhite, fontWeight: FontWeight.bold, fontSize: 18),
-      headlineSmall: TextStyle(color: NatureColors.offWhite, fontWeight: FontWeight.bold, fontSize: 16),
+      // Headline styles
+      headlineLarge: TextStyle(color: Color(0xFFE8E8E8), fontWeight: FontWeight.bold, fontSize: 22),
+      headlineMedium: TextStyle(color: Color(0xFFE8E8E8), fontWeight: FontWeight.bold, fontSize: 18),
+      headlineSmall: TextStyle(color: Color(0xFFE8E8E8), fontWeight: FontWeight.bold, fontSize: 16),
       
-      // Title styles - reduced sizes for mobile
-      titleLarge: TextStyle(color: NatureColors.offWhite, fontWeight: FontWeight.w600, fontSize: 18),
-      titleMedium: TextStyle(color: NatureColors.offWhite, fontWeight: FontWeight.w600, fontSize: 16),
-      titleSmall: TextStyle(color: NatureColors.offWhite, fontWeight: FontWeight.w600, fontSize: 14),
+      // Title styles
+      titleLarge: TextStyle(color: Color(0xFFE8E8E8), fontWeight: FontWeight.w600, fontSize: 18),
+      titleMedium: TextStyle(color: Color(0xFFE8E8E8), fontWeight: FontWeight.w600, fontSize: 16),
+      titleSmall: TextStyle(color: Color(0xFFE8E8E8), fontWeight: FontWeight.w600, fontSize: 14),
       
-      // Body styles - optimized for mobile readability
-      bodyLarge: TextStyle(color: NatureColors.offWhite, fontSize: 16, height: 1.5),
-      bodyMedium: TextStyle(color: NatureColors.offWhite, fontSize: 14, height: 1.4),
-      bodySmall: TextStyle(color: NatureColors.mediumGray, fontSize: 12, height: 1.3),
+      // Body styles - better contrast
+      bodyLarge: TextStyle(color: Color(0xFFE8E8E8), fontSize: 16, height: 1.5),
+      bodyMedium: TextStyle(color: Color(0xFFE8E8E8), fontSize: 14, height: 1.4),
+      bodySmall: TextStyle(color: Color(0xFF999999), fontSize: 12, height: 1.3),
       
-      // Label styles - reduced sizes for mobile
-      labelLarge: TextStyle(color: NatureColors.offWhite, fontWeight: FontWeight.w500, fontSize: 14),
-      labelMedium: TextStyle(color: NatureColors.offWhite, fontWeight: FontWeight.w500, fontSize: 12),
-      labelSmall: TextStyle(color: NatureColors.mediumGray, fontWeight: FontWeight.w500, fontSize: 10),
+      // Label styles
+      labelLarge: TextStyle(color: Color(0xFFE8E8E8), fontWeight: FontWeight.w500, fontSize: 14),
+      labelMedium: TextStyle(color: Color(0xFFE8E8E8), fontWeight: FontWeight.w500, fontSize: 12),
+      labelSmall: TextStyle(color: Color(0xFF999999), fontWeight: FontWeight.w500, fontSize: 10),
     ),
-    visualDensity: VisualDensity.compact, // Changed from adaptivePlatformDensity for mobile optimization
+    visualDensity: VisualDensity.compact,
   );
 }

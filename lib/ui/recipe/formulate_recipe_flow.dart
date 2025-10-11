@@ -219,7 +219,6 @@ class _FormulateRecipeFlowState extends State<FormulateRecipeFlow> {
                   RecipeAnalyticsWidget(
                     ingredients: recipeIngredients,
                     cropTarget: _selectedCrop ?? 'General',
-                    batchSize: _selectedBatchSize,
                     onIngredientsUpdated: (updatedIngredients) {
                       // Update the selected ingredients based on analytics suggestions
                       final newSelectedIds = updatedIngredients.map((ri) => ri.ingredientId).toSet();
@@ -304,9 +303,9 @@ class _FormulateRecipeFlowState extends State<FormulateRecipeFlow> {
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Text(
+                                      const Text(
                                         'Recipe Summary',
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                           fontSize: 24,
                                           fontWeight: FontWeight.bold,
                                           color: Colors.black87,
@@ -414,15 +413,15 @@ class _FormulateRecipeFlowState extends State<FormulateRecipeFlow> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Row(
+                            const Row(
                               children: [
                                 Icon(
                                   Icons.inventory_2,
                                   color: NatureColors.lightGreen,
                                   size: 20,
                                 ),
-                                const SizedBox(width: 8),
-                                const Text(
+                                SizedBox(width: 8),
+                                Text(
                                   'Selected Ingredients',
                                   style: TextStyle(
                                     fontSize: 18,
@@ -468,11 +467,11 @@ class _FormulateRecipeFlowState extends State<FormulateRecipeFlow> {
                               ),
                             ),
                             const SizedBox(width: 16),
-                            Expanded(
+                            const Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Text(
+                                  Text(
                                     'Ready to Start?',
                                     style: TextStyle(
                                       fontSize: 16,
@@ -480,8 +479,8 @@ class _FormulateRecipeFlowState extends State<FormulateRecipeFlow> {
                                       color: Colors.black87,
                                     ),
                                   ),
-                                  const SizedBox(height: 4),
-                                  const Text(
+                                  SizedBox(height: 4),
+                                  Text(
                                 'Click "Start Fermentation" to automatically create a fermentation log and begin tracking your fermentation process.',
                                 style: TextStyle(
                                       fontSize: 14,
@@ -656,9 +655,6 @@ class _FormulateRecipeFlowState extends State<FormulateRecipeFlow> {
       final generated = _generateRecipe(ownerUid: owner);
       await recipesRepo.createRecipe(generated);
       
-      // Track recipe creation in history
-      await recipesRepo.trackRecipeView(owner, generated.id, action: 'created');
-      
       if (mounted) {
         setState(() => _saving = false);
         ScaffoldMessenger.of(context).showSnackBar(
@@ -704,9 +700,6 @@ class _FormulateRecipeFlowState extends State<FormulateRecipeFlow> {
       final generated = _generateRecipe(ownerUid: owner);
       final recipesRepo = context.read<RecipesRepo>();
       await recipesRepo.createRecipe(generated);
-
-      // Track recipe creation in history
-      await recipesRepo.trackRecipeView(owner, generated.id, action: 'started');
 
       // Create fermentation log automatically
       await _createAutoFermentationLog(context, generated, owner);
@@ -788,10 +781,10 @@ class _FormulateRecipeFlowState extends State<FormulateRecipeFlow> {
       totalWeight: _selectedBatchSize,
     );
     
-    // Convert GuideStep to RecipeStep (exclude tips for draft)
+    // Convert GuideStep to RecipeStep
     final recipeSteps = guide.steps.map((guideStep) => RecipeStep(
       order: guideStep.order,
-      text: '${guideStep.title}\n\n${guideStep.description}\n\nDetailed Instructions:\n${guideStep.details.map((detail) => '• $detail').join('\n')}',
+      text: '${guideStep.title}\n\n${guideStep.description}\n\nDetailed Instructions:\n${guideStep.details.map((detail) => '• $detail').join('\n')}${guideStep.tips.isNotEmpty ? '\n\nTips:\n${guideStep.tips.map((tip) => '• $tip').join('\n')}' : ''}',
     )).toList();
     
     return Recipe(
@@ -884,13 +877,7 @@ class _FormulateRecipeFlowState extends State<FormulateRecipeFlow> {
     final factor = totalWeight / totalCalculated;
     
     for (final key in weights.keys) {
-      if (ingredients.length == 1) {
-        // For single ingredient, use full batch size
-        weights[key] = totalWeight;
-      } else {
-        // For multiple ingredients, normalize with reasonable limits
-        weights[key] = (weights[key]! * factor).clamp(0.1, totalWeight * 0.8); // Min 0.1kg, max 80% of total
-      }
+      weights[key] = (weights[key]! * factor).clamp(0.1, totalWeight * 0.8); // Min 0.1kg, max 80% of total
     }
     
     return weights;

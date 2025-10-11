@@ -6,10 +6,6 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'messaging_service.dart';
 import '../utils/logger.dart';
-import 'navigation_service.dart';
-import '../router.dart';
-import '../services/navigation_service.dart';
-import '../router.dart';
 
 class NotificationService {
   final MessagingService _messagingService;
@@ -32,12 +28,14 @@ class NotificationService {
   static void handleNotificationAction(String action, String payload) {
     switch (action) {
       case 'open_app':
+        // Navigate to fermentation detail page
         AppLogger.info('User tapped "Open App" for payload: $payload');
-        _routeFromPayload(payload);
+        _navigateToNotificationBell();
         break;
       case 'mark_done':
+        // Mark fermentation stage as completed
         AppLogger.info('User tapped "Mark as Done" for payload: $payload');
-        _routeFromPayload(payload);
+        _navigateToNotificationBell();
         break;
       case 'view_announcement':
         // Navigate to announcement details
@@ -60,7 +58,7 @@ class NotificationService {
         break;
       default:
         AppLogger.info('Unknown notification action: $action');
-        _routeFromPayload(payload);
+        _navigateToNotificationBell();
     }
   }
 
@@ -69,42 +67,6 @@ class NotificationService {
     // This would typically use your app's navigation system
     // For example: Navigator.pushNamed(context, '/notifications');
     AppLogger.info('Navigating to notification bell');
-  }
-
-  /// Parse payload and navigate into fermentation tracking
-  /// Supported payloads:
-  ///  - fermentation:<logId>:<stageIndex>
-  ///  - fermentation_complete:<logId>
-  static void _routeFromPayload(String payload) {
-    try {
-      if (payload.startsWith('fermentation_complete:')) {
-        final logId = payload.split(':').elementAt(1);
-        AppLogger.info('Navigate to log detail for completion: $logId');
-        _pushNamed('/log_detail', {'id': logId});
-        return;
-      }
-      if (payload.startsWith('fermentation:')) {
-        final parts = payload.split(':');
-        final logId = parts.elementAt(1);
-        final stageIndex = parts.length > 2 ? int.tryParse(parts[2]) : null;
-        AppLogger.info('Navigate to log detail for $logId stage $stageIndex');
-        _pushNamed('/log_detail', {'id': logId});
-        return;
-      }
-    } catch (e) {
-      AppLogger.error('Failed to route from payload: $payload - $e', e);
-    }
-    _navigateToNotificationBell();
-  }
-
-  /// Bridge to app navigation by route name; the app should map '/log_detail' to Routes.logDetail
-  static void _pushNamed(String route, Map<String, dynamic> args) {
-    AppLogger.info('Request navigation to $route with args: $args');
-    if (route == '/log_detail') {
-      NavigationService.pushNamed(Routes.logDetail, arguments: args);
-      return;
-    }
-    NavigationService.pushNamed(route, arguments: args);
   }
 
 
@@ -139,27 +101,8 @@ class NotificationService {
       iOS: iosSettings,
     );
     
-    await _localNotifications.initialize(
-      initSettings,
-      onDidReceiveNotificationResponse: (NotificationResponse response) {
-        final actionId = (response.actionId != null && response.actionId!.isNotEmpty)
-            ? response.actionId!
-            : 'open_app';
-        final payload = response.payload ?? '';
-        handleNotificationAction(actionId, payload);
-      },
-      onDidReceiveBackgroundNotificationResponse: notificationTapBackground,
-    );
+    await _localNotifications.initialize(initSettings);
     _isInitialized = true;
-  }
-
-  @pragma('vm:entry-point')
-  static void notificationTapBackground(NotificationResponse response) {
-    final actionId = (response.actionId != null && response.actionId!.isNotEmpty)
-        ? response.actionId!
-        : 'open_app';
-    final payload = response.payload ?? '';
-    handleNotificationAction(actionId, payload);
   }
 
   /// Send moderation notification to user
@@ -552,57 +495,35 @@ class NotificationService {
     }
   }
 
-  /// Schedule fermentation notifications
+  /// Schedule fermentation notifications with enhanced tracking
   Future<void> scheduleFermentationNotifications(
     String logId,
     String title,
     List<Map<String, dynamic>> stages,
     DateTime startDate,
-    {int startIndex = 0}
   ) async {
     try {
       // Ensure notification service is initialized
       await _ensureInitialized();
+      
       // Schedule notifications for each stage
       for (int i = 0; i < stages.length; i++) {
         final stage = stages[i];
         final day = stage['day'] as int;
-        final stageLabel = stage['label'] as String? ?? 'Stage ${startIndex + i + 1}';
+        final stageLabel = stage['label'] as String? ?? 'Stage ${i + 1}';
         final stageAction = stage['action'] as String? ?? '';
-         final notificationDate = startDate.add(Duration(days: day));
-
-         // For Day 1, notify immediately on creation as requested
-         if (day <= 1 && DateTime.now().isAfter(startDate.subtract(const Duration(minutes: 1)))) {
-          await _localNotifications.show(
-            logId.hashCode + (startIndex + i),
-            '🌱 Fermentation Started!',
-            '$title\n\n$stageLabel: $stageAction',
-            const NotificationDetails(
-              android: AndroidNotificationDetails(
-                'fermentation_channel',
-                'Fermentation Notifications',
-                channelDescription: 'Notifications for fermentation stages',
-                importance: Importance.high,
-                priority: Priority.high,
-              ),
-              iOS: DarwinNotificationDetails(),
-            ),
-            payload: 'fermentation:$logId:$i',
-          );
-          continue;
-         }
-
-         // Schedule notification at the exact stage time (no early scheduling)
-         final exactNotificationDate = notificationDate;
-
-         // Only schedule if the date is in the future
-         if (exactNotificationDate.isAfter(DateTime.now())) {
-          AppLogger.info('Scheduling fermentation notification for $stageLabel at ${exactNotificationDate.toString()}');
+        final notificationDate = startDate.add(Duration(days: day));
+         
+        // Only schedule if the date is in the future
+        if (notificationDate.isAfter(DateTime.now())) {
+          AppLogger.info('Scheduling fermentation notification for $stageLabel at ${notificationDate.toString()}');
+          
+          // Schedule primary notification
           await _localNotifications.zonedSchedule(
-            logId.hashCode + (startIndex + i), // Unique ID for each notification
+            logId.hashCode + i, // Unique ID for each notification
             '🌱 Fermentation Time!',
             '$title\n\n$stageLabel: $stageAction\n\nTap to open the app and track your progress.',
-            _convertToTZDateTime(exactNotificationDate),
+            _convertToTZDateTime(notificationDate),
             NotificationDetails(
               android: AndroidNotificationDetails(
                 'fermentation_channel',
@@ -632,6 +553,11 @@ class NotificationService {
                     'Mark as Done',
                     showsUserInterface: true,
                   ),
+                  AndroidNotificationAction(
+                    'snooze_1h',
+                    'Snooze 1h',
+                    showsUserInterface: false,
+                  ),
                 ],
               ),
               iOS: DarwinNotificationDetails(
@@ -645,10 +571,13 @@ class NotificationService {
               ),
             ),
             uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
-            payload: 'fermentation:$logId:$i',
+            payload: 'fermentation:$logId:$i:primary',
           );
+
+          // Schedule follow-up notifications for users who don't actively use the app
+          await _scheduleFollowUpNotifications(logId, i, stageLabel, notificationDate, title);
         } else {
-          AppLogger.warning('Skipping fermentation notification for $stageLabel - date is in the past: ${exactNotificationDate.toString()}');
+          AppLogger.warning('Skipping fermentation notification for $stageLabel - date is in the past: ${notificationDate.toString()}');
         }
       }
     } catch (e) {
@@ -656,64 +585,120 @@ class NotificationService {
     }
   }
 
-  /// Schedule a single stage notification (used when user adds a new stage later)
-  Future<void> scheduleSingleFermentationStageNotification({
-    required String logId,
-    required String title,
-    required Map<String, dynamic> stage,
-    required DateTime startDate,
-    required int index,
-  }) async {
+  /// Schedule follow-up notifications for inactive users
+  Future<void> _scheduleFollowUpNotifications(
+    String logId,
+    int stageIndex,
+    String stageLabel,
+    DateTime notificationDate,
+    String title,
+  ) async {
     try {
-      await _ensureInitialized();
-      final day = stage['day'] as int;
-      final stageLabel = stage['label'] as String? ?? 'Stage ${index + 1}';
-      final stageAction = stage['action'] as String? ?? '';
-      final notificationDate = startDate.add(Duration(days: day));
+      // Schedule follow-up notifications at strategic intervals
+      final followUpTimes = [
+        const Duration(hours: 2),   // 2 hours after
+        const Duration(hours: 6),   // 6 hours after
+        const Duration(days: 1),    // 1 day after
+        const Duration(days: 2),    // 2 days after
+        const Duration(days: 3),    // 3 days after
+      ];
 
-      if (day <= 1 && DateTime.now().isAfter(startDate.subtract(const Duration(minutes: 1)))) {
-        await _localNotifications.show(
-          logId.hashCode + index,
-          '🌱 Fermentation Started!',
-          '$title\n\n$stageLabel: $stageAction',
-          const NotificationDetails(
-            android: AndroidNotificationDetails(
-              'fermentation_channel',
-              'Fermentation Notifications',
-              channelDescription: 'Notifications for fermentation stages',
-              importance: Importance.high,
-              priority: Priority.high,
+      for (int i = 0; i < followUpTimes.length; i++) {
+        final followUpDate = notificationDate.add(followUpTimes[i]);
+        
+        if (followUpDate.isAfter(DateTime.now())) {
+          await _localNotifications.zonedSchedule(
+            logId.hashCode + stageIndex + 1000 + i, // Unique ID for follow-up
+            _getFollowUpTitle(i),
+            _getFollowUpMessage(stageLabel, i, title),
+            _convertToTZDateTime(followUpDate),
+            NotificationDetails(
+              android: AndroidNotificationDetails(
+                'fermentation_followup',
+                'Fermentation Follow-ups',
+                channelDescription: 'Follow-up reminders for fermentation stages',
+                importance: i < 2 ? Importance.high : Importance.defaultImportance,
+                priority: i < 2 ? Priority.high : Priority.defaultPriority,
+                enableVibration: i < 2,
+                vibrationPattern: i < 2 ? Int64List.fromList([0, 500, 250, 500]) : null,
+                enableLights: i < 2,
+                ledColor: i < 2 ? const Color(0xFFFF9800) : null,
+                ledOnMs: i < 2 ? 1000 : null,
+                ledOffMs: i < 2 ? 500 : null,
+                showWhen: true,
+                playSound: true,
+                category: AndroidNotificationCategory.reminder,
+                actions: const [
+                  AndroidNotificationAction(
+                    'open_app',
+                    'Open App',
+                    showsUserInterface: true,
+                  ),
+                  AndroidNotificationAction(
+                    'mark_done',
+                    'Mark as Done',
+                    showsUserInterface: true,
+                  ),
+                  AndroidNotificationAction(
+                    'dismiss',
+                    'Dismiss',
+                    showsUserInterface: false,
+                  ),
+                ],
+              ),
+              iOS: DarwinNotificationDetails(
+                presentAlert: true,
+                presentBadge: true,
+                presentSound: true,
+                badgeNumber: 1,
+                categoryIdentifier: 'FERMENTATION_FOLLOWUP',
+                threadIdentifier: 'fermentation_$logId',
+                interruptionLevel: i < 2 ? InterruptionLevel.timeSensitive : InterruptionLevel.active,
+              ),
             ),
-            iOS: DarwinNotificationDetails(),
-          ),
-          payload: 'fermentation:$logId:$index',
-        );
-        return;
-      }
-
-      if (notificationDate.isAfter(DateTime.now())) {
-        await _localNotifications.zonedSchedule(
-          logId.hashCode + index,
-          '🌱 Fermentation Time!',
-          '$title\n\n$stageLabel: $stageAction\n\nTap to open the app and track your progress.',
-          _convertToTZDateTime(notificationDate),
-          const NotificationDetails(
-            android: AndroidNotificationDetails(
-              'fermentation_channel',
-              'Fermentation Notifications',
-              channelDescription: 'Notifications for fermentation stages',
-              importance: Importance.high,
-              priority: Priority.high,
-            ),
-            iOS: DarwinNotificationDetails(),
-          ),
-          androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-          uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
-          payload: 'fermentation:$logId:$index',
-        );
+            uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+            payload: 'fermentation:$logId:$stageIndex:followup_$i',
+          );
+        }
       }
     } catch (e) {
-      AppLogger.error('Failed to schedule single stage notification: $e', e);
+      AppLogger.error('Failed to schedule follow-up notifications: $e', e);
+    }
+  }
+
+  /// Get follow-up notification title based on escalation level
+  String _getFollowUpTitle(int level) {
+    switch (level) {
+      case 0:
+        return '⏰ Gentle Reminder';
+      case 1:
+        return '🔔 Don\'t Forget!';
+      case 2:
+        return '⚠️ Overdue Stage';
+      case 3:
+        return '🚨 Urgent: Fermentation Stage';
+      case 4:
+        return '🆘 Critical: Check Your Fermentation';
+      default:
+        return '🌱 Fermentation Reminder';
+    }
+  }
+
+  /// Get follow-up notification message based on escalation level
+  String _getFollowUpMessage(String stageLabel, int level, String title) {
+    switch (level) {
+      case 0:
+        return '$title\n\nJust a friendly reminder about your $stageLabel stage.';
+      case 1:
+        return '$title\n\nYour $stageLabel stage is waiting for you.';
+      case 2:
+        return '$title\n\nYour $stageLabel stage is overdue. Please check your fermentation.';
+      case 3:
+        return '$title\n\nURGENT: Your $stageLabel stage is significantly overdue. This may affect your fermentation quality.';
+      case 4:
+        return '$title\n\nCRITICAL: Your $stageLabel stage has been overdue for days. Please check your fermentation immediately.';
+      default:
+        return '$title\n\nReminder about your $stageLabel stage.';
     }
   }
 
@@ -1083,67 +1068,5 @@ class NotificationService {
   /// Convert DateTime to TZDateTime for scheduling
   tz.TZDateTime _convertToTZDateTime(DateTime dateTime) {
     return tz.TZDateTime.from(dateTime, tz.local);
-  }
-
-  /// Mark any pending announcement notifications (by announcementId) as delivered for the current user
-  Future<void> markPendingDeliveredForAnnouncement(String announcementId) async {
-    try {
-      final currentUser = FirebaseAuth.instance.currentUser;
-      if (currentUser == null) return;
-      final userId = currentUser.uid;
-
-      final pendingQuery = await _db
-          .collection('users')
-          .doc(userId)
-          .collection('notifications')
-          .where('type', isEqualTo: 'announcement')
-          .where('data.announcementId', isEqualTo: announcementId)
-          .where('data.pendingLocalNotification', isEqualTo: true)
-          .get();
-
-      if (pendingQuery.docs.isEmpty) return;
-
-      final batch = _db.batch();
-      for (final doc in pendingQuery.docs) {
-        batch.update(doc.reference, {
-          'data.pendingLocalNotification': false,
-          'deliveredAt': FieldValue.serverTimestamp(),
-        });
-      }
-      await batch.commit();
-    } catch (e) {
-      AppLogger.error('Failed to mark pending announcement as delivered: $e', e);
-    }
-  }
-
-  /// Mark any pending report notifications (by reportId) as delivered for the current user
-  Future<void> markPendingDeliveredForReport(String reportId) async {
-    try {
-      final currentUser = FirebaseAuth.instance.currentUser;
-      if (currentUser == null) return;
-      final userId = currentUser.uid;
-
-      final pendingQuery = await _db
-          .collection('users')
-          .doc(userId)
-          .collection('notifications')
-          .where('type', isEqualTo: 'report')
-          .where('data.reportId', isEqualTo: reportId)
-          .where('data.pendingLocalNotification', isEqualTo: true)
-          .get();
-
-      if (pendingQuery.docs.isEmpty) return;
-
-      final batch = _db.batch();
-      for (final doc in pendingQuery.docs) {
-        batch.update(doc.reference, {
-          'data.pendingLocalNotification': false,
-          'deliveredAt': FieldValue.serverTimestamp(),
-        });
-      }
-      await batch.commit();
-    } catch (e) {
-      AppLogger.error('Failed to mark pending report as delivered: $e', e);
-    }
   }
 }

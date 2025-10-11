@@ -4,6 +4,7 @@ import '../../../theme/theme.dart';
 import '../../../router.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../models/announcement.dart';
+import '../../../l10n/app_localizations.dart';
 
 class HomeTab extends StatelessWidget {
   final VoidCallback? onTapBrowseRecipes;
@@ -20,6 +21,7 @@ class HomeTab extends StatelessWidget {
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
     final userName = auth.currentAppUser?.name ?? 'Farmer';
+    final t = AppLocalizations.of(context);
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -94,9 +96,9 @@ class HomeTab extends StatelessWidget {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text(
-                                  'Welcome back!',
-                                  style: TextStyle(
+                                Text(
+                                  t.t('welcome'),
+                                  style: const TextStyle(
                                     fontSize: 14,
                                     color: NatureColors.offWhite,
                                     fontWeight: FontWeight.w500,
@@ -144,14 +146,14 @@ class HomeTab extends StatelessWidget {
           const SizedBox(height: 24),
           
           // Quick Actions
-          const Text(
-            'Quick Actions',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: NatureColors.textDark,
+            Text(
+              t.t('quick_actions'),
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: NatureColors.textDark,
+              ),
             ),
-          ),
           const SizedBox(height: 16),
           
           Row(
@@ -159,8 +161,8 @@ class HomeTab extends StatelessWidget {
               Expanded(
                 child: _buildActionCard(
                   icon: Icons.restaurant_menu,
-                  title: 'Browse Recipes',
-                  subtitle: 'Find what to make',
+                  title: t.t('browse_recipes'),
+                  subtitle: t.t('find_what_to_make'),
                   color: NatureColors.lightGreen,
                   onTap: () {
                     if (onTapBrowseRecipes != null) {
@@ -175,8 +177,8 @@ class HomeTab extends StatelessWidget {
               Expanded(
                 child: _buildActionCard(
                   icon: Icons.bubble_chart,
-                  title: 'Start Fermentation',
-                  subtitle: 'Log a new batch',
+                  title: t.t('start_fermentation'),
+                  subtitle: t.t('log_new_batch'),
                   color: NatureColors.accentGreen,
                   onTap: () => Navigator.of(context).pushNamed(Routes.newLog),
                 ),
@@ -190,8 +192,8 @@ class HomeTab extends StatelessWidget {
               Expanded(
                 child: _buildActionCard(
                   icon: Icons.groups,
-                  title: 'New Post',
-                  subtitle: 'Share with community',
+                  title: t.t('new_post'),
+                  subtitle: t.t('share_with_community'),
                   color: NatureColors.primaryGreen,
                   onTap: () => Navigator.of(context).pushNamed(Routes.newPost),
                 ),
@@ -204,14 +206,14 @@ class HomeTab extends StatelessWidget {
           const SizedBox(height: 24),
           
           // My Recipes Quick Access
-          const Text(
-            'My Recipes',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: NatureColors.textDark,
+            Text(
+              t.t('my_recipes'),
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: NatureColors.textDark,
+              ),
             ),
-          ),
           const SizedBox(height: 16),
           
           Row(
@@ -219,7 +221,7 @@ class HomeTab extends StatelessWidget {
               Expanded(
                 child: _buildActionCard(
                   icon: Icons.edit_note,
-                  title: 'My Drafts',
+                  title: t.t('my_drafts'),
                   subtitle: '',
                   color: Colors.orange,
                   onTap: onTapMyDrafts,
@@ -229,8 +231,8 @@ class HomeTab extends StatelessWidget {
               Expanded(
                 child: _buildActionCard(
                   icon: Icons.favorite,
-                  title: 'Favorites',
-                  subtitle: 'Liked recipes',
+                  title: t.t('favorites'),
+                  subtitle: t.t('liked_recipes'),
                   color: Colors.red,
                   onTap: onTapFavorites,
                 ),
@@ -290,7 +292,7 @@ class HomeTab extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    _formatDate(announcement.createdAt),
+                    _formatDate(context, announcement.createdAt),
                     style: const TextStyle(
                       fontSize: 12,
                       color: NatureColors.mediumGray,
@@ -429,7 +431,7 @@ class HomeTab extends StatelessWidget {
                             ),
                             const SizedBox(width: 8),
                             Text(
-                              _formatDate(announcement.createdAt),
+                              _formatDate(context, announcement.createdAt),
                               style: const TextStyle(
                                 fontSize: 14,
                                 color: NatureColors.mediumGray,
@@ -465,7 +467,7 @@ class HomeTab extends StatelessWidget {
       MaterialPageRoute(
         builder: (context) => Scaffold(
           appBar: AppBar(
-            title: const Text('All Announcements'),
+            title: Text(AppLocalizations.of(context).t('all_announcements')),
             backgroundColor: NatureColors.primaryGreen,
             foregroundColor: NatureColors.pureWhite,
           ),
@@ -486,14 +488,14 @@ class HomeTab extends StatelessWidget {
     );
   }
 
-  String _formatDate(DateTime date) {
+  String _formatDate(BuildContext context, DateTime date) {
     final now = DateTime.now();
     final difference = now.difference(date);
     
     if (difference.inDays == 0) {
-      return 'Today';
+      return AppLocalizations.of(context).t('today');
     } else if (difference.inDays == 1) {
-      return 'Yesterday';
+      return AppLocalizations.of(context).t('yesterday');
     } else if (difference.inDays < 7) {
       return '${difference.inDays} days ago';
     } else {

@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
@@ -39,18 +38,9 @@ class AppWrapper extends StatelessWidget {
             );
           }
           
-          // Show splash while loading with reasonable timeout for fresh install
+          // Show splash while loading
           if (authProvider.loading) {
-            return FutureBuilder(
-              future: Future.delayed(const Duration(seconds: 15)), // Reasonable timeout for fresh install
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.done) {
-                  // If still loading after timeout, show emergency screen
-                  return _EmergencyLoginScreen(authProvider: authProvider);
-                }
-                return const SplashScreen();
-              },
-            );
+            return const SplashScreen();
           }
           
           // If not logged in, show onboarding once then login
@@ -70,18 +60,9 @@ class AppWrapper extends StatelessWidget {
             );
           }
           
-          // If logged in but user data is not loaded yet, show splash with timeout
+          // If logged in but user data is not loaded yet, show splash
           if (authProvider.currentAppUser == null) {
-            return FutureBuilder(
-              future: Future.delayed(const Duration(seconds: 10)), // Reasonable timeout for user data
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.done) {
-                  // Force user data refresh or show emergency screen
-                  return _EmergencyUserDataScreen(authProvider: authProvider);
-                }
-                return const SplashScreen();
-              },
-            );
+            return const SplashScreen();
           }
           
           // Route based on user role
@@ -89,7 +70,6 @@ class AppWrapper extends StatelessWidget {
           final isApproved = authProvider.currentAppUser?.approved;
           
           AppLogger.debug('AppWrapper: User role: $userRole, approved: $isApproved');
-          
           
           if (userRole == 'admin') {
             AppLogger.debug('AppWrapper: Routing to admin dashboard');
@@ -195,372 +175,24 @@ class _PendingApprovalScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 32),
                       
-                      // Refresh and Sign Out Buttons
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          // Refresh Button
-                          OutlinedButton.icon(
-                            onPressed: () async {
-                              final authProvider = context.read<AuthProvider>();
-                              await authProvider.refreshCurrentUser();
-                              
-                              // If there's an error (like session expired), show it
-                              if (authProvider.hasError) {
-                                if (context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(authProvider.error ?? 'Failed to refresh'),
-                                      backgroundColor: Colors.red,
-                                      action: SnackBarAction(
-                                        label: 'Login',
-                                        textColor: Colors.white,
-                                        onPressed: () {
-                                          authProvider.signOut();
-                                        },
-                                      ),
-                                    ),
-                                  );
-                                }
-                              }
-                            },
-                            icon: const Icon(Icons.refresh, size: 18),
-                            label: const Text('Refresh'),
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: NatureColors.primaryGreen,
-                              side: const BorderSide(color: NatureColors.primaryGreen),
-                              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
+                      // Sign Out Button
+                      FilledButton(
+                        onPressed: () => context.read<AuthProvider>().signOut(),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: NatureColors.primaryGreen,
+                          foregroundColor: NatureColors.pureWhite,
+                          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 32),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
                           ),
-                          // Sign Out Button
-                          FilledButton.icon(
-                            onPressed: () => context.read<AuthProvider>().signOut(),
-                            icon: const Icon(Icons.logout, size: 18),
-                            label: const Text('Sign Out'),
-                            style: FilledButton.styleFrom(
-                              backgroundColor: NatureColors.primaryGreen,
-                              foregroundColor: NatureColors.pureWhite,
-                              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
+                        ),
+                        child: const Text(
+                          'Sign Out',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
                           ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      
-                      // Help text
-                      Text(
-                        'If you have been approved, tap "Refresh" to update your status.',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: NatureColors.mediumGray,
-                          fontStyle: FontStyle.italic,
                         ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 8),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// Emergency login screen for when normal loading fails
-class _EmergencyLoginScreen extends StatelessWidget {
-  final AuthProvider authProvider;
-  
-  const _EmergencyLoginScreen({required this.authProvider});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: NatureColors.natureBackground,
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              NatureColors.natureBackground,
-              NatureColors.offWhite,
-            ],
-          ),
-        ),
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 400),
-              child: Card(
-                elevation: 8,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(16),
-                    gradient: const LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        NatureColors.pureWhite,
-                        NatureColors.lightGray,
-                      ],
-                    ),
-                  ),
-                  padding: const EdgeInsets.all(32),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Icon Section
-                      Container(
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: NatureColors.primaryGreen,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Icon(
-                          Icons.refresh,
-                          size: 64,
-                          color: NatureColors.pureWhite,
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      
-                      // Title
-                      const Text(
-                        'Login Taking Too Long',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: NatureColors.darkGreen,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 16),
-                      
-                      // Description
-                      const Text(
-                        'The app is taking longer than usual to load. This is common on fresh installs. Let\'s try to fix this.',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: NatureColors.darkGray,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 32),
-                      
-                      // Action Buttons
-                      Column(
-                        children: [
-                          SizedBox(
-                            width: double.infinity,
-                            child: FilledButton(
-                              onPressed: () {
-                                authProvider.resetAuthState();
-                              },
-                              style: FilledButton.styleFrom(
-                                backgroundColor: NatureColors.primaryGreen,
-                                foregroundColor: NatureColors.pureWhite,
-                                padding: const EdgeInsets.symmetric(vertical: 16),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                              child: const Text(
-                                'Try Again',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          SizedBox(
-                            width: double.infinity,
-                            child: OutlinedButton(
-                              onPressed: () {
-                                authProvider.signOut();
-                              },
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: NatureColors.primaryGreen,
-                                side: const BorderSide(color: NatureColors.primaryGreen),
-                                padding: const EdgeInsets.symmetric(vertical: 16),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                              child: const Text(
-                                'Sign Out & Start Over',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// Emergency user data screen for when user data loading fails
-class _EmergencyUserDataScreen extends StatelessWidget {
-  final AuthProvider authProvider;
-  
-  const _EmergencyUserDataScreen({required this.authProvider});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: NatureColors.natureBackground,
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              NatureColors.natureBackground,
-              NatureColors.offWhite,
-            ],
-          ),
-        ),
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 400),
-              child: Card(
-                elevation: 8,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(16),
-                    gradient: const LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        NatureColors.pureWhite,
-                        NatureColors.lightGray,
-                      ],
-                    ),
-                  ),
-                  padding: const EdgeInsets.all(32),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Icon Section
-                      Container(
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: NatureColors.lightGreen,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Icon(
-                          Icons.account_circle_outlined,
-                          size: 64,
-                          color: NatureColors.pureWhite,
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      
-                      // Title
-                      const Text(
-                        'Setting Up Your Account',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: NatureColors.darkGreen,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 16),
-                      
-                      // Description
-                      const Text(
-                        'We\'re having trouble loading your account data. This is common on fresh installs. Let\'s try to refresh your account.',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: NatureColors.darkGray,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 32),
-                      
-                      // Action Buttons
-                      Column(
-                        children: [
-                          SizedBox(
-                            width: double.infinity,
-                            child: FilledButton(
-                              onPressed: () {
-                                authProvider.refreshCurrentUser();
-                              },
-                              style: FilledButton.styleFrom(
-                                backgroundColor: NatureColors.primaryGreen,
-                                foregroundColor: NatureColors.pureWhite,
-                                padding: const EdgeInsets.symmetric(vertical: 16),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                              child: const Text(
-                                'Refresh Account',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          SizedBox(
-                            width: double.infinity,
-                            child: OutlinedButton(
-                              onPressed: () {
-                                authProvider.signOut();
-                              },
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: NatureColors.primaryGreen,
-                                side: const BorderSide(color: NatureColors.primaryGreen),
-                                padding: const EdgeInsets.symmetric(vertical: 16),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                              child: const Text(
-                                'Sign Out & Try Again',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
                       ),
                     ],
                   ),

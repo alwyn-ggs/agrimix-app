@@ -35,18 +35,11 @@
   class _RecipeDetailBodyState extends State<_RecipeDetailBody> {
     late Future<Recipe?> _recipeFuture;
 
-  @override
-  void initState() {
-    super.initState();
-    _recipeFuture = context.read<RecipesRepo>().getRecipe(widget.recipeId);
-    
-    // Track recipe view for history
-    final auth = context.read<AuthProvider>();
-    final userId = auth.currentUser?.uid;
-    if (userId != null) {
-      context.read<RecipesRepo>().trackRecipeView(userId, widget.recipeId);
+    @override
+    void initState() {
+      super.initState();
+      _recipeFuture = context.read<RecipesRepo>().getRecipe(widget.recipeId);
     }
-  }
 
     @override
     Widget build(BuildContext context) {
@@ -100,47 +93,7 @@
                           _buildIngredients(recipe),
                           const SizedBox(height: 24),
                           _buildSteps(recipe),
-                          const SizedBox(height: 24),
-                          // Start fermenting for drafts (private) owned by user
-                          if (recipe.visibility == RecipeVisibility.private && uid == recipe.ownerUid)
-                            SafeArea(
-                              top: false,
-                              child: SizedBox(
-                                width: double.infinity,
-                                child: FilledButton.icon(
-                                  onPressed: () => Navigator.of(context).pushNamed(
-                                    Routes.newLog,
-                                    arguments: {'recipe': recipe},
-                                  ),
-                                  style: FilledButton.styleFrom(
-                                    backgroundColor: Colors.green,
-                                    padding: const EdgeInsets.symmetric(vertical: 14),
-                                    foregroundColor: Colors.white,
-                                  ),
-                                  icon: const Icon(Icons.play_circle_fill, size: 18),
-                                  label: const Text('Start Fermenting'),
-                                ),
-                              ),
-                            ),
-                          if (recipe.visibility == RecipeVisibility.private && uid == recipe.ownerUid)
-                            const SizedBox(height: 24),
-                          if (_shouldShowUseButton(uid, recipe))
-                            SafeArea(
-                              top: false,
-                              child: SizedBox(
-                                width: double.infinity,
-                                child: FilledButton.icon(
-                                  onPressed: () => _useThisRecipe(context, recipe, uid),
-                                  style: FilledButton.styleFrom(
-                                    backgroundColor: NatureColors.primaryGreen,
-                                    padding: const EdgeInsets.symmetric(vertical: 14),
-                                  ),
-                                  icon: const Icon(Icons.playlist_add, size: 18),
-                                  label: const Text('Use this recipe'),
-                                ),
-                              ),
-                            ),
-                          const SizedBox(height: 24),
+                          const SizedBox(height: 100), // Bottom padding for FAB
                         ],
                       ),
                     ),
@@ -240,7 +193,7 @@
           ),
         ),
         actions: [
-          if (!recipe.isStandard && recipe.visibility == RecipeVisibility.public && uid != recipe.ownerUid)
+          if (!recipe.isStandard)
             IconButton(
               icon: Icon(isFav ? Icons.favorite : Icons.favorite_border, color: Colors.white),
               onPressed: () => context.read<RecipesRepo>().toggleFavorite(userId: uid, recipeId: recipe.id),
@@ -250,7 +203,7 @@
               icon: const Icon(Icons.share, color: Colors.white),
               onPressed: () => _shareRecipe(context, recipe),
             ),
-          if (uid == recipe.ownerUid)
+          if (uid == recipe.ownerUid || isAdmin)
             Builder(
               builder: (menuContext) {
                 return IconButton(
@@ -308,50 +261,6 @@
           ),
         ),
       );
-    }
-
-    bool _shouldShowUseButton(String uid, Recipe recipe) {
-      if (uid.isEmpty) return false;
-      if (uid == recipe.ownerUid) return false;
-      if (recipe.isStandard) return true;
-      return recipe.visibility == RecipeVisibility.public;
-    }
-
-    Future<void> _useThisRecipe(BuildContext context, Recipe source, String uid) async {
-      try {
-        final repo = context.read<RecipesRepo>();
-        final newId = FirebaseFirestore.instance.collection(Recipe.collectionPath).doc().id;
-        final copy = Recipe(
-          id: newId,
-          ownerUid: uid,
-          name: source.name,
-          description: source.description,
-          method: source.method,
-          cropTarget: source.cropTarget,
-          ingredients: source.ingredients,
-          steps: source.steps,
-          visibility: RecipeVisibility.private,
-          isStandard: false,
-          likes: 0,
-          avgRating: 0.0,
-          totalRatings: 0,
-          imageUrls: source.imageUrls,
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-        );
-        await repo.createRecipe(copy);
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Added to your Drafts. Edit and share when ready.')),
-          );
-        }
-      } catch (e) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to use recipe: $e')),
-          );
-        }
-      }
     }
 
     Widget _buildRecipeInfo(BuildContext context, Recipe recipe) {

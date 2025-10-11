@@ -12,7 +12,7 @@ import '../../providers/auth_provider.dart';
 import '../../services/notification_service.dart';
 import '../../services/stage_management_service.dart';
 import '../../services/storage_service.dart';
-import '../../models/stage_completion.dart';
+
 
 class LogDetailPage extends StatelessWidget {
   const LogDetailPage({super.key});
@@ -175,8 +175,8 @@ class _DetailState extends State<_Detail> {
                         }
                         final recipe = recipeSnap.data;
                         if (recipe == null) {
-                          return Row(
-                            children: const [
+                          return const Row(
+                            children: [
                               Icon(Icons.restaurant_menu, size: 16, color: Colors.grey),
                               SizedBox(width: 8),
                               Text('Linked to recipe: unavailable')

@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart'; 
 import 'theme/theme.dart';
+import 'providers/settings_provider.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'l10n/app_localizations.dart';
 import 'router.dart';
 import 'ui/common/app_wrapper.dart';
 import 'providers/auth_provider.dart';
@@ -58,6 +61,7 @@ class AgriMixAppRoot extends StatelessWidget {
 
     return MultiProvider(
       providers: [
+        ChangeNotifierProvider(create: (_) => SettingsProvider()),
         ChangeNotifierProvider(create: (_) => AuthProvider(authService, usersRepo, messagingService, notificationService)),
         ChangeNotifierProvider(create: (_) => UserProvider(usersRepo)),
         ChangeNotifierProvider(create: (_) => RecipeProvider(recipesRepo, ingredientsRepo)),
@@ -86,12 +90,21 @@ class AgriMixAppRoot extends StatelessWidget {
         builder: (context) {
           final theme = buildTheme();
           final darkTheme = buildDarkTheme();
+          final settings = context.watch<SettingsProvider>();
           return MaterialApp(
             title: 'AgriMix App',
             debugShowCheckedModeBanner: false,
-            themeMode: ThemeMode.light,
+            themeMode: settings.themeMode,
             theme: theme,
             darkTheme: darkTheme,
+            locale: settings.locale,
+            supportedLocales: const [Locale('en'), Locale('tl')],
+            localizationsDelegates: const [
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+              AppLocalizations.delegate,
+            ],
             navigatorKey: NavigationService.navigatorKey,
             home: const AppWrapper(), // Use AppWrapper for initial navigation
             onGenerateRoute: AppRouter.onGenerateRoute,

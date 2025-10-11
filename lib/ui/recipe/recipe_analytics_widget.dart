@@ -10,14 +10,12 @@ import '../../theme/theme.dart';
 class RecipeAnalyticsWidget extends StatefulWidget {
   final List<RecipeIngredient> ingredients;
   final String cropTarget;
-  final double batchSize;
   final Function(List<RecipeIngredient>)? onIngredientsUpdated;
 
   const RecipeAnalyticsWidget({
     super.key,
     required this.ingredients,
     required this.cropTarget,
-    required this.batchSize,
     this.onIngredientsUpdated,
   });
 
@@ -89,7 +87,6 @@ class _RecipeAnalyticsWidgetState extends State<RecipeAnalyticsWidget> {
   Future<NutrientProfile> _calculateRealNutrients() async {
     final ingredientsRepo = context.read<IngredientsRepo>();
     NutrientProfile totalProfile = const NutrientProfile();
-    int processedIngredients = 0;
 
     for (final recipeIngredient in widget.ingredients) {
       try {
@@ -98,22 +95,13 @@ class _RecipeAnalyticsWidgetState extends State<RecipeAnalyticsWidget> {
           // Scale the nutrient profile by the amount used in the recipe
           final scaledProfile = ingredient!.nutrientProfile! * recipeIngredient.amount;
           totalProfile = totalProfile + scaledProfile;
-          processedIngredients++;
-          
-          // Debug: Print individual ingredient contributions
-          print('Ingredient: ${ingredient.name} (${recipeIngredient.amount}${recipeIngredient.unit})');
-          print('  N: ${scaledProfile.nitrogen.toStringAsFixed(2)}, P: ${scaledProfile.phosphorus.toStringAsFixed(2)}, K: ${scaledProfile.potassium.toStringAsFixed(2)}');
         }
       } catch (e) {
-        print('Error processing ingredient ${recipeIngredient.ingredientId}: $e');
+        // Continue with other ingredients if one fails
         continue;
       }
     }
 
-    // Debug: Print final totals
-    print('Total NPK from $processedIngredients ingredients:');
-    print('  N: ${totalProfile.nitrogen.toStringAsFixed(2)}, P: ${totalProfile.phosphorus.toStringAsFixed(2)}, K: ${totalProfile.potassium.toStringAsFixed(2)}');
-    
     return totalProfile;
   }
 
@@ -124,7 +112,7 @@ class _RecipeAnalyticsWidgetState extends State<RecipeAnalyticsWidget> {
     if (profile.fruitingPromotion < 0.4) {
       recommendations.add(NutrientRecommendation(
         type: NutrientDeficiencyType.fruiting,
-        description: 'Low nutrients for fruiting. Add more fruit ingredients.',
+        description: 'Kulang sa nutrients para sa fruiting. Magdagdag ng mga prutas na ingredients.',
         suggestedIngredients: [
           IngredientSuggestion(
             ingredient: _createMockIngredient('Saging (Banana)', 'FFJ'),
@@ -136,7 +124,7 @@ class _RecipeAnalyticsWidgetState extends State<RecipeAnalyticsWidget> {
             ingredient: _createMockIngredient('Papaya', 'FFJ'),
             relevance: 0.8,
             suggestedAmount: 1.5,
-            reason: 'Natural enzymes and phosphorus for flowering',
+            reason: 'Natural enzymes at phosphorus para sa flowering',
           ),
         ],
         priority: 1,
@@ -147,7 +135,7 @@ class _RecipeAnalyticsWidgetState extends State<RecipeAnalyticsWidget> {
     if (profile.leafGrowth < 0.4) {
       recommendations.add(NutrientRecommendation(
         type: NutrientDeficiencyType.leafGrowth,
-        description: 'Low nutrients for leaf growth. Add more leafy ingredients.',
+        description: 'Kulang sa nutrients para sa leaf growth. Magdagdag ng mga dahon na ingredients.',
         suggestedIngredients: [
           IngredientSuggestion(
             ingredient: _createMockIngredient('Malunggay (Moringa)', 'FPJ'),
@@ -170,7 +158,7 @@ class _RecipeAnalyticsWidgetState extends State<RecipeAnalyticsWidget> {
     if (profile.nitrogen < 2.0) {
       recommendations.add(NutrientRecommendation(
         type: NutrientDeficiencyType.nitrogen,
-        description: 'Low Nitrogen (N). Needed for green leaves and overall growth.',
+        description: 'Mababa ang Nitrogen (N). Kailangan para sa green leaves at overall growth.',
         suggestedIngredients: [
           IngredientSuggestion(
             ingredient: _createMockIngredient('Young Leaves', 'FPJ'),
@@ -186,7 +174,7 @@ class _RecipeAnalyticsWidgetState extends State<RecipeAnalyticsWidget> {
     if (profile.phosphorus < 1.5) {
       recommendations.add(NutrientRecommendation(
         type: NutrientDeficiencyType.phosphorus,
-        description: 'Low Phosphorus (P). Needed for root development and flowering.',
+        description: 'Mababa ang Phosphorus (P). Kailangan para sa root development at flowering.',
         suggestedIngredients: [
           IngredientSuggestion(
             ingredient: _createMockIngredient('Root Vegetables', 'FPJ'),
@@ -202,7 +190,7 @@ class _RecipeAnalyticsWidgetState extends State<RecipeAnalyticsWidget> {
     if (profile.potassium < 2.0) {
       recommendations.add(NutrientRecommendation(
         type: NutrientDeficiencyType.potassium,
-        description: 'Low Potassium (K). Needed for fruit quality and disease resistance.',
+        description: 'Mababa ang Potassium (K). Kailangan para sa fruit quality at disease resistance.',
         suggestedIngredients: [
           IngredientSuggestion(
             ingredient: _createMockIngredient('Banana Peel', 'FFJ'),
@@ -269,7 +257,7 @@ class _RecipeAnalyticsWidgetState extends State<RecipeAnalyticsWidget> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        '🌾 Recipe Nutrient Analysis',
+                        '🌾 Nutrient Analysis para sa Recipe',
                         style: Theme.of(context).textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.bold,
                           color: NatureColors.primaryGreen,
@@ -335,7 +323,7 @@ class _RecipeAnalyticsWidgetState extends State<RecipeAnalyticsWidget> {
           ),
           const SizedBox(height: 16),
           Text(
-            '🌱 Add ingredients to see the analysis',
+            '🌱 Magdagdag ng ingredients para makita ang analysis',
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
               color: NatureColors.primaryGreen,
               fontWeight: FontWeight.bold,
@@ -344,7 +332,7 @@ class _RecipeAnalyticsWidgetState extends State<RecipeAnalyticsWidget> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Select ingredients you want to use in your recipe',
+            'Piliin ang mga ingredients na gusto mo gamitin sa recipe mo',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               color: Colors.grey.shade600,
             ),
@@ -391,9 +379,15 @@ class _RecipeAnalyticsWidgetState extends State<RecipeAnalyticsWidget> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        _buildFitBadge(analysis),
+        const SizedBox(height: 12),
         _buildSupportMeters(analysis.totalNutrients),
         const SizedBox(height: 16),
+        _buildSuggestedMix(widget.ingredients),
+        const SizedBox(height: 16),
         _buildDilutionAndCoverage(widget.ingredients),
+        const SizedBox(height: 12),
+        _buildQuickTips(analysis),
       ],
     );
   }
@@ -415,7 +409,7 @@ class _RecipeAnalyticsWidgetState extends State<RecipeAnalyticsWidget> {
     
     if (isFloweringCrop) {
       if (flowerScore >= 0.6 && growthScore >= 0.4) {
-        title = '✅ Great Recipe!';
+        title = '✅ Magandang Recipe!';
         description = 'Perfect para sa mga halaman na nagbubunga';
         color = Colors.green;
         icon = Icons.thumb_up;
@@ -432,7 +426,7 @@ class _RecipeAnalyticsWidgetState extends State<RecipeAnalyticsWidget> {
       }
     } else {
       if (growthScore >= 0.6 && rootScore >= 0.4) {
-        title = '✅ Great Recipe!';
+        title = '✅ Magandang Recipe!';
         description = 'Perfect para sa malusog na paglaki ng halaman';
         color = Colors.green;
         icon = Icons.thumb_up;
@@ -493,17 +487,37 @@ class _RecipeAnalyticsWidgetState extends State<RecipeAnalyticsWidget> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        Row(
+          children: [
+            const Icon(Icons.eco, color: NatureColors.primaryGreen, size: 18),
+            const SizedBox(width: 6),
+            Flexible(
+              child: Text(
+                'Nutrient Analysis',
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold),
+                overflow: TextOverflow.visible,
+                softWrap: true,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        
         // NPK Values Display
         _buildNPKDisplay(profile),
         const SizedBox(height: 16),
         
-        _farmerMeterRow('🌱 Plant Growth', 'For healthy leaves and stems', _calculatePlantGrowth(profile), Colors.green),
+        // Plant Application Recommendations
+        _buildPlantApplications(profile),
+        const SizedBox(height: 16),
+        
+        _farmerMeterRow('🌱 Plant Growth', 'Para sa malusog na dahon at tangkay', profile.leafGrowth, Colors.green),
         const SizedBox(height: 8),
-        _farmerMeterRow('🌸 Flowering & Fruiting', 'For more flowers and fruits', _calculateFloweringFruiting(profile), Colors.orange),
+        _farmerMeterRow('🌸 Flowering & Fruiting', 'Para sa mas maraming bulaklak at bunga', profile.fruitingPromotion, Colors.orange),
         const SizedBox(height: 8),
-        _farmerMeterRow('🌿 Root Health', 'For strong root system', _calculateRootHealth(profile), Colors.brown),
+        _farmerMeterRow('🌿 Root Health', 'Para sa malakas na ugat', profile.rootDevelopment, Colors.brown),
         const SizedBox(height: 8),
-        _farmerMeterRow('🛡️ Disease Resistance', 'For stronger plant immunity', _calculateDiseaseResistance(profile), Colors.blue),
+        _farmerMeterRow('🛡️ Disease Resistance', 'Para sa mas malakas na halaman', profile.diseaseResistance, Colors.blue),
       ],
     );
   }
@@ -521,10 +535,10 @@ class _RecipeAnalyticsWidgetState extends State<RecipeAnalyticsWidget> {
         border: Border.all(color: Colors.blue.shade200),
       ),
       child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
               const Icon(Icons.science, color: Colors.blue, size: 20),
               const SizedBox(width: 8),
               Text(
@@ -532,199 +546,59 @@ class _RecipeAnalyticsWidgetState extends State<RecipeAnalyticsWidget> {
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.bold,
                   color: Colors.blue.shade800,
+                ),
               ),
-            ),
-          ],
-        ),
-          const SizedBox(height: 16),
-          _buildNPKRow('N', profile.nitrogen, Colors.green),
-        const SizedBox(height: 12),
-          _buildNPKRow('P', profile.phosphorus, Colors.orange),
+            ],
+          ),
           const SizedBox(height: 12),
-          _buildNPKRow('K', profile.potassium, Colors.purple),
+          Row(
+            children: [
+              Expanded(child: _buildNutrientCard('N', 'Nitrogen', profile.nitrogen, Colors.green, 'Leaf Growth')),
+              const SizedBox(width: 8),
+              Expanded(child: _buildNutrientCard('P', 'Phosphorus', profile.phosphorus, Colors.orange, 'Root & Flower')),
+              const SizedBox(width: 8),
+              Expanded(child: _buildNutrientCard('K', 'Potassium', profile.potassium, Colors.purple, 'Fruit Quality')),
+            ],
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildNPKRow(String symbol, double value, Color color) {
-    // Calculate percentage (assuming max ideal value of 5.0 for each nutrient)
-    final percentage = (value / 5.0).clamp(0.0, 1.0);
-    final percentText = '${(percentage * 100).round()}%';
-    
-    return Row(
-      children: [
-        // Symbol
-        SizedBox(
-          width: 20,
-          child: Text(
+  Widget _buildNutrientCard(String symbol, String name, double value, Color color, String purpose) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+      ),
+      child: Column(
+        children: [
+          Text(
             symbol,
             style: TextStyle(
-              fontSize: 18,
+              fontSize: 24,
               fontWeight: FontWeight.bold,
               color: color,
             ),
           ),
-        ),
-        const SizedBox(width: 8),
-        
-        // Progress loading line
-        Expanded(
-          child: Container(
-            height: 4,
-            decoration: BoxDecoration(
-              color: Colors.grey.shade200,
-              borderRadius: BorderRadius.circular(2),
-            ),
-            child: FractionallySizedBox(
-              alignment: Alignment.centerLeft,
-              widthFactor: percentage,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: color,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-          ),
-        ),
-        
-        const SizedBox(width: 8),
-        
-        // Percentage
-        SizedBox(
-          width: 40,
-          child: Text(
-            percentText,
+          const SizedBox(height: 4),
+          Text(
+            value.toStringAsFixed(1),
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
               color: color,
             ),
-            textAlign: TextAlign.right,
           ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildNutrientCard(String symbol, String name, double value, Color color, String purpose) {
-    // Calculate percentage (assuming max ideal value of 5.0 for each nutrient)
-    final percentage = (value / 5.0).clamp(0.0, 1.0);
-    final percentText = '${(percentage * 100).round()}%';
-    
-    // Determine quality level
-    String quality;
-    Color qualityColor;
-    if (percentage >= 0.8) {
-      quality = 'Excellent';
-      qualityColor = Colors.green;
-    } else if (percentage >= 0.6) {
-      quality = 'Good';
-      qualityColor = Colors.lightGreen;
-    } else if (percentage >= 0.4) {
-      quality = 'Fair';
-      qualityColor = Colors.orange;
-    } else {
-      quality = 'Low';
-      qualityColor = Colors.red;
-    }
-
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header with symbol and percentage
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                symbol,
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: color,
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: qualityColor.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  percentText,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: qualityColor,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        const SizedBox(height: 8),
-          
-          // Value display
-          Text(
-            '${value.toStringAsFixed(1)} mg/L',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: color.withValues(alpha: 0.8),
-            ),
-          ),
-        const SizedBox(height: 8),
-          
-          // Horizontal percentage bar
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                height: 8,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade200,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: FractionallySizedBox(
-                  alignment: Alignment.centerLeft,
-                  widthFactor: percentage,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [color.withValues(alpha: 0.7), color],
-                      ),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                quality,
-                style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w600,
-                  color: qualityColor,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          
-          // Purpose
+          const SizedBox(height: 4),
           Text(
             purpose,
-            textAlign: TextAlign.left,
+            textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 9,
-              color: color.withValues(alpha: 0.7),
+              fontSize: 10,
+              color: color.withValues(alpha: 0.8),
             ),
           ),
         ],
@@ -732,118 +606,31 @@ class _RecipeAnalyticsWidgetState extends State<RecipeAnalyticsWidget> {
     );
   }
 
-  // Calculate plant growth based on Nitrogen levels
-  double _calculatePlantGrowth(NutrientProfile profile) {
-    // Plant growth is primarily driven by Nitrogen (N)
-    // Also influenced by overall nutrient balance
-    final nitrogenScore = (profile.nitrogen / 5.0).clamp(0.0, 1.0); // Max 5.0 mg/L
-    final balanceBonus = _calculateNutrientBalance(profile) * 0.2; // 20% bonus for balance
-    final leafGrowthBonus = profile.leafGrowth * 0.3; // 30% from ingredient leaf growth properties
-    
-    return (nitrogenScore * 0.5 + balanceBonus + leafGrowthBonus).clamp(0.0, 1.0);
-  }
-
-  // Calculate flowering & fruiting based on Phosphorus and Potassium
-  double _calculateFloweringFruiting(NutrientProfile profile) {
-    // Flowering needs Phosphorus (P), Fruiting needs Potassium (K)
-    final phosphorusScore = (profile.phosphorus / 3.0).clamp(0.0, 1.0); // Max 3.0 mg/L
-    final potassiumScore = (profile.potassium / 5.0).clamp(0.0, 1.0); // Max 5.0 mg/L
-    final fruitingBonus = profile.fruitingPromotion * 0.3; // 30% from ingredient properties
-    
-    return ((phosphorusScore + potassiumScore) / 2.0 * 0.7 + fruitingBonus).clamp(0.0, 1.0);
-  }
-
-  // Calculate root health based on Phosphorus and secondary nutrients
-  double _calculateRootHealth(NutrientProfile profile) {
-    // Root development needs Phosphorus (P) and Calcium (Ca)
-    final phosphorusScore = (profile.phosphorus / 3.0).clamp(0.0, 1.0);
-    final calciumScore = (profile.calcium / 2.0).clamp(0.0, 1.0); // Max 2.0 mg/L
-    final rootDevBonus = profile.rootDevelopment * 0.4; // 40% from ingredient properties
-    
-    return ((phosphorusScore + calciumScore) / 2.0 * 0.6 + rootDevBonus).clamp(0.0, 1.0);
-  }
-
-  // Calculate disease resistance based on Potassium and micronutrients
-  double _calculateDiseaseResistance(NutrientProfile profile) {
-    // Disease resistance comes from Potassium (K) and balanced nutrition
-    final potassiumScore = (profile.potassium / 5.0).clamp(0.0, 1.0);
-    final micronutrientScore = ((profile.iron + profile.zinc + profile.manganese) / 3.0).clamp(0.0, 1.0);
-    final resistanceBonus = profile.diseaseResistance * 0.3; // 30% from ingredient properties
-    
-    return ((potassiumScore + micronutrientScore) / 2.0 * 0.7 + resistanceBonus).clamp(0.0, 1.0);
-  }
-
-  // Calculate overall nutrient balance
-  double _calculateNutrientBalance(NutrientProfile profile) {
-    // Ideal NPK ratio is roughly 3:1:2 (N:P:K)
-    final n = profile.nitrogen;
-    final p = profile.phosphorus;
-    final k = profile.potassium;
-    
-    if (n == 0 && p == 0 && k == 0) return 0.0;
-    
-    // Calculate how close we are to ideal ratios
-    final total = n + p + k;
-    final nRatio = n / total;
-    final pRatio = p / total;
-    final kRatio = k / total;
-    
-    // Ideal ratios (normalized): N=0.5, P=0.17, K=0.33
-    final nDiff = (nRatio - 0.5).abs();
-    final pDiff = (pRatio - 0.17).abs();
-    final kDiff = (kRatio - 0.33).abs();
-    
-    final balance = 1.0 - ((nDiff + pDiff + kDiff) / 3.0);
-    return balance.clamp(0.0, 1.0);
-  }
-
   Widget _buildPlantApplications(NutrientProfile profile) {
     final applications = <String>[];
     
-    // Use calculated values based on NPK
-    final plantGrowth = _calculatePlantGrowth(profile);
-    final floweringFruiting = _calculateFloweringFruiting(profile);
-    final rootHealth = _calculateRootHealth(profile);
-    final diseaseResistance = _calculateDiseaseResistance(profile);
-    
-    // Determine best applications based on calculated scores
-    if (plantGrowth > 0.6) {
-      applications.add('✅ Excellent for Vegetative Growth');
-    } else if (plantGrowth > 0.4) {
-      applications.add('✅ Good for Vegetative Growth');
+    // Determine best applications based on nutrient profile
+    if (profile.leafGrowth > 0.4) {
+      applications.add('✅ Maganda para sa Vegetative Growth');
     }
-    
-    if (floweringFruiting > 0.6) {
-      applications.add('✅ Excellent for Flowering & Fruiting');
-    } else if (floweringFruiting > 0.4) {
-      applications.add('✅ Good for Flowering & Fruiting');
+    if (profile.fruitingPromotion > 0.4) {
+      applications.add('✅ Maganda para sa Flowering & Fruiting');
     }
-    
-    if (rootHealth > 0.6) {
-      applications.add('✅ Excellent for Root Development');
-    } else if (rootHealth > 0.4) {
-      applications.add('✅ Good for Root Development');
+    if (profile.rootDevelopment > 0.3) {
+      applications.add('✅ Maganda para sa Root Development');
     }
-    
-    if (diseaseResistance > 0.6) {
-      applications.add('✅ Excellent for Disease Resistance');
-    } else if (diseaseResistance > 0.4) {
-      applications.add('✅ Good for Disease Resistance');
+    if (profile.nitrogen > 2.0) {
+      applications.add('✅ Mataas sa Nitrogen - Perfect para sa leafy vegetables');
     }
-    
-    // NPK-specific recommendations
-    if (profile.nitrogen > 3.0) {
-      applications.add('✅ High Nitrogen - Perfect for leafy vegetables');
+    if (profile.potassium > 2.0) {
+      applications.add('✅ Mataas sa Potassium - Perfect para sa fruiting plants');
     }
-    if (profile.potassium > 3.0) {
-      applications.add('✅ High Potassium - Perfect for fruiting plants');
-    }
-    if (profile.phosphorus > 2.0) {
-      applications.add('✅ High Phosphorus - Perfect for flowering');
+    if (profile.phosphorus > 1.5) {
+      applications.add('✅ Mataas sa Phosphorus - Perfect para sa flowering');
     }
     
     if (applications.isEmpty) {
-      applications.add('⚠️ Add more ingredients for better results');
+      applications.add('⚠️ Kailangan pa ng more ingredients para sa better results');
     }
 
     return Container(
@@ -891,13 +678,13 @@ class _RecipeAnalyticsWidgetState extends State<RecipeAnalyticsWidget> {
     Color statusColor;
     
     if (pct >= 70) {
-      status = 'Good';
+      status = 'Maganda';
       statusColor = Colors.green;
     } else if (pct >= 40) {
-      status = 'Fair';
+      status = 'Katamtaman';
       statusColor = Colors.orange;
     } else {
-      status = 'Low';
+      status = 'Kailangan pa';
       statusColor = Colors.red;
     }
     
@@ -993,7 +780,7 @@ class _RecipeAnalyticsWidgetState extends State<RecipeAnalyticsWidget> {
               const SizedBox(width: 6),
               Expanded(
                 child: Text(
-                  '🌱 Suggested Recipe Mix',
+                  '🌱 Suggested Mix para sa Recipe',
                   style: Theme.of(context).textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: Colors.green.shade800,
@@ -1018,7 +805,7 @@ class _RecipeAnalyticsWidgetState extends State<RecipeAnalyticsWidget> {
                   const Icon(Icons.info, color: Colors.orange, size: 20),
                   const SizedBox(width: 8),
                   Text(
-                    'No ingredients selected',
+                    'Walang ingredients na napili',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: Colors.orange.shade800,
                       fontWeight: FontWeight.w500,
@@ -1073,31 +860,10 @@ class _RecipeAnalyticsWidgetState extends State<RecipeAnalyticsWidget> {
   }
 
   Widget _buildDilutionAndCoverage(List<RecipeIngredient> ingredients) {
-    // Use the selected batch size from step 1 to determine coverage
-    String coverageRange;
-    String areaDescription;
-    
-    switch (widget.batchSize) {
-      case 1.5:
-        coverageRange = '5-8 sqm';
-        areaDescription = 'Small backyard';
-        break;
-      case 3.0:
-        coverageRange = '10-15 sqm';
-        areaDescription = 'Medium backyard';
-        break;
-      case 6.0:
-        coverageRange = '20-30 sqm';
-        areaDescription = 'Large backyard';
-        break;
-      case 9.0:
-        coverageRange = '30-50 sqm';
-        areaDescription = 'Small farm';
-        break;
-      default:
-        coverageRange = '10-15 sqm';
-        areaDescription = 'Medium backyard';
-    }
+    // Farmer-friendly dilution and coverage calculation
+    final totalKg = ingredients.fold<double>(0.0, (sum, ri) => sum + (ri.unit.toLowerCase().contains('kg') ? ri.amount : 0.0));
+    final coverageSqm = (totalKg * 10).clamp(5, 200).round();
+    final plants = (coverageSqm * 3 / 2).round();
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -1115,7 +881,7 @@ class _RecipeAnalyticsWidgetState extends State<RecipeAnalyticsWidget> {
               const SizedBox(width: 8),
               Flexible(
                 child: Text(
-                  'How to Use the Recipe',
+                  'Paano gamitin ang Recipe',
                   style: Theme.of(context).textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: Colors.blue.shade800,
@@ -1129,22 +895,22 @@ class _RecipeAnalyticsWidgetState extends State<RecipeAnalyticsWidget> {
           const SizedBox(height: 12),
           _buildUsageCard(
             '💧 Dilution Ratio',
-            '1:100 (1 part FPJ/FFJ to 100 parts water)',
-            'Example: 1 cup FPJ to 100 cups water = 1 liter solution',
+            '1:100 (1 parte ng FPJ/FFJ sa 100 parte ng tubig)',
+            'Halimbawa: 1 baso ng FPJ sa 100 baso ng tubig = 1 liter',
             Colors.blue,
           ),
           const SizedBox(height: 8),
           _buildUsageCard(
             '📏 Coverage Area',
-            'Approximately $coverageRange',
-            '${widget.batchSize}kg batch - $areaDescription',
+            '~$coverageSqm square meters o ~$plants na halaman',
+            'Saklaw ng recipe mo para sa buong garden',
             Colors.green,
           ),
           const SizedBox(height: 8),
           _buildUsageCard(
             '⏰ Application',
-            'Spray in the morning (6-8 AM) or afternoon (4-6 PM), 2-3 times per week',
-            'Best time: morning before heat, afternoon after heat subsides',
+            'I-spray sa umaga (6-8 AM) o hapon (4-6 PM), 2-3 beses sa isang linggo',
+            'Pinakamagandang oras: umaga bago mag-init, hapon pagkatapos ng init',
             Colors.orange,
           ),
         ],
@@ -1189,6 +955,135 @@ class _RecipeAnalyticsWidgetState extends State<RecipeAnalyticsWidget> {
       ),
     );
   }
+
+  Widget _buildQuickTips(RecipeNutrientAnalysis analysis) {
+    final tips = <Map<String, String>>[];
+    final profile = analysis.totalNutrients;
+    
+    if (profile.fruitingPromotion < 0.6) {
+      tips.add({
+        'icon': '🌸',
+        'title': 'Para sa mas maraming bunga',
+        'tip': 'Dagdag ng saging (2-3 piraso), papaya (1/2 piraso)'
+      });
+    }
+    if (profile.leafGrowth < 0.6) {
+      tips.add({
+        'icon': '🌱',
+        'title': 'Para sa malusog na dahon',
+        'tip': 'Dagdag ng malunggay (1-2 cups), kangkong (1 cup)'
+      });
+    }
+    if (profile.rootDevelopment < 0.6) {
+      tips.add({
+        'icon': '🌿',
+        'title': 'Para sa malakas na ugat',
+        'tip': 'Dagdag ng kamote tops (1 cup), luya (1-2 piraso)'
+      });
+    }
+    if (profile.diseaseResistance < 0.6) {
+      tips.add({
+        'icon': '🛡️',
+        'title': 'Para sa mas malakas na halaman',
+        'tip': 'Dagdag ng luya (2-3 piraso), bawang (3-5 piraso)'
+      });
+    }
+    
+    if (tips.isEmpty) {
+      tips.add({
+        'icon': '✅',
+        'title': 'Magandang recipe!',
+        'tip': 'Perfect na para sa crop mo! Good job, farmer! 🌾'
+      });
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.amber.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.amber.shade200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.lightbulb, color: Colors.amber.shade700, size: 20),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  'Mga Tips para sa Recipe',
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.amber.shade800,
+                  ),
+                  overflow: TextOverflow.visible,
+                  softWrap: true,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ...tips.take(3).map((tip) => _buildTipCard(tip)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTipCard(Map<String, String> tip) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.amber.shade200),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            tip['icon']!,
+            style: const TextStyle(fontSize: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  tip['title']!,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.amber.shade800,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  tip['tip']!,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Colors.grey.shade700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+
+
+
+
+
+
+
+
+
+
 
 
 }

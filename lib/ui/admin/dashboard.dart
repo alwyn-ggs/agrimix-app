@@ -10,6 +10,7 @@ import 'community_moderation_page.dart';
 import 'fermentation_monitor_page.dart';
 import 'announcements_page.dart';
 import '../common/notifications_page.dart';
+import '../../l10n/app_localizations.dart';
 
 class Dashboard extends StatefulWidget {
   const Dashboard({super.key});
@@ -510,48 +511,73 @@ class _DashboardState extends State<Dashboard> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.settings, color: NatureColors.primaryGreen),
-            SizedBox(width: 8),
-            Text('Settings'),
+            const Icon(Icons.settings, color: NatureColors.primaryGreen),
+            const SizedBox(width: 8),
+            Text(AppLocalizations.of(context).t('settings')),
           ],
         ),
-        content: const Column(
+        content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             ListTile(
-              leading: Icon(Icons.notifications_outlined),
-              title: Text('Notifications'),
-              subtitle: Text('Manage notification preferences'),
+              leading: const Icon(Icons.notifications_outlined),
+              title: Text(AppLocalizations.of(context).t('notifications')),
+              subtitle: Text(AppLocalizations.of(context).t('notifications_sub')),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const NotificationsPage(),
+                  ),
+                );
+              },
             ),
             ListTile(
-              leading: Icon(Icons.palette_outlined),
-              title: Text('Theme'),
-              subtitle: Text('Change app appearance'),
+              leading: const Icon(Icons.palette_outlined),
+              title: Text(AppLocalizations.of(context).t('theme')),
+              subtitle: Text(AppLocalizations.of(context).t('theme_sub')),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, '/settings/theme');
+              },
             ),
             ListTile(
-              leading: Icon(Icons.language_outlined),
-              title: Text('Language'),
-              subtitle: Text('Select your preferred language'),
+              leading: const Icon(Icons.language_outlined),
+              title: Text(AppLocalizations.of(context).t('language')),
+              subtitle: Text(AppLocalizations.of(context).t('language_sub')),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, '/settings/language');
+              },
             ),
             ListTile(
-              leading: Icon(Icons.admin_panel_settings_outlined),
-              title: Text('Admin Settings'),
-              subtitle: Text('Configure admin-specific settings'),
+              leading: const Icon(Icons.admin_panel_settings_outlined),
+              title: Text(AppLocalizations.of(context).t('admin_settings')),
+              subtitle: Text(AppLocalizations.of(context).t('admin_settings_sub')),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, '/settings/admin');
+              },
             ),
             ListTile(
-              leading: Icon(Icons.help_outline),
-              title: Text('Help & Support'),
-              subtitle: Text('Get help and contact support'),
+              leading: const Icon(Icons.help_outline),
+              title: Text(AppLocalizations.of(context).t('help_support')),
+              subtitle: Text(AppLocalizations.of(context).t('help_support_sub')),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, '/help');
+              },
             ),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
+            child: Text(AppLocalizations.of(context).t('close')),
           ),
         ],
       ),

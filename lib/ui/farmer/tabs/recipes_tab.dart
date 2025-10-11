@@ -9,16 +9,19 @@ import '../../../providers/auth_provider.dart';
 import '../../../theme/theme.dart';
 import '../../../router.dart';
 import '../../../utils/logger.dart';
+import '../../../l10n/app_localizations.dart';
 
 class RecipesTab extends StatelessWidget {
   const RecipesTab({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
+    
     return Scaffold(
       backgroundColor: NatureColors.natureBackground,
       appBar: AppBar(
-        title: const Text('Recipes', style: TextStyle(color: Colors.white)),
+        title: Text(t.t('recipes'), style: const TextStyle(color: Colors.white)),
         backgroundColor: NatureColors.primaryGreen,
         elevation: 0,
       ),
@@ -134,23 +137,23 @@ class RecipesTab extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 16),
-                      const Expanded(
+                      Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Standard Recipes',
-                              style: TextStyle(
+                              t.t('standard_recipes'),
+                              style: const TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.bold,
                                 color: NatureColors.pureWhite,
                                 letterSpacing: 0.5,
                               ),
                             ),
-                            SizedBox(height: 4),
+                            const SizedBox(height: 4),
                             Text(
-                              'Verified organic fertilizer recipes',
-                              style: TextStyle(
+                              t.t('verified_organic'),
+                              style: const TextStyle(
                                 fontSize: 14,
                                 color: NatureColors.offWhite,
                               ),
@@ -199,23 +202,23 @@ class RecipesTab extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 16),
-                      const Expanded(
+                      Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Community Recipes',
-                              style: TextStyle(
+                              t.t('community_recipes'),
+                              style: const TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.bold,
                                 color: NatureColors.darkGray,
                                 letterSpacing: 0.5,
                               ),
                             ),
-                            SizedBox(height: 4),
+                            const SizedBox(height: 4),
                             Text(
-                              'Shared by fellow farmers',
-                              style: TextStyle(
+                              t.t('shared_by_farmers'),
+                              style: const TextStyle(
                                 fontSize: 14,
                                 color: NatureColors.mediumGray,
                               ),
@@ -248,6 +251,7 @@ class RecipesTab extends StatelessWidget {
     required String description,
     required Color color,
   }) {
+    final t = AppLocalizations.of(context);
     return ListTile(
       leading: Container(
         padding: const EdgeInsets.all(8),
@@ -303,7 +307,7 @@ class RecipesTab extends StatelessWidget {
               ),
               const SizedBox(width: 4),
               Text(
-                'Standard Recipe',
+                t.t('standard_recipe'),
                 style: TextStyle(
                   fontSize: 12,
                   color: Colors.grey[600],
@@ -323,6 +327,7 @@ class RecipesTab extends StatelessWidget {
   }
 
   void _showRecipeDetails(BuildContext context, RecipeMethod method) {
+    final t = AppLocalizations.of(context);
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -338,8 +343,8 @@ class RecipesTab extends StatelessWidget {
             children: [
               Text(
                 method == RecipeMethod.fpj 
-                  ? 'For general plant growth and development'
-                  : 'For flowering and fruit development',
+                  ? t.t('general_plant_growth')
+                  : t.t('flowering_fruit'),
                 style: const TextStyle(fontWeight: FontWeight.w500),
               ),
               const SizedBox(height: 16),
@@ -389,14 +394,14 @@ class RecipesTab extends StatelessWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Close'),
+            child: Text(t.t('close')),
           ),
           ElevatedButton(
             onPressed: () {
               Navigator.of(context).pop();
               
             },
-            child: const Text('View Details'),
+            child: Text(t.t('view_details')),
           ),
         ],
       ),
@@ -578,6 +583,7 @@ class _InteractiveRecipeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
     return Container(
       margin: const EdgeInsets.only(left: 16, right: 16, bottom: 20),
       decoration: BoxDecoration(
@@ -875,7 +881,7 @@ class _InteractiveRecipeCard extends StatelessWidget {
                                         );
                                       },
                                       icon: const Icon(Icons.visibility, size: 18),
-                                      label: const Text('View Recipe'),
+                                      label: Text(t.t('view_recipe')),
                                       style: ElevatedButton.styleFrom(
                                         backgroundColor: NatureColors.primaryGreen,
                                         foregroundColor: Colors.white,

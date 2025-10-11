@@ -4,6 +4,7 @@ import '../../community/post_list_page.dart';
 import '../../community/saved_posts_page.dart';
 import '../../../providers/community_provider.dart';
 import '../../../theme/theme.dart';
+import '../../../l10n/app_localizations.dart';
 
 
 class CommunityTab extends StatefulWidget {
@@ -39,10 +40,12 @@ class _CommunityTabState extends State<CommunityTab> {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
+    
     return Scaffold(
       backgroundColor: NatureColors.natureBackground,
       appBar: AppBar(
-        title: const Text('Community'),
+        title: Text(t.t('community')),
         backgroundColor: NatureColors.primaryGreen,
         foregroundColor: NatureColors.pureWhite,
         actions: [
@@ -57,7 +60,7 @@ class _CommunityTabState extends State<CommunityTab> {
                 ),
               );
             },
-            tooltip: 'Saved Posts',
+            tooltip: t.t('saved_posts'),
           ),
           // Hide moderation entry point on user side
         ],

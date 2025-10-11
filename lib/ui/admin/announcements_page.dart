@@ -1447,9 +1447,9 @@ class AnnouncementDetailsDialog extends StatelessWidget {
               spacing: 8,
               runSpacing: 4,
               children: [
-                Row(
+                const Row(
                   mainAxisSize: MainAxisSize.min,
-                  children: const [Icon(Icons.person, size: 12, color: NatureColors.lightGray), SizedBox(width: 3)],
+                  children: [Icon(Icons.person, size: 12, color: NatureColors.lightGray), SizedBox(width: 3)],
                 ),
                 Text(announcement.createdBy, style: const TextStyle(color: NatureColors.lightGray, fontSize: 11)),
                 if (announcement.pushSent)

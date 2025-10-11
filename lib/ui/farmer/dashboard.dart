@@ -4,6 +4,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../theme/theme.dart';
 import '../../providers/auth_provider.dart';
 import '../common/notifications_page.dart';
+import '../common/notification_preferences_page.dart';
+import '../../l10n/app_localizations.dart';
 import 'tabs/home_tab.dart';
 import 'tabs/recipes_tab.dart';
 import 'tabs/fermentation_tab.dart';
@@ -299,72 +301,72 @@ class _DashboardState extends State<Dashboard> {
         backgroundColor: NatureColors.pureWhite,
         indicatorColor: NatureColors.lightGreen,
         labelBehavior: NavigationDestinationLabelBehavior.alwaysHide,
-        destinations: const [
+        destinations: [
           NavigationDestination(
-            icon: Tooltip(
+            icon: const Tooltip(
               message: 'Home',
               child: Icon(Icons.home_outlined, color: NatureColors.mediumGray),
             ),
-            selectedIcon: Tooltip(
+            selectedIcon: const Tooltip(
               message: 'Home',
               child: Icon(Icons.home, color: NatureColors.pureWhite),
             ),
-            label: 'Home',
+            label: AppLocalizations.of(context).t('home'),
           ),
           NavigationDestination(
-            icon: Tooltip(
+            icon: const Tooltip(
               message: 'Recipes',
               child: Icon(Icons.restaurant_menu_outlined, color: NatureColors.mediumGray),
             ),
-            selectedIcon: Tooltip(
+            selectedIcon: const Tooltip(
               message: 'Recipes',
               child: Icon(Icons.restaurant_menu, color: NatureColors.pureWhite),
             ),
-            label: 'Recipes',
+            label: AppLocalizations.of(context).t('recipes'),
           ),
           NavigationDestination(
-            icon: Tooltip(
+            icon: const Tooltip(
               message: 'Ferment',
               child: Icon(Icons.bubble_chart_outlined, color: NatureColors.mediumGray),
             ),
-            selectedIcon: Tooltip(
+            selectedIcon: const Tooltip(
               message: 'Ferment',
               child: Icon(Icons.bubble_chart, color: NatureColors.pureWhite),
             ),
-            label: 'Ferment',
+            label: AppLocalizations.of(context).t('ferment'),
           ),
           NavigationDestination(
-            icon: Tooltip(
+            icon: const Tooltip(
               message: 'Community',
               child: Icon(Icons.groups_outlined, color: NatureColors.mediumGray),
             ),
-            selectedIcon: Tooltip(
+            selectedIcon: const Tooltip(
               message: 'Community',
               child: Icon(Icons.groups, color: NatureColors.pureWhite),
             ),
-            label: 'Community',
+            label: AppLocalizations.of(context).t('community'),
           ),
           NavigationDestination(
-            icon: Tooltip(
+            icon: const Tooltip(
               message: 'My Recipes',
               child: Icon(Icons.person_pin_outlined, color: NatureColors.mediumGray),
             ),
-            selectedIcon: Tooltip(
+            selectedIcon: const Tooltip(
               message: 'My Recipes',
               child: Icon(Icons.person_pin, color: NatureColors.pureWhite),
             ),
-            label: 'My Recipes',
+            label: AppLocalizations.of(context).t('my_recipes'),
           ),
           NavigationDestination(
-            icon: Tooltip(
+            icon: const Tooltip(
               message: 'Profile',
               child: Icon(Icons.person_outline, color: NatureColors.mediumGray),
             ),
-            selectedIcon: Tooltip(
+            selectedIcon: const Tooltip(
               message: 'Profile',
               child: Icon(Icons.person, color: NatureColors.pureWhite),
             ),
-            label: 'Profile',
+            label: AppLocalizations.of(context).t('profile'),
           ),
         ],
       ),
@@ -375,36 +377,53 @@ class _DashboardState extends State<Dashboard> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.settings, color: NatureColors.primaryGreen),
-            SizedBox(width: 8),
-            Text('Settings'),
+            const Icon(Icons.settings, color: NatureColors.primaryGreen),
+            const SizedBox(width: 8),
+            Text(AppLocalizations.of(context).t('settings')),
           ],
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const ListTile(
-              leading: Icon(Icons.notifications_outlined),
-              title: Text('Notifications'),
-              subtitle: Text('Manage notification preferences'),
+            ListTile(
+              leading: const Icon(Icons.notifications_outlined),
+              title: Text(AppLocalizations.of(context).t('notifications')),
+              subtitle: Text(AppLocalizations.of(context).t('notifications_sub')),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const NotificationPreferencesPage(),
+                  ),
+                );
+              },
             ),
-            const ListTile(
-              leading: Icon(Icons.palette_outlined),
-              title: Text('Theme'),
-              subtitle: Text('Change app appearance'),
+            ListTile(
+              leading: const Icon(Icons.palette_outlined),
+              title: Text(AppLocalizations.of(context).t('theme')),
+              subtitle: Text(AppLocalizations.of(context).t('theme_sub')),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, '/settings/theme');
+              },
             ),
-            const ListTile(
-              leading: Icon(Icons.language_outlined),
-              title: Text('Language'),
-              subtitle: Text('Select your preferred language'),
+            ListTile(
+              leading: const Icon(Icons.language_outlined),
+              title: Text(AppLocalizations.of(context).t('language')),
+              subtitle: Text(AppLocalizations.of(context).t('language_sub')),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, '/settings/language');
+              },
             ),
             ListTile(
               leading: const Icon(Icons.help_outline),
-              title: const Text('Help & Support'),
-              subtitle: const Text('Get help and contact support'),
+              title: Text(AppLocalizations.of(context).t('help_support')),
+              subtitle: Text(AppLocalizations.of(context).t('help_support_sub')),
               onTap: () {
                 Navigator.pop(context);
                 Navigator.pushNamed(context, '/help');
@@ -412,7 +431,7 @@ class _DashboardState extends State<Dashboard> {
             ),
             ListTile(
               leading: const Icon(Icons.article_outlined),
-              title: const Text('Terms of Service'),
+              title: Text(AppLocalizations.of(context).t('terms_of_service')),
               onTap: () {
                 Navigator.pop(context);
                 Navigator.pushNamed(context, '/terms');
@@ -420,7 +439,7 @@ class _DashboardState extends State<Dashboard> {
             ),
             ListTile(
               leading: const Icon(Icons.privacy_tip_outlined),
-              title: const Text('Privacy Policy'),
+              title: Text(AppLocalizations.of(context).t('privacy_policy')),
               onTap: () {
                 Navigator.pop(context);
                 Navigator.pushNamed(context, '/privacy');
@@ -431,7 +450,7 @@ class _DashboardState extends State<Dashboard> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
+            child: Text(AppLocalizations.of(context).t('close')),
           ),
         ],
       ),
