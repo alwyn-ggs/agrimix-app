@@ -13,6 +13,7 @@ import '../../theme/theme.dart';
 import '../../services/fermentation_guide_service.dart';
 import '../../services/notification_service.dart';
 import 'recipe_analytics_widget.dart';
+import '../../services/feedback_service.dart';
 
 class FormulateRecipeFlow extends StatefulWidget {
   const FormulateRecipeFlow({super.key});
@@ -608,12 +609,7 @@ class _FormulateRecipeFlowState extends State<FormulateRecipeFlow> {
                   final hasName = _nameCtrl.text.trim().isNotEmpty;
                   final hasCrop = (_selectedCrop ?? '').trim().isNotEmpty;
                   if (!hasName || !hasCrop) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Please provide recipe name and crop target.'),
-                        backgroundColor: Colors.red,
-                      ),
-                    );
+                    FeedbackService().showSnack('Please provide recipe name and crop target.');
                     return;
                   }
                 }
@@ -642,12 +638,7 @@ class _FormulateRecipeFlowState extends State<FormulateRecipeFlow> {
       if (owner.isEmpty) {
         if (mounted) {
           setState(() => _saving = false);
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Please log in to save recipes'),
-              backgroundColor: Colors.red,
-            ),
-          );
+          FeedbackService().showSnack('Please log in to save recipes');
         }
         return;
       }
@@ -657,23 +648,13 @@ class _FormulateRecipeFlowState extends State<FormulateRecipeFlow> {
       
       if (mounted) {
         setState(() => _saving = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Recipe saved successfully!'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        FeedbackService().showSnack('Recipe saved successfully!');
         Navigator.of(context).pop();
       }
     } catch (e) {
       if (mounted) {
         setState(() => _saving = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to save recipe: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        FeedbackService().showSnack('Failed to save recipe: ${e.toString()}');
       }
     }
   }
@@ -684,12 +665,7 @@ class _FormulateRecipeFlowState extends State<FormulateRecipeFlow> {
       final owner = auth.currentUser?.uid ?? '';
       
       if (owner.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Please log in to start fermentation'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        FeedbackService().showSnack('Please log in to start fermentation');
         return;
       }
 
@@ -706,23 +682,13 @@ class _FormulateRecipeFlowState extends State<FormulateRecipeFlow> {
 
       if (mounted) {
         setState(() => _saving = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Recipe saved and fermentation started automatically!'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        FeedbackService().showSnack('Recipe saved and fermentation started automatically!');
         Navigator.of(context).pop();
       }
     } catch (e) {
       if (mounted) {
         setState(() => _saving = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to start fermentation: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        FeedbackService().showSnack('Failed to start fermentation: ${e.toString()}');
       }
     }
   }

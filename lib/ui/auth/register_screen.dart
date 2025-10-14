@@ -21,6 +21,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _acceptedTerms = false;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
+  double _passwordStrength = 0.0; // 0.0 to 1.0
+  String _passwordStrengthLabel = '';
+  bool _pwHasLower = false;
+  bool _pwHasUpper = false;
+  bool _pwHasDigit = false;
+  bool _pwHasSymbol = false;
+  bool _pwLen8 = false;
 
   void _showUnderReviewDialog(BuildContext context) {
     showDialog(
@@ -336,7 +343,32 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               ),
                             ),
                             obscureText: _obscurePassword,
+                            onChanged: (v) {
+                              final result = _evaluatePassword(v);
+                              setState(() {
+                                _passwordStrength = result.$1;
+                                _passwordStrengthLabel = result.$2;
+                                _pwHasLower = v.contains(RegExp(r'[a-z]'));
+                                _pwHasUpper = v.contains(RegExp(r'[A-Z]'));
+                                _pwHasDigit = v.contains(RegExp(r'[0-9]'));
+                                _pwHasSymbol = v.contains(RegExp(r'[!@#\$%^&*(),.?":{}|<>_\-]'));
+                                _pwLen8 = v.length >= 8;
+                              });
+                            },
                             validator: (v) => Validators.minLength(v, 6, label: 'Password'),
+                          ),
+                          const SizedBox(height: 8),
+                          _PasswordStrengthMeter(
+                            strength: _passwordStrength,
+                            label: _passwordStrengthLabel,
+                          ),
+                          const SizedBox(height: 6),
+                          _PasswordHints(
+                            hasLower: _pwHasLower,
+                            hasUpper: _pwHasUpper,
+                            hasDigit: _pwHasDigit,
+                            hasSymbol: _pwHasSymbol,
+                            hasMinLen: _pwLen8,
                           ),
                           const SizedBox(height: 16),
 
@@ -483,7 +515,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                           // Create Account Button
                           FilledButton(
-                            onPressed: (auth.loading || !_acceptedTerms)
+                            onPressed: (auth.loading || !_acceptedTerms || _passwordStrength < 0.3)
                                 ? null
                                 : () async {
                                     if (!_formKey.currentState!.validate()) return;
@@ -622,6 +654,162 @@ class _RegisterScreenState extends State<RegisterScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  /// Simple password strength estimator
+  /// Returns (strength 0..1, label)
+  (double, String) _evaluatePassword(String value) {
+    if (value.isEmpty) return (0.0, '');
+    int score = 0;
+    if (value.length >= 8) score++;
+    if (value.length >= 12) score++;
+    final hasLower = value.contains(RegExp(r'[a-z]'));
+    final hasUpper = value.contains(RegExp(r'[A-Z]'));
+    final hasDigit = value.contains(RegExp(r'[0-9]'));
+    final hasSymbol = value.contains(RegExp(r'[!@#\$%^&*(),.?":{}|<>_\-]'));
+    if (hasLower && hasUpper) score++;
+    if (hasDigit) score++;
+    if (hasSymbol) score++;
+
+    // Convert to strength
+    final strength = (score / 5).clamp(0, 1).toDouble();
+    String label;
+    if (strength < 0.3) {
+      label = 'Weak';
+    } else if (strength < 0.6) {
+      label = 'Fair';
+    } else if (strength < 0.85) {
+      label = 'Good';
+    } else {
+      label = 'Strong';
+    }
+    return (strength, label);
+  }
+}
+
+class _PasswordStrengthMeter extends StatelessWidget {
+  final double strength; // 0..1
+  final String label;
+
+  const _PasswordStrengthMeter({
+    required this.strength,
+    required this.label,
+  });
+
+  int _tier(double v) {
+    if (v < 0.3) return 1; // Weak
+    if (v < 0.6) return 2; // Fair
+    return 3; // Strong
+  }
+
+  Color _tierColor(int t) {
+    switch (t) {
+      case 1:
+        return Colors.red;
+      case 2:
+        return Colors.amber;
+      case 3:
+      default:
+        return Colors.green;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (label.isEmpty) return const SizedBox.shrink();
+    final t = _tier(strength);
+    final activeColor = _tierColor(t);
+    final inactive = Colors.grey.withAlpha((0.3 * 255).round());
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Container(
+                height: 8,
+                decoration: BoxDecoration(
+                  color: t >= 1 ? activeColor : inactive,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+            ),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Container(
+                height: 8,
+                decoration: BoxDecoration(
+                  color: t >= 2 ? activeColor : inactive,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+            ),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Container(
+                height: 8,
+                decoration: BoxDecoration(
+                  color: t >= 3 ? activeColor : inactive,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        Text(
+          'Password strength: $label',
+          style: TextStyle(
+            fontSize: 12,
+            color: activeColor,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _PasswordHints extends StatelessWidget {
+  final bool hasLower;
+  final bool hasUpper;
+  final bool hasDigit;
+  final bool hasSymbol;
+  final bool hasMinLen;
+
+  const _PasswordHints({
+    required this.hasLower,
+    required this.hasUpper,
+    required this.hasDigit,
+    required this.hasSymbol,
+    required this.hasMinLen,
+  });
+
+  Widget _hint(String text, bool ok) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(ok ? Icons.check_circle : Icons.radio_button_unchecked,
+            size: 14, color: ok ? Colors.green : Colors.grey),
+        const SizedBox(width: 6),
+        Text(text, style: TextStyle(fontSize: 12, color: ok ? Colors.green[800] : Colors.black54)),
+      ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 12,
+      runSpacing: 8,
+      children: [
+        _hint('8+ chars', hasMinLen),
+        _hint('lowercase', hasLower),
+        _hint('uppercase', hasUpper),
+        _hint('number', hasDigit),
+        _hint('symbol', hasSymbol),
+      ],
     );
   }
 }

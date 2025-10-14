@@ -44,6 +44,23 @@ class _ErrorBoundaryState extends State<ErrorBoundary> {
         return;
       }
 
+      // Ignore non-fatal layout/build scheduling assertions that often appear
+      // during hot reload or transient rebuilds in debug mode.
+      final msg = asString.toLowerCase();
+      final isBuildScheduledDuringFrame = msg.contains('build scheduled during frame');
+      final isSetStateDuringBuild = msg.contains('setstate() or markneedsbuild called during build');
+      if (isBuildScheduledDuringFrame || isSetStateDuringBuild) {
+        FlutterError.presentError(details);
+        return;
+      }
+
+      // In debug builds, don't surface a blocking error UI; just log/present
+      // so hot reload and transient framework assertions don't break UX.
+      if (kDebugMode) {
+        FlutterError.presentError(details);
+        return;
+      }
+
       if (mounted) {
         setState(() {
           _error = details.exception;

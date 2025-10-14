@@ -6,6 +6,7 @@ import '../../../models/fermentation_log.dart';
 import '../../fermentation/new_log_page.dart';
 import '../../fermentation/log_detail_page.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../services/feedback_service.dart';
 
 class FermentationTab extends StatefulWidget {
   const FermentationTab({super.key});
@@ -547,26 +548,10 @@ class _FermentationTabState extends State<FermentationTab> with TickerProviderSt
       await provider.deleteFermentationLog(log.id);
 
       // Show success message
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Fermentation log "${log.title}" deleted successfully'),
-            backgroundColor: Colors.green,
-            duration: const Duration(seconds: 2),
-          ),
-        );
-      }
+      FeedbackService().showSnack('Fermentation log "${log.title}" deleted successfully');
     } catch (e) {
       // Show error message
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to delete fermentation log: $e'),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 3),
-          ),
-        );
-      }
+      FeedbackService().showSnack('Failed to delete fermentation log: $e');
     }
   }
 

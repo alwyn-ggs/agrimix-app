@@ -134,7 +134,9 @@ class AuthProvider extends ChangeNotifier with ErrorHandlerMixin {
       
     } catch (e) {
       AppLogger.error('AuthProvider: Sign in failed: $e', e);
-      handleError(e, context: 'Sign in');
+      // Do NOT escalate to global error page; show inline on login screen instead
+      final message = ErrorHandlerService.getUserFriendlyMessage(e, null);
+      setErrorMessage(message);
       loading = false;
       notifyListeners();
     }

@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import '../utils/logger.dart';
+import 'feedback_service.dart';
 
 /// Centralized error handling service
 class ErrorHandlerService {
@@ -170,10 +172,26 @@ class ErrorHandlerService {
       print('User Message: $userMessage');
     }
 
-    // This could be a snackbar, dialog, or in-app notification
+    // Surface to user via centralized feedback with light dedupe
     if (showToUser) {
-      // For now, we'll just log that we should show to user
-      AppLogger.info('Should show error to user: $userMessage');
+      // Choose color by error type (optional; keep subtle defaults)
+      Color? bg;
+      switch (errorType) {
+        case AppErrorType.network:
+        case AppErrorType.server:
+        case AppErrorType.firebase:
+          bg = const Color(0xFFB00020); // red tone
+          break;
+        case AppErrorType.validation:
+          bg = const Color(0xFFEF6C00); // orange tone
+          break;
+        case AppErrorType.authentication:
+        case AppErrorType.storage:
+        case AppErrorType.unknown:
+          bg = const Color(0xFFB00020);
+          break;
+      }
+      FeedbackService().showSnack(userMessage, backgroundColor: bg);
     }
   }
 
@@ -228,6 +246,13 @@ mixin ErrorHandlerMixin {
     _error = ErrorHandlerService.getUserFriendlyMessage(error, null);
     _hasError = true;
     ErrorHandlerService.handleError(error, context: context);
+  }
+
+  /// Set a non-blocking error message that can be rendered inline by the UI
+  /// without triggering global error pages.
+  void setErrorMessage(String message) {
+    _error = message;
+    _hasError = false; // keep it inline; do not elevate to global error
   }
 
   void clearError() {

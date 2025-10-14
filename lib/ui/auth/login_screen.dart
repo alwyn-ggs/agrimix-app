@@ -4,6 +4,7 @@ import '../../providers/auth_provider.dart';
 import '../../router.dart';
 import '../../theme/theme.dart';
 import '../common/validators.dart';
+import '../common/widgets/app_error.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -307,54 +308,16 @@ class _LoginScreenState extends State<LoginScreen> {
                             ],
                           ),
                           
-                          // Error Message
-                          if (auth.error != null)
-                            Container(
-                              margin: const EdgeInsets.only(top: 16),
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: Colors.red.shade50,
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: Colors.red.shade200),
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(Icons.error_outline, color: Colors.red.shade600, size: 20),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(
-                                      auth.error!,
-                                      style: TextStyle(
-                                        color: Colors.red.shade700,
-                                        fontSize: 14,
-                                      ),
-                                    ),
-                                  ),
-                          const SizedBox(height: 12),
-
-                          // Footer links: Terms, Privacy, Help
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              TextButton(
-                                onPressed: () => Navigator.pushNamed(context, Routes.terms),
-                                child: const Text('Terms of Service', style: TextStyle(fontSize: 12)),
-                              ),
-                              const Text('·', style: TextStyle(color: NatureColors.darkGray)),
-                              TextButton(
-                                onPressed: () => Navigator.pushNamed(context, Routes.privacy),
-                                child: const Text('Privacy Policy', style: TextStyle(fontSize: 12)),
-                              ),
-                              const Text('·', style: TextStyle(color: NatureColors.darkGray)),
-                              TextButton(
-                                onPressed: () => Navigator.pushNamed(context, Routes.help),
-                                child: const Text('Help/Support', style: TextStyle(fontSize: 12)),
-                              ),
-                            ],
-                          ),
-                                ],
-                              ),
+                          // Error Message (wraps safely on small screens)
+                          if (auth.error != null) ...[
+                            const SizedBox(height: 16),
+                            AppErrorInline(
+                              message: auth.error!,
+                              padding: const EdgeInsets.all(0),
                             ),
+                            const SizedBox(height: 12),
+                          ],
+                          // Footer links removed from Login; shown in Register flow
                         ],
                       ),
                     ),

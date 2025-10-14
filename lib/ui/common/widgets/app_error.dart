@@ -153,8 +153,10 @@ class AppErrorInline extends StatelessWidget {
     if (!isVisible) return const SizedBox.shrink();
 
     return Container(
+      width: double.infinity,
       padding: padding ?? const EdgeInsets.symmetric(vertical: 8),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Icon(
             Icons.error_outline,
@@ -165,6 +167,7 @@ class AppErrorInline extends StatelessWidget {
           Expanded(
             child: Text(
               message,
+              softWrap: true,
               style: const TextStyle(
                 fontSize: 12,
                 color: Colors.red,

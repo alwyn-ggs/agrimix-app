@@ -10,6 +10,7 @@ import '../../../theme/theme.dart';
 import '../../../router.dart';
 import '../../../utils/logger.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../services/feedback_service.dart';
 
 class RecipesTab extends StatelessWidget {
   const RecipesTab({super.key});
@@ -484,17 +485,9 @@ class _StandardRecipesList extends StatelessWidget {
         updatedAt: DateTime.now(),
       );
       await repo.createRecipe(copy);
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Added to your Drafts. Edit and share when ready.')),
-        );
-      }
+      FeedbackService().showSnack('Added to your Drafts. Edit and share when ready.');
     } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to use recipe: $e')),
-        );
-      }
+      FeedbackService().showSnack('Failed to use recipe: $e');
     }
   }
 }
@@ -1095,22 +1088,10 @@ class _InteractiveRecipeCard extends StatelessWidget {
       );
       
       // Show success feedback
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Recipe rated $rating star${rating > 1 ? 's' : ''}!'),
-          backgroundColor: NatureColors.primaryGreen,
-          duration: const Duration(seconds: 2),
-        ),
-      );
+      FeedbackService().showSnack('Recipe rated $rating star${rating > 1 ? 's' : ''}!');
     } catch (e) {
       // Show error feedback
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to rate recipe: $e'),
-          backgroundColor: Colors.red,
-          duration: const Duration(seconds: 3),
-        ),
-      );
+      FeedbackService().showSnack('Failed to rate recipe: $e');
     }
   }
 
@@ -1128,41 +1109,14 @@ class _InteractiveRecipeCard extends StatelessWidget {
       );
       
       // Show success feedback
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            isCurrentlyFavorite 
-              ? 'Recipe removed from favorites!' 
-              : 'Recipe saved to favorites!'
-          ),
-          backgroundColor: NatureColors.primaryGreen,
-          duration: const Duration(seconds: 2),
-          action: SnackBarAction(
-            label: 'View Favorites',
-            textColor: Colors.white,
-            onPressed: () {
-              // Navigate to My Recipes tab with Favorites selected
-              // This would require access to the parent dashboard to switch tabs
-              // For now, just show a message
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Go to "My Recipes" tab to view your favorites'),
-                  duration: Duration(seconds: 2),
-                ),
-              );
-            },
-          ),
-        ),
+      FeedbackService().showSnack(
+        isCurrentlyFavorite 
+          ? 'Recipe removed from favorites!' 
+          : 'Recipe saved to favorites!'
       );
     } catch (e) {
       // Show error feedback
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to save recipe: $e'),
-          backgroundColor: Colors.red,
-          duration: const Duration(seconds: 3),
-        ),
-      );
+      FeedbackService().showSnack('Failed to save recipe: $e');
     }
   }
 
