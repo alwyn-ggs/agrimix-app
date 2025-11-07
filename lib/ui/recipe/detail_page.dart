@@ -3,10 +3,14 @@
   import 'package:cloud_firestore/cloud_firestore.dart';
   import 'package:url_launcher/url_launcher.dart';
   import '../../repositories/recipes_repo.dart';
+  import '../../repositories/fermentation_repo.dart';
+  import '../../services/notification_service.dart';
+  import '../../models/fermentation_log.dart';
   import '../../models/recipe.dart';
   import '../../providers/auth_provider.dart';
   import '../../theme/theme.dart';
   import '../../router.dart';
+  import '../../services/stage_management_service.dart';
 
   class RecipeDetailPage extends StatelessWidget {
     const RecipeDetailPage({super.key});
@@ -88,11 +92,46 @@
                         children: [
                           _buildRecipeInfo(context, recipe),
                           const SizedBox(height: 24),
+                          // Insert informal warning if the recipe is not standard or authored by this user
+                          if (!recipe.isStandard || recipe.ownerUid == uid) ...[
+                            Container(
+                              margin: const EdgeInsets.only(bottom: 16),
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Colors.yellow[100],
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: Colors.orangeAccent, width: 1),
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.warning, color: Colors.orange, size: 18),
+                                  const SizedBox(width: 8),
+                                  Expanded(child: Text(
+                                    'This is an informal recipe shared by a user. Always exercise judgment and refer to official recipes when needed.',
+                                    style: TextStyle(color: Colors.orange[900]),
+                                  ))
+                                ],
+                              ),
+                            ),
+                          ],
                           _buildDescription(recipe),
                           const SizedBox(height: 24),
                           _buildIngredients(recipe),
                           const SizedBox(height: 24),
                           _buildSteps(recipe),
+                          const SizedBox(height: 16),
+                          if (recipe.visibility == RecipeVisibility.private && recipe.ownerUid == uid)
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: OutlinedButton.icon(
+                                    onPressed: () => _startFermentingNow(context, recipe),
+                                    icon: const Icon(Icons.play_circle_fill),
+                                    label: const Text('Start Fermenting'),
+                                  ),
+                                ),
+                              ],
+                            ),
                           const SizedBox(height: 100), // Bottom padding for FAB
                         ],
                       ),
@@ -749,6 +788,88 @@
           SnackBar(content: Text('Share link: $url')),
         );
       }
+    }
+
+    Future<void> _startFermentingNow(BuildContext context, Recipe recipe) async {
+      try {
+        final auth = context.read<AuthProvider>();
+        final uid = auth.currentUser?.uid ?? '';
+        if (uid.isEmpty) throw Exception('Not authenticated');
+
+        final repo = context.read<FermentationRepo>();
+        final notifier = context.read<NotificationService>();
+
+        final method = recipe.method == RecipeMethod.ffj ? FermentationMethod.ffj : FermentationMethod.fpj;
+        final ingredients = recipe.ingredients
+            .map((i) => FermentationIngredient(name: i.name, amount: i.amount, unit: i.unit))
+            .toList();
+        final stages = _defaultStagesForMethod(method);
+        final now = DateTime.now();
+
+        final log = FermentationLog(
+          id: DateTime.now().millisecondsSinceEpoch.toString(),
+          ownerUid: uid,
+          recipeId: recipe.id,
+          title: '${recipe.name} - ${recipe.cropTarget}',
+          method: method,
+          ingredients: ingredients,
+          startAt: now,
+          stages: stages,
+          currentStage: 0,
+          status: FermentationStatus.active,
+          notes: 'Started from draft recipe',
+          photos: const <String>[],
+          alertsEnabled: true,
+          createdAt: now,
+        );
+
+        await repo.createFermentationLog(log);
+        // Initialize per-stage tracking for photos/notes
+        try {
+          await StageManagementService().initializeStages(
+            fermentationLogId: log.id,
+            stages: stages,
+            userId: uid,
+          );
+        } catch (_) {}
+        await notifier.scheduleFermentationNotifications(
+          log.id,
+          log.title,
+          stages.map((s) => s.toMap()).toList(),
+          now,
+        );
+
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Fermentation started (Day 1)'),
+            backgroundColor: NatureColors.primaryGreen,
+          ),
+        );
+      } catch (e) {
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to start fermentation: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+
+    List<FermentationStage> _defaultStagesForMethod(FermentationMethod m) {
+      if (m == FermentationMethod.ffj) {
+        return const [
+          FermentationStage(day: 0, label: 'Day 1', action: 'Mix ingredients'),
+          FermentationStage(day: 2, label: 'Day 3', action: 'Stir mixture'),
+          FermentationStage(day: 6, label: 'Day 7', action: 'Strain and bottle'),
+        ];
+      }
+      return const [
+        FermentationStage(day: 0, label: 'Day 1', action: 'Mix plant tips and sugar'),
+        FermentationStage(day: 2, label: 'Day 3', action: 'Stir and check aroma'),
+        FermentationStage(day: 6, label: 'Day 7', action: 'Strain and store'),
+      ];
     }
 
     void _showDeleteDialog(BuildContext context, Recipe recipe) {

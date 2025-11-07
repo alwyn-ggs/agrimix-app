@@ -6,6 +6,10 @@ import '../../repositories/recipes_repo.dart';
 import '../../models/recipe.dart';
 import '../../theme/theme.dart';
 import '../../router.dart';
+import '../../repositories/fermentation_repo.dart';
+import '../../services/notification_service.dart';
+import '../../models/fermentation_log.dart';
+import '../../services/stage_management_service.dart';
 import 'dart:io';
 
 class RecipeEditPage extends StatelessWidget {
@@ -551,17 +555,7 @@ class _RecipeFormState extends State<_RecipeForm> {
             if (_existingRecipe?.visibility == RecipeVisibility.private)
               Expanded(
                 child: OutlinedButton.icon(
-                  onPressed: () {
-                    // Navigate to start fermentation with current recipe data
-                    Navigator.of(context).pushNamed(
-                      Routes.newLog,
-                      arguments: {
-                        'prefill': {
-                          'recipeId': widget.recipeId,
-                        }
-                      },
-                    );
-                  },
+                  onPressed: _saving ? null : _startFermentingNow,
                   icon: const Icon(Icons.play_circle_fill),
                   label: const Text('Start Fermenting'),
                 ),
@@ -570,6 +564,102 @@ class _RecipeFormState extends State<_RecipeForm> {
         ),
       ],
     );
+  }
+
+  Future<void> _startFermentingNow() async {
+    try {
+      setState(() => _saving = true);
+      final uid = context.read<AuthProvider>().currentUser?.uid ?? '';
+      if (uid.isEmpty) throw Exception('Not authenticated');
+
+      final repo = context.read<FermentationRepo>();
+      final notifier = context.read<NotificationService>();
+
+      // Map recipe method to fermentation method
+      final fermentationMethod = _method == RecipeMethod.ffj
+          ? FermentationMethod.ffj
+          : FermentationMethod.fpj;
+
+      // Convert recipe ingredients to fermentation ingredients
+      final fermentationIngredients = _ingredients.map((i) => FermentationIngredient(
+            name: i.name,
+            amount: i.amount,
+            unit: i.unit,
+          )).toList();
+
+      // Default stages based on method (Day 1, Day 3, Day 7)
+      final stages = _defaultStagesForMethod(fermentationMethod);
+
+      final now = DateTime.now();
+      final log = FermentationLog(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        ownerUid: uid,
+        recipeId: _existingRecipe?.id ?? widget.recipeId,
+        title: _name.text.trim().isNotEmpty ? _name.text.trim() : (_existingRecipe?.name ?? 'Fermentation'),
+        method: fermentationMethod,
+        ingredients: fermentationIngredients,
+        startAt: now,
+        stages: stages,
+        currentStage: 0,
+        status: FermentationStatus.active,
+        notes: _description.text.trim().isEmpty ? null : _description.text.trim(),
+        photos: const <String>[],
+        alertsEnabled: true,
+        createdAt: now,
+      );
+
+      await repo.createFermentationLog(log);
+      // Initialize per-stage tracking for photos/notes
+      try {
+        await StageManagementService().initializeStages(
+          fermentationLogId: log.id,
+          stages: stages,
+          userId: uid,
+        );
+      } catch (_) {}
+
+      // Schedule notifications immediately (shows Day 1 now)
+      await notifier.scheduleFermentationNotifications(
+        log.id,
+        log.title,
+        stages.map((s) => s.toMap()).toList(),
+        now,
+      );
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Fermentation started (Day 1)'),
+          backgroundColor: NatureColors.primaryGreen,
+        ),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to start fermentation: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  List<FermentationStage> _defaultStagesForMethod(FermentationMethod m) {
+    if (m == FermentationMethod.ffj) {
+      return const [
+        FermentationStage(day: 0, label: 'Day 1', action: 'Mix ingredients'),
+        FermentationStage(day: 2, label: 'Day 3', action: 'Stir mixture'),
+        FermentationStage(day: 6, label: 'Day 7', action: 'Strain and bottle'),
+      ];
+    }
+    return const [
+      FermentationStage(day: 0, label: 'Day 1', action: 'Mix plant tips and sugar'),
+      FermentationStage(day: 2, label: 'Day 3', action: 'Stir and check aroma'),
+      FermentationStage(day: 6, label: 'Day 7', action: 'Strain and store'),
+    ];
   }
 
   Future<void> _pickImages() async {

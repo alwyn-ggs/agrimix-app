@@ -2,17 +2,25 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
+import 'package:timezone/data/latest.dart' as tzdata;
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'messaging_service.dart';
 import '../utils/logger.dart';
+import '../router.dart';
+import 'navigation_service.dart';
 
 class NotificationService {
   final MessagingService _messagingService;
   final FirebaseFirestore _db = FirebaseFirestore.instance;
   final FlutterLocalNotificationsPlugin _localNotifications = FlutterLocalNotificationsPlugin();
+  late tz.Location _appLocalLocation;
 
-  NotificationService(this._messagingService);
+  NotificationService(this._messagingService) {
+    // Initialize with a safe default to avoid LateInitializationError
+    _appLocalLocation = tz.UTC;
+  }
 
   bool _isInitialized = false;
 
@@ -90,19 +98,61 @@ class NotificationService {
   Future<void> init() async {
     if (_isInitialized) return;
     
-    // Initialize timezone data
-    // Initialize timezone data - this is done automatically in newer versions
-    // tz.initializeTimeZones();
+    // Initialize timezone data and set a default local location
+    try {
+      tzdata.initializeTimeZones();
+      // Use UTC as a safe default to avoid tz.local uninitialized errors
+      _appLocalLocation = tz.getLocation('UTC');
+    } catch (_) {}
     
     const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
     const iosSettings = DarwinInitializationSettings();
-    const initSettings = InitializationSettings(
+    final initSettings = InitializationSettings(
       android: androidSettings,
       iOS: iosSettings,
     );
     
-    await _localNotifications.initialize(initSettings);
+    await _localNotifications.initialize(
+      initSettings,
+      onDidReceiveNotificationResponse: (NotificationResponse response) {
+        try {
+          final payload = response.payload;
+          if (payload == null) return;
+          _handleNotificationPayloadTap(payload, response.actionId);
+        } catch (e) {
+          AppLogger.error('Notification tap handling failed: $e');
+        }
+      },
+    );
+
+    // Request notification permissions on supported platforms
+    try {
+      await _localNotifications
+          .resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>()
+          ?.requestPermissions(alert: true, badge: true, sound: true);
+      await _localNotifications
+          .resolvePlatformSpecificImplementation<MacOSFlutterLocalNotificationsPlugin>()
+          ?.requestPermissions(alert: true, badge: true, sound: true);
+      // Android: requesting POST_NOTIFICATIONS is not supported in this plugin version.
+      // Ensure you declare the permission in AndroidManifest for Android 13+.
+    } catch (_) {}
+
     _isInitialized = true;
+  }
+
+  /// If the app was launched via tapping a notification, navigate accordingly
+  Future<void> handleLaunchNavigation() async {
+    try {
+      final details = await _localNotifications.getNotificationAppLaunchDetails();
+      if (details?.didNotificationLaunchApp == true) {
+        final payload = details?.notificationResponse?.payload;
+        if (payload != null && payload.isNotEmpty) {
+          _handleNotificationPayloadTap(payload, details?.notificationResponse?.actionId);
+        }
+      }
+    } catch (e) {
+      AppLogger.error('Failed to handle launch navigation: $e');
+    }
   }
 
   /// Send moderation notification to user
@@ -506,6 +556,33 @@ class NotificationService {
       // Ensure notification service is initialized
       await _ensureInitialized();
       
+      // Immediate start notification (Day 1)
+      try {
+        await _localNotifications.show(
+          logId.hashCode + 500, // Unique ID for start notification
+          'Fermentation Started',
+          '$title — Day 1 begins now',
+          const NotificationDetails(
+            android: AndroidNotificationDetails(
+              'fermentation_channel',
+              'Fermentation Notifications',
+              channelDescription: 'Notifications for fermentation stages',
+              importance: Importance.high,
+              priority: Priority.high,
+              playSound: true,
+            ),
+            iOS: DarwinNotificationDetails(
+              presentAlert: true,
+              presentBadge: true,
+              presentSound: true,
+            ),
+          ),
+          payload: 'fermentation:$logId:start',
+        );
+      } catch (e) {
+        AppLogger.warning('Failed to show immediate start notification: $e');
+      }
+      
       // Schedule notifications for each stage
       for (int i = 0; i < stages.length; i++) {
         final stage = stages[i];
@@ -519,12 +596,12 @@ class NotificationService {
           AppLogger.info('Scheduling fermentation notification for $stageLabel at ${notificationDate.toString()}');
           
           // Schedule primary notification
-          await _localNotifications.zonedSchedule(
-            logId.hashCode + i, // Unique ID for each notification
-            '🌱 Fermentation Time!',
-            '$title\n\n$stageLabel: $stageAction\n\nTap to open the app and track your progress.',
-            _convertToTZDateTime(notificationDate),
-            NotificationDetails(
+          await _zonedScheduleWithFallback(
+            id: logId.hashCode + i,
+            title: '🌱 Fermentation Time!',
+            body: '$title\n\n$stageLabel: $stageAction\n\nTap to open the app and track your progress.',
+            scheduledDate: _convertToTZDateTime(notificationDate),
+            details: NotificationDetails(
               android: AndroidNotificationDetails(
                 'fermentation_channel',
                 'Fermentation Notifications',
@@ -570,7 +647,6 @@ class NotificationService {
                 interruptionLevel: InterruptionLevel.timeSensitive,
               ),
             ),
-            uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
             payload: 'fermentation:$logId:$i:primary',
           );
 
@@ -607,12 +683,12 @@ class NotificationService {
         final followUpDate = notificationDate.add(followUpTimes[i]);
         
         if (followUpDate.isAfter(DateTime.now())) {
-          await _localNotifications.zonedSchedule(
-            logId.hashCode + stageIndex + 1000 + i, // Unique ID for follow-up
-            _getFollowUpTitle(i),
-            _getFollowUpMessage(stageLabel, i, title),
-            _convertToTZDateTime(followUpDate),
-            NotificationDetails(
+          await _zonedScheduleWithFallback(
+            id: logId.hashCode + stageIndex + 1000 + i,
+            title: _getFollowUpTitle(i),
+            body: _getFollowUpMessage(stageLabel, i, title),
+            scheduledDate: _convertToTZDateTime(followUpDate),
+            details: NotificationDetails(
               android: AndroidNotificationDetails(
                 'fermentation_followup',
                 'Fermentation Follow-ups',
@@ -656,7 +732,6 @@ class NotificationService {
                 interruptionLevel: i < 2 ? InterruptionLevel.timeSensitive : InterruptionLevel.active,
               ),
             ),
-            uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
             payload: 'fermentation:$logId:$stageIndex:followup_$i',
           );
         }
@@ -1067,6 +1142,74 @@ class NotificationService {
 
   /// Convert DateTime to TZDateTime for scheduling
   tz.TZDateTime _convertToTZDateTime(DateTime dateTime) {
-    return tz.TZDateTime.from(dateTime, tz.local);
+    // Avoid using tz.local to prevent LateInitializationError when not set
+    return tz.TZDateTime.from(dateTime, _appLocalLocation);
+  }
+
+  void _handleNotificationPayloadTap(String payload, String? actionId) {
+    // Examples of payloads used:
+    // 'fermentation:<logId>:start'
+    // 'fermentation:<logId>:<index>:primary'
+    // 'fermentation:<logId>:<index>:followup_i'
+    if (payload.startsWith('fermentation:')) {
+      final parts = payload.split(':');
+      if (parts.length >= 2) {
+        final logId = parts[1];
+        NavigationService.pushNamed(Routes.logDetail, arguments: {'id': logId});
+        return;
+      }
+    }
+
+    if (payload.startsWith('announcement:')) {
+      // Could navigate to announcements list; for now go to bell/notifications
+      NavigationService.pushNamed(Routes.farmerDashboard);
+      return;
+    }
+
+    // Fallback: open dashboard
+    NavigationService.pushNamed(Routes.farmerDashboard);
+  }
+
+  Future<void> _zonedScheduleWithFallback({
+    required int id,
+    required String title,
+    required String body,
+    required tz.TZDateTime scheduledDate,
+    required NotificationDetails details,
+    required String payload,
+  }) async {
+    try {
+      await _localNotifications.zonedSchedule(
+        id,
+        title,
+        body,
+        scheduledDate,
+        details,
+        uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        payload: payload,
+      );
+    } on PlatformException catch (e) {
+      final msg = e.message ?? '';
+      if (msg.contains('exact_alarms_not_permitted') || msg.contains('Exact alarms are not permitted')) {
+        // Retry with inexact mode that doesn't require exact alarm permission
+        try {
+          await _localNotifications.zonedSchedule(
+            id,
+            title,
+            body,
+            scheduledDate,
+            details,
+            uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+            androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+            payload: payload,
+          );
+          return;
+        } catch (e2) {
+          AppLogger.error('Fallback inexact schedule failed: $e2');
+        }
+      }
+      rethrow;
+    }
   }
 }

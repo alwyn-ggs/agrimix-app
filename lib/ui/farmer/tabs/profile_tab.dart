@@ -18,7 +18,7 @@ class _ProfileTabState extends State<ProfileTab> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _nameController;
   late TextEditingController _emailController;
-  late TextEditingController _membershipController;
+  late TextEditingController _membershipController; 
   bool _saving = false;
   bool _uploadingPhoto = false;
   bool _removingPhoto = false;
@@ -404,9 +404,14 @@ class _ProfileTabState extends State<ProfileTab> {
   Future<void> _requestNotifPermission(BuildContext context) async {
     final messaging = context.read<MessagingService>();
     try {
-      await messaging.requestPermission();
+      // requestPermission returns bool: true = granted, false = denied
+      bool granted = await messaging.requestPermission();
       if (mounted) {
-        setState(() { _status = 'Notification permission requested.'; });
+        setState(() {
+          _status = granted
+              ? 'Notification permission GRANTED!'
+              : '❌ Notification DENIED. Pakienable sa App Settings.';
+        });
       }
     } catch (e) {
       if (mounted) {

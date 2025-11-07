@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/auth_service.dart';
 import '../services/messaging_service.dart';
@@ -137,6 +138,48 @@ class AuthProvider extends ChangeNotifier with ErrorHandlerMixin {
       // Do NOT escalate to global error page; show inline on login screen instead
       final message = ErrorHandlerService.getUserFriendlyMessage(e, null);
       setErrorMessage(message);
+      loading = false;
+      notifyListeners();
+    }
+  }
+
+  /// Google Sign-In flow
+  Future<void> signInWithGoogle() async {
+    if (loading) return;
+    loading = true;
+    clearError();
+    notifyListeners();
+
+    try {
+      AppLogger.debug('AuthProvider: Starting Google sign-in...');
+      final googleUser = await GoogleSignIn().signIn();
+      if (googleUser == null) {
+        AppLogger.debug('AuthProvider: Google sign-in cancelled by user');
+        loading = false;
+        notifyListeners();
+        return;
+      }
+
+      final googleAuth = await googleUser.authentication;
+      final credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      await FirebaseAuth.instance.signInWithCredential(credential);
+
+      final uid = auth.currentUser?.uid;
+      if (uid != null) {
+        AppLogger.debug('AuthProvider: Google sign-in success, uid: $uid');
+        // Load or create user document then complete login
+        await _loadUserDataDirectly(uid);
+        _handleFCMTokenSafely(uid);
+      } else {
+        throw Exception('No user UID after Google sign-in');
+      }
+    } catch (e) {
+      AppLogger.error('AuthProvider: Google sign-in failed: $e', e);
+      setErrorMessage(ErrorHandlerService.getUserFriendlyMessage(e, null));
       loading = false;
       notifyListeners();
     }

@@ -45,6 +45,9 @@ class AgriMixAppRoot extends StatelessWidget {
     final storageService = StorageService();
     final messagingService = MessagingService();
     final notificationService = NotificationService(messagingService);
+    // Initialize notifications and handle launch-from-notification navigation
+    notificationService.init();
+    notificationService.handleLaunchNavigation();
     final fcmMessageHandler = FCMMessageHandler(notificationService);
     final fcmPushService = FCMPushService();
     final auditService = AuditService(AuditRepo(firestoreService));

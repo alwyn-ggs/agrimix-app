@@ -346,4 +346,29 @@ class PostsRepo {
       throw Exception('Failed to get last document: $e');
     }
   }
+
+  Future<void> reactPost(String postId, String userId, int reaction) async {
+    try {
+      await _fs.runTransaction((transaction) async {
+        final postRef = _fs.db.collection(Post.collectionPath).doc(postId);
+        final postDoc = await transaction.get(postRef);
+        if (!postDoc.exists) throw Exception('Post not found');
+        final thumbsUpBy = List<String>.from(postDoc.data()!['thumbsUpBy'] ?? postDoc.data()!['likedBy'] ?? []);
+        final thumbsDownBy = List<String>.from(postDoc.data()!['thumbsDownBy'] ?? []);
+        // Mutate lists
+        thumbsUpBy.remove(userId);
+        thumbsDownBy.remove(userId);
+        if (reaction == 1) thumbsUpBy.add(userId);
+        if (reaction == -1) thumbsDownBy.add(userId);
+        transaction.update(postRef, {
+          'thumbsUpBy': thumbsUpBy,
+          'thumbsDownBy': thumbsDownBy,
+          'thumbsUp': thumbsUpBy.length,
+          'thumbsDown': thumbsDownBy.length,
+        });
+      });
+    } catch (e) {
+      throw Exception('Failed to react to post: $e');
+    }
+  }
 }

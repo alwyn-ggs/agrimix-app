@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../models/notification_preferences.dart';
 import '../../services/notification_preferences_service.dart' show NotificationPreferencesService;
+import '../../services/messaging_service.dart';
 import '../../theme/theme.dart';
 
 class NotificationPreferencesPage extends StatefulWidget {
@@ -14,6 +15,7 @@ class NotificationPreferencesPage extends StatefulWidget {
 
 class _NotificationPreferencesPageState extends State<NotificationPreferencesPage> {
   final NotificationPreferencesService _preferencesService = NotificationPreferencesService();
+  final MessagingService _messagingService = MessagingService();
   NotificationPreferences? _preferences;
   bool _isLoading = true;
   bool _isSaving = false;
@@ -26,19 +28,29 @@ class _NotificationPreferencesPageState extends State<NotificationPreferencesPag
 
   Future<void> _loadPreferences() async {
     final currentUser = context.read<AuthProvider>().currentUser;
-    if (currentUser == null) return;
+    if (currentUser == null) {
+      setState(() {
+        _isLoading = false;
+      });
+      _showErrorSnackBar('User not authenticated');
+      return;
+    }
 
     try {
       final prefs = await _preferencesService.getUserPreferences(currentUser.uid);
-      setState(() {
-        _preferences = prefs;
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _preferences = prefs;
+          _isLoading = false;
+        });
+      }
     } catch (e) {
-      setState(() {
-        _isLoading = false;
-      });
-      _showErrorSnackBar('Failed to load preferences');
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+        _showErrorSnackBar('Failed to load preferences: ${e.toString()}');
+      }
     }
   }
 
@@ -53,6 +65,8 @@ class _NotificationPreferencesPageState extends State<NotificationPreferencesPag
       final success = await _preferencesService.savePreferences(_preferences!);
       if (success) {
         _showSuccessSnackBar('Preferences saved successfully');
+        // After saving, sync topics
+        await _syncTopicsForCurrentPrefs();
       } else {
         _showErrorSnackBar('Failed to save preferences');
       }
@@ -62,6 +76,45 @@ class _NotificationPreferencesPageState extends State<NotificationPreferencesPag
       setState(() {
         _isSaving = false;
       });
+    }
+  }
+
+  Future<void> _ensurePermissionAndRegisterTokenIfEnabled({required bool enabled}) async {
+    if (!enabled) return;
+    final granted = await _messagingService.requestPermission();
+    if (!granted) {
+      _showErrorSnackBar('Notification permission denied');
+      return;
+    }
+    final user = context.read<AuthProvider>().currentUser;
+    if (user == null) return;
+    final token = await _messagingService.getToken();
+    if (token != null) {
+      await _messagingService.saveTokenToUser(user.uid, token);
+    }
+  }
+
+  Future<void> _syncTopicsForCurrentPrefs() async {
+    final prefs = _preferences;
+    final user = context.read<AuthProvider>().currentUser;
+    if (prefs == null || user == null) return;
+
+    // If push channel or global is disabled, unsubscribe from all known types
+    final pushEnabled = prefs.channels['push'] ?? false;
+    if (!prefs.enabled || !pushEnabled) {
+      for (final type in prefs.notificationTypes.keys) {
+        await _messagingService.unsubscribeFromTopic(type);
+      }
+      return;
+    }
+
+    // Subscribe/unsubscribe based on per-type toggle
+    for (final entry in prefs.notificationTypes.entries) {
+      if (entry.value) {
+        await _messagingService.subscribeToTopic(entry.key);
+      } else {
+        await _messagingService.unsubscribeFromTopic(entry.key);
+      }
     }
   }
 
@@ -200,6 +253,7 @@ class _NotificationPreferencesPageState extends State<NotificationPreferencesPag
                 setState(() {
                   _preferences = _preferences!.copyWith(enabled: value);
                 });
+                _ensurePermissionAndRegisterTokenIfEnabled(enabled: value);
               },
               activeColor: NatureColors.primaryGreen,
             ),
@@ -264,6 +318,9 @@ class _NotificationPreferencesPageState extends State<NotificationPreferencesPag
                     updatedChannels[entry.key] = value;
                     _preferences = _preferences!.copyWith(channels: updatedChannels);
                   });
+                  if (entry.key == 'push') {
+                    _ensurePermissionAndRegisterTokenIfEnabled(enabled: value);
+                  }
                 },
               );
             }),

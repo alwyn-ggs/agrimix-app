@@ -717,6 +717,7 @@ class _MyRecipesTabState extends State<MyRecipesTab> with TickerProviderStateMix
                         mainAxisAlignment: MainAxisAlignment.end,
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
+                          // Start Fermenting should be inside the draft recipe detail, not in list
                           if (recipe.visibility == RecipeVisibility.private)
                             IconButton(
                               tooltip: 'Edit draft',

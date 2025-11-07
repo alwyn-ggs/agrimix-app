@@ -854,6 +854,30 @@ class _InteractiveRecipeCard extends StatelessWidget {
                     LayoutBuilder(
                       builder: (context, constraints) {
                         final isCompact = constraints.maxWidth < 400;
+                        if (recipe.isStandard) {
+                          // For standard recipes, show a primary "Use Recipe" action
+                          return Row(
+                            children: [
+                              Text(
+                                'Updated: ${_formatDate(recipe.updatedAt)}',
+                                style: const TextStyle(fontSize: 12, color: NatureColors.mediumGray),
+                              ),
+                              const Spacer(),
+                              ElevatedButton.icon(
+                                onPressed: () => _useStandardRecipe(context, recipe),
+                                icon: const Icon(Icons.library_add, size: 18),
+                                label: const Text('Use Recipe'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: NatureColors.primaryGreen,
+                                  foregroundColor: Colors.white,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          );
+                        }
                         if (isCompact) {
                           return Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -925,6 +949,38 @@ class _InteractiveRecipeCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _useStandardRecipe(BuildContext context, Recipe standard) async {
+    try {
+      if (currentUserId == null) {
+        FeedbackService().showSnack('Please sign in to use this recipe.');
+        return;
+      }
+      final newId = FirebaseFirestore.instance.collection(Recipe.collectionPath).doc().id;
+      final copy = Recipe(
+        id: newId,
+        ownerUid: currentUserId!,
+        name: standard.name,
+        description: standard.description,
+        method: standard.method,
+        cropTarget: standard.cropTarget,
+        ingredients: standard.ingredients,
+        steps: standard.steps,
+        visibility: RecipeVisibility.private,
+        isStandard: false,
+        likes: 0,
+        avgRating: 0.0,
+        totalRatings: 0,
+        imageUrls: standard.imageUrls,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+      await recipesRepo.createRecipe(copy);
+      FeedbackService().showSnack('Added to your Drafts. Edit and share when ready.');
+    } catch (e) {
+      FeedbackService().showSnack('Failed to use recipe: $e');
+    }
   }
 
   Widget _buildEnhancedChip(IconData icon, String text, Color color) {

@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/community_provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/recipe_provider.dart';
 import '../../theme/theme.dart';
 import '../../models/post.dart';
 import '../../models/comment.dart';
+import '../../models/recipe.dart';
 
 class PostDetailPage extends StatefulWidget {
   final Post post;
@@ -60,6 +62,13 @@ class _PostDetailPageState extends State<PostDetailPage> {
   }
 
   Widget _buildPostContent() {
+    final recipeProvider = Provider.of<RecipeProvider>(context, listen:false);
+    Recipe? recipe;
+    if (widget.post.recipeId != null) {
+      final matches = recipeProvider.items.where((r) => r.id == widget.post.recipeId);
+      recipe = matches.isNotEmpty ? matches.first : null;
+    }
+    final isInformal = recipe != null && (!recipe.isStandard || recipe.ownerUid == widget.post.ownerUid);
     return Card(
       margin: const EdgeInsets.all(16),
       elevation: 2,
@@ -117,6 +126,26 @@ class _PostDetailPageState extends State<PostDetailPage> {
                 color: NatureColors.darkGray,
               ),
             ),
+            if (isInformal)
+              Container(
+                margin: const EdgeInsets.only(top: 8, bottom: 8),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.yellow[100],
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.orangeAccent, width: 1),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.warning, color: Colors.orange, size: 18),
+                    const SizedBox(width: 8),
+                    Expanded(child: Text(
+                      'This is an informal recipe shared by a user. Always exercise judgment and refer to official recipes when needed.',
+                      style: TextStyle(color: Colors.orange[900]),
+                    ))
+                  ],
+                ),
+              ),
             const SizedBox(height: 12),
             Text(
               widget.post.body,
@@ -126,6 +155,74 @@ class _PostDetailPageState extends State<PostDetailPage> {
                 fontSize: 16,
               ),
             ),
+            if (recipe != null && recipe.ingredients.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: NatureColors.lightGreen.withAlpha((0.2 * 255).round()),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: NatureColors.primaryGreen.withAlpha((0.3 * 255).round())),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.restaurant_menu,
+                          color: NatureColors.primaryGreen,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Recipe Ingredients',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: NatureColors.darkGreen,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    ...recipe.ingredients.map((ingredient) => Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 6,
+                            height: 6,
+                            decoration: const BoxDecoration(
+                              color: NatureColors.primaryGreen,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              ingredient.name,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                color: NatureColors.darkGray,
+                              ),
+                            ),
+                          ),
+                          Text(
+                            '${ingredient.amount} ${ingredient.unit}',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: NatureColors.darkGreen,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )),
+                  ],
+                ),
+              ),
+            ],
             if (widget.post.images.isNotEmpty) ...[
               const SizedBox(height: 16),
               SizedBox(
@@ -164,7 +261,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
                 Consumer<CommunityProvider>(
                   builder: (context, provider, child) {
                     final currentUser = context.read<AuthProvider>().currentUser;
-                    final isLiked = provider.isPostLiked(widget.post.id, currentUser?.uid ?? '');
+                    final reaction = provider.getUserReaction(widget.post.id, currentUser?.uid ?? '');
                     final post = provider.posts.firstWhere(
                       (p) => p.id == widget.post.id,
                       orElse: () => widget.post,
@@ -173,21 +270,34 @@ class _PostDetailPageState extends State<PostDetailPage> {
                       children: [
                         IconButton(
                           icon: Icon(
-                            isLiked ? Icons.favorite : Icons.favorite_border,
-                            color: isLiked ? Colors.red : NatureColors.mediumGray,
+                            reaction == 1 ? Icons.thumb_up : Icons.thumb_up_outlined,
+                            color: reaction == 1 ? Colors.green : NatureColors.mediumGray,
                           ),
                           onPressed: currentUser == null
                               ? null
                               : () {
-                                  if (isLiked) {
-                                    // prevent duplicate like
-                                    return;
-                                  }
-                                  provider.likePost(widget.post.id, currentUser.uid);
+                                  if (reaction == 1) return;
+                                  provider.reactPost(widget.post.id, currentUser.uid, 1);
                                 },
                         ),
                         Text(
-                          '${post.likes}',
+                          '${post.thumbsUp}',
+                          style: const TextStyle(color: NatureColors.mediumGray),
+                        ),
+                        IconButton(
+                          icon: Icon(
+                            reaction == -1 ? Icons.thumb_down : Icons.thumb_down_outlined,
+                            color: reaction == -1 ? Colors.red : NatureColors.mediumGray,
+                          ),
+                          onPressed: currentUser == null
+                              ? null
+                              : () {
+                                  if (reaction == -1) return;
+                                  provider.reactPost(widget.post.id, currentUser.uid, -1);
+                                },
+                        ),
+                        Text(
+                          '${post.thumbsDown}',
                           style: const TextStyle(color: NatureColors.mediumGray),
                         ),
                       ],
@@ -349,6 +459,65 @@ class _PostDetailPageState extends State<PostDetailPage> {
                       ),
                     ],
                   ),
+                ),
+                const Spacer(),
+                PopupMenuButton<String>(
+                  onSelected: (value) async {
+                    if (value == 'report') {
+                      final currentUser = context.read<AuthProvider>().currentUser;
+                      if (currentUser != null) {
+                        String? reason = await showDialog<String>(
+                          context: context,
+                          builder: (ctx) {
+                            String selectedReason = 'Unrelated/Spam';
+                            String custom = '';
+                            return StatefulBuilder(
+                              builder: (context, setState) => AlertDialog(
+                                title: const Text('Report Comment'),
+                                content: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    DropdownButton<String>(
+                                      value: selectedReason,
+                                      items: [
+                                        'Unrelated/Spam',
+                                        'Harassment',
+                                        'Inappropriate',
+                                        'Other',
+                                      ].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+                                      onChanged: (v) => setState(() => selectedReason = v ?? 'Other'),
+                                    ),
+                                    if (selectedReason == 'Other') ...[
+                                      const SizedBox(height: 8),
+                                      TextField(
+                                        decoration: const InputDecoration(hintText: 'Type reason...'),
+                                        onChanged: (v) => custom = v,
+                                      )
+                                    ]
+                                  ]
+                                ),
+                                actions: [
+                                  TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+                                  TextButton(onPressed: () => Navigator.pop(context, selectedReason == 'Other' ? custom : selectedReason), child: const Text('Report')),
+                                ],
+                              )
+                            );
+                          },
+                        );
+                        if (reason != null && reason.trim().isNotEmpty) {
+                          await context.read<CommunityProvider>().reportComment(
+                              comment.id, comment.postId, comment.authorId, reason.trim(), currentUser.uid);
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Comment reported')));
+                          }
+                        }
+                      }
+                    }
+                  },
+                  itemBuilder: (ctx) => [
+                    const PopupMenuItem(value: 'report', child: Row(children: [Icon(Icons.flag,size:16), SizedBox(width:8), Text('Report')]))
+                  ],
                 ),
               ],
             ),

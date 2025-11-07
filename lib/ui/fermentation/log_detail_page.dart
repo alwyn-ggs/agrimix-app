@@ -353,14 +353,6 @@ class _DetailState extends State<_Detail> {
                   label: const Text('Change Status'),
                 ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: FilledButton.icon(
-                  onPressed: () => _markNextStage(context),
-                  icon: const Icon(Icons.check_circle),
-                  label: const Text('Next Stage'),
-                ),
-              ),
             ],
           ),
         ],
@@ -525,8 +517,12 @@ class _DetailState extends State<_Detail> {
           minChildSize: 0.5,
           maxChildSize: 0.95,
           builder: (context, scrollController) {
-            final photos = completion?.photos ?? const <String>[];
-            return Padding(
+            final initialPhotos = List<String>.from(completion?.photos ?? const <String>[]);
+            return StatefulBuilder(
+              builder: (context, setModalState) {
+                bool isUploading = false;
+                List<String> photos = initialPhotos;
+                return Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -560,18 +556,26 @@ class _DetailState extends State<_Detail> {
                       TextButton.icon(
                         onPressed: completion == null ? null : () async {
                           final picker = ImagePicker();
-                          final picked = await picker.pickImage(source: ImageSource.camera);
+                          final picked = await picker.pickImage(source: ImageSource.camera, imageQuality: 75, maxWidth: 1280);
                           if (picked != null) {
-                            final url = await storage.uploadFile(
-                              file: File(picked.path),
-                              userId: uid,
-                              folder: 'fermentation_stage',
-                            );
-                            await service.addPhotosToStage(stageId: completion.id, photoUrls: [url]);
-                            // Refresh modal by closing and reopening with updated data
-                            if (context.mounted) {
-                              Navigator.pop(context);
-                              _showStageDetails(context, index, stage);
+                            setModalState(() { isUploading = true; });
+                            try {
+                              final url = await storage.uploadFile(
+                                file: File(picked.path),
+                                userId: uid,
+                                folder: 'fermentation_stage',
+                              );
+                              await service.addPhotosToStage(stageId: completion.id, photoUrls: [url]);
+                              setModalState(() { photos = List<String>.from(photos)..add(url); });
+                              if (mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Photo added.')));
+                              }
+                            } catch (e) {
+                              if (mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Upload failed: $e')));
+                              }
+                            } finally {
+                              setModalState(() { isUploading = false; });
                             }
                           }
                         },
@@ -580,6 +584,7 @@ class _DetailState extends State<_Detail> {
                       ),
                     ],
                   ),
+                  if (isUploading) const LinearProgressIndicator(),
                   const SizedBox(height: 8),
                   if (photos.isEmpty)
                     const Padding(
@@ -639,6 +644,8 @@ class _DetailState extends State<_Detail> {
                   ),
                 ],
               ),
+            );
+              },
             );
           },
         );
@@ -713,7 +720,7 @@ class _DetailState extends State<_Detail> {
   Future<void> _addPhoto(BuildContext context) async {
     try {
       final picker = ImagePicker();
-      final image = await picker.pickImage(source: ImageSource.camera);
+      final image = await picker.pickImage(source: ImageSource.camera, imageQuality: 75, maxWidth: 1280);
       if (image != null) {
         final repo = context.read<FermentationRepo>();
         final uid = context.read<AuthProvider>().currentUser?.uid ?? '';
@@ -857,17 +864,6 @@ class _DetailState extends State<_Detail> {
     }
   }
 
-  Future<void> _markNextStage(BuildContext context) async {
-    if (_log.currentStage < _log.stages.length) {
-      await _markStageCompleted(context, _log.currentStage);
-    } else {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('All stages completed!')),
-        );
-      }
-    }
-  }
 
   Future<void> _showStatusDialog(BuildContext context) async {
     final newStatus = await showDialog<FermentationStatus>(

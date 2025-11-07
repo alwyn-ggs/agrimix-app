@@ -199,19 +199,13 @@ class _SavedPostsPageState extends State<SavedPostsPage> {
               const SizedBox(height: 12),
               Row(
                 children: [
-                  const Icon(Icons.favorite_border, color: NatureColors.mediumGray, size: 16),
-                  const SizedBox(width: 4),
-                  Text(
-                    '${post.likes}',
-                    style: const TextStyle(color: NatureColors.mediumGray, fontSize: 12),
-                  ),
-                  const SizedBox(width: 16),
-                  const Icon(Icons.comment_outlined, color: NatureColors.mediumGray, size: 16),
-                  const SizedBox(width: 4),
-                  Text(
-                    '${post.savedBy.length}',
-                    style: const TextStyle(color: NatureColors.mediumGray, fontSize: 12),
-                  ),
+                  const Icon(Icons.thumb_up_outlined, color: NatureColors.mediumGray, size: 16),
+                  const SizedBox(width: 2),
+                  Text('${post.thumbsUp}', style: const TextStyle(color: NatureColors.mediumGray)),
+                  const SizedBox(width: 8),
+                  const Icon(Icons.thumb_down_outlined, color: NatureColors.mediumGray, size: 16),
+                  const SizedBox(width: 2),
+                  Text('${post.thumbsDown}', style: const TextStyle(color: NatureColors.mediumGray)),
                 ],
               ),
             ],

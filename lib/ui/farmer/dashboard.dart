@@ -305,55 +305,55 @@ class _DashboardState extends State<Dashboard> {
           NavigationDestination(
             icon: const Tooltip(
               message: 'Home',
-              child: Icon(Icons.home_outlined, color: NatureColors.mediumGray),
+              child: Icon(Icons.eco_outlined, color: NatureColors.mediumGray),
             ),
             selectedIcon: const Tooltip(
               message: 'Home',
-              child: Icon(Icons.home, color: NatureColors.pureWhite),
+              child: Icon(Icons.eco, color: NatureColors.pureWhite),
             ),
             label: AppLocalizations.of(context).t('home'),
           ),
           NavigationDestination(
             icon: const Tooltip(
               message: 'Recipes',
-              child: Icon(Icons.restaurant_menu_outlined, color: NatureColors.mediumGray),
+              child: Icon(Icons.menu_book_outlined, color: NatureColors.mediumGray),
             ),
             selectedIcon: const Tooltip(
               message: 'Recipes',
-              child: Icon(Icons.restaurant_menu, color: NatureColors.pureWhite),
+              child: Icon(Icons.menu_book, color: NatureColors.pureWhite),
             ),
             label: AppLocalizations.of(context).t('recipes'),
           ),
           NavigationDestination(
             icon: const Tooltip(
               message: 'Ferment',
-              child: Icon(Icons.bubble_chart_outlined, color: NatureColors.mediumGray),
+              child: Icon(Icons.science_outlined, color: NatureColors.mediumGray),
             ),
             selectedIcon: const Tooltip(
               message: 'Ferment',
-              child: Icon(Icons.bubble_chart, color: NatureColors.pureWhite),
+              child: Icon(Icons.science, color: NatureColors.pureWhite),
             ),
             label: AppLocalizations.of(context).t('ferment'),
           ),
           NavigationDestination(
             icon: const Tooltip(
               message: 'Community',
-              child: Icon(Icons.groups_outlined, color: NatureColors.mediumGray),
+              child: Icon(Icons.forum_outlined, color: NatureColors.mediumGray),
             ),
             selectedIcon: const Tooltip(
               message: 'Community',
-              child: Icon(Icons.groups, color: NatureColors.pureWhite),
+              child: Icon(Icons.forum, color: NatureColors.pureWhite),
             ),
             label: AppLocalizations.of(context).t('community'),
           ),
           NavigationDestination(
             icon: const Tooltip(
               message: 'My Recipes',
-              child: Icon(Icons.person_pin_outlined, color: NatureColors.mediumGray),
+              child: Icon(Icons.library_books_outlined, color: NatureColors.mediumGray),
             ),
             selectedIcon: const Tooltip(
               message: 'My Recipes',
-              child: Icon(Icons.person_pin, color: NatureColors.pureWhite),
+              child: Icon(Icons.library_books, color: NatureColors.pureWhite),
             ),
             label: AppLocalizations.of(context).t('my_recipes'),
           ),

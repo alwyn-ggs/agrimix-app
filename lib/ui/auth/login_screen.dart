@@ -268,12 +268,16 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           const SizedBox(height: 16),
 
-                          // Google Sign-in placeholder
+                          // Google Sign-in
                           OutlinedButton.icon(
-                            onPressed: null,
+                            onPressed: auth.loading
+                                ? null
+                                : () async {
+                                    await context.read<AuthProvider>().signInWithGoogle();
+                                  },
                             icon: const Icon(Icons.g_mobiledata, color: NatureColors.darkGray),
                             label: const Text(
-                              'Continue with Google (soon)',
+                              'Continue with Google',
                               style: TextStyle(color: NatureColors.darkGray),
                             ),
                             style: OutlinedButton.styleFrom(

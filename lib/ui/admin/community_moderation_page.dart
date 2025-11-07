@@ -399,24 +399,23 @@ class _CommunityModerationPageState extends State<CommunityModerationPage> with 
             StreamBuilder<List<Comment>>(
               stream: context.read<CommunityProvider>().watchComments(post.id),
               builder: (context, snapshot) {
-                final count = snapshot.data?.length ?? 0;
                 return Row(
                   children: [
                     Icon(
-                      Icons.favorite,
-                      color: post.likes > 0 ? Colors.red : NatureColors.lightGray,
+                      Icons.thumb_up,
+                      color: post.thumbsUp > 0 ? Colors.green : NatureColors.lightGray,
                       size: 16,
                     ),
                     const SizedBox(width: 4),
-                    Text('${post.likes}'),
-                    const SizedBox(width: 16),
-                    const Icon(
-                      Icons.comment,
-                      color: NatureColors.lightGray,
+                    Text('${post.thumbsUp}'),
+                    const SizedBox(width: 8),
+                    Icon(
+                      Icons.thumb_down,
+                      color: post.thumbsDown > 0 ? Colors.red : NatureColors.lightGray,
                       size: 16,
                     ),
                     const SizedBox(width: 4),
-                    Text('$count'),
+                    Text('${post.thumbsDown}'),
                   ],
                 );
               },
@@ -548,122 +547,142 @@ class _CommunityModerationPageState extends State<CommunityModerationPage> with 
 
   Widget _buildViolationCard(dynamic violation) {
     final isPostReport = _getTargetTypeString(violation.targetType) == 'post';
-    return InkWell(
-      onTap: !isPostReport
-          ? null
-          : () async {
-              try {
-                final postsRepo = context.read<CommunityProvider>().postsRepo;
-                final post = await postsRepo.getPost(violation.targetId);
-                if (post != null && mounted) {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => PostDetailPage(post: post),
-                    ),
-                  );
-                } else if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Reported post not found or has been removed.')),
-                  );
+    final isCommentReport = _getTargetTypeString(violation.targetType) == 'comment';
+    return FutureBuilder<Comment?>(
+      future: isCommentReport
+        ? Future.value(
+            context.read<ModerationProvider>().reportedComments.any((c) => c.id == violation.targetId)
+              ? context.read<ModerationProvider>().reportedComments.firstWhere((c) => c.id == violation.targetId)
+              : null
+          )
+        : Future.value(null),
+      builder: (context, snapshot) {
+        final comment = snapshot.data;
+        return InkWell(
+          onTap: (isPostReport || isCommentReport)
+              ? () async {
+                  final postsRepo = context.read<CommunityProvider>().postsRepo;
+                  final parentPostId = isCommentReport ? comment?.postId : violation.targetId;
+                  final post = await postsRepo.getPost(parentPostId);
+                  if (post != null && mounted) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => PostDetailPage(post: post), // option: scroll to the comment
+                      ),
+                    );
+                  } else if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Reported content not found or has been removed.')),
+                    );
+                  }
                 }
-              } catch (e) {
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Failed to open reported post: $e')),
-                  );
-                }
-              }
-            },
-      child: Card(
-        margin: const EdgeInsets.only(bottom: 12),
-        child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Icon(
-                  Icons.report_problem,
-                  color: Colors.orange,
-                  size: 20,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Reported ${_getTargetTypeString(violation.targetType).toUpperCase()}',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
+              : null,
+          child: Card(
+            margin: const EdgeInsets.only(bottom: 12),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.report_problem,
+                        color: Colors.orange,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Reported ${_getTargetTypeString(violation.targetType).toUpperCase()}',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: _getStatusColor(_getDisplayStatus(violation)),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          _getDisplayStatus(violation).toUpperCase(),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  // Show post details or comment details
+                  if (isCommentReport)
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Comment: ${comment?.text ?? '[Deleted or not available]'}',
+                          style: const TextStyle(fontStyle: FontStyle.italic),
+                        ),
+                        const SizedBox(height: 4),
+                        Text('By: ${comment?.authorName ?? comment?.authorId ?? '[Unknown]'}', style: const TextStyle(fontSize: 12)),
+                      ],
                     ),
+                  Text(
+                    'Reason: ${violation.reason}',
+                    style: const TextStyle(fontSize: 14),
                   ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: _getStatusColor(_getDisplayStatus(violation)),
-                    borderRadius: BorderRadius.circular(12),
+                  const SizedBox(height: 8),
+                  _buildReporterName(violation.reporterUid),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () => _handleViolationAction('warn', violation),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.orange,
+                            foregroundColor: Colors.white,
+                          ),
+                          child: const Text('Warn'),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () => _handleViolationAction('delete', violation),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.red,
+                            foregroundColor: Colors.white,
+                          ),
+                          child: const Text('Delete'),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () => _handleViolationAction('dismiss', violation),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.grey,
+                            foregroundColor: Colors.white,
+                          ),
+                          child: const Text('Dismiss'),
+                        ),
+                      ),
+                    ],
                   ),
-                  child: Text(
-                    _getDisplayStatus(violation).toUpperCase(),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
-            const SizedBox(height: 8),
-            Text(
-              'Reason: ${violation.reason}',
-              style: const TextStyle(fontSize: 14),
-            ),
-            const SizedBox(height: 8),
-            _buildReporterName(violation.reporterUid),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () => _handleViolationAction('warn', violation),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.orange,
-                      foregroundColor: Colors.white,
-                    ),
-                    child: const Text('Warn'),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () => _handleViolationAction('delete', violation),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
-                      foregroundColor: Colors.white,
-                    ),
-                    child: const Text('Delete'),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () => _handleViolationAction('dismiss', violation),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.grey,
-                      foregroundColor: Colors.white,
-                    ),
-                    child: const Text('Dismiss'),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    ));
+          ),
+        );
+      },
+    );
   }
 
   Color _getStatusColor(String status) {
@@ -895,61 +914,87 @@ class _CommunityModerationPageState extends State<CommunityModerationPage> with 
 
   void _showWarnDialog(dynamic violation) {
     final TextEditingController controller = TextEditingController();
+    String selectedReason = 'Unrelated/Spam';
+    final warnings = <String, String>{
+      'Unrelated/Spam': 'Please avoid posting content or comments unrelated to the community topic. Violations may result in account suspension.',
+      'Harassment': 'Your comment or post was reported as harassment. Any further violations may result in disciplinary actions.',
+      'Inappropriate': 'Your content was reported as inappropriate. Please be respectful and follow the community guidelines.',
+      'Other': '',
+    };
+    controller.text = warnings[selectedReason]!;
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Warn User'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text('Enter a warning message to send to the user:'),
-            const SizedBox(height: 12),
-            TextField(
-              controller: controller,
-              decoration: const InputDecoration(
-                hintText: 'Warning message',
-                border: OutlineInputBorder(),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text('Warn User'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('Choose a warning type to send to the user:'),
+              const SizedBox(height: 8),
+              DropdownButton<String>(
+                value: selectedReason,
+                items: warnings.keys.map((key) => DropdownMenuItem(
+                  value: key,
+                  child: Text(key),
+                )).toList(),
+                onChanged: (val) {
+                  if (val == null) return;
+                  setState(() {
+                    selectedReason = val;
+                    controller.text = warnings[val]!;
+                  });
+                },
               ),
-              maxLines: 3,
+              const SizedBox(height: 12),
+              TextField(
+                controller: controller,
+                decoration: const InputDecoration(
+                  hintText: 'Warning message',
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 3,
+                enabled: selectedReason == 'Other' || selectedReason.isNotEmpty,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final text = controller.text.trim();
+                if (text.isEmpty) return;
+                final moderationProvider = context.read<ModerationProvider>();
+                final currentUser = context.read<AuthProvider>().currentUser;
+                if (currentUser == null) return;
+                try {
+                  await moderationProvider.warnUser(violation.id, currentUser.uid, warningMessage: text);
+                  if (!mounted) return;
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Warning sent successfully'),
+                      backgroundColor: Colors.orange,
+                    ),
+                  );
+                } catch (e) {
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Failed to send warning: $e'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, foregroundColor: Colors.white),
+              child: const Text('Send Warning'),
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              final text = controller.text.trim();
-              if (text.isEmpty) return;
-              final moderationProvider = context.read<ModerationProvider>();
-              final currentUser = context.read<AuthProvider>().currentUser;
-              if (currentUser == null) return;
-              try {
-                await moderationProvider.warnUser(violation.id, currentUser.uid, warningMessage: text);
-                if (!mounted) return;
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Warning sent successfully'),
-                    backgroundColor: Colors.orange,
-                  ),
-                );
-              } catch (e) {
-                if (!mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Failed to send warning: $e'),
-                    backgroundColor: Colors.red,
-                  ),
-                );
-              }
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, foregroundColor: Colors.white),
-            child: const Text('Send Warning'),
-          ),
-        ],
       ),
     );
   }

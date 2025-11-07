@@ -9,6 +9,11 @@ class NotificationPreferencesService {
   /// Get user notification preferences
   Future<NotificationPreferences?> getUserPreferences(String userId) async {
     try {
+      if (userId.isEmpty) {
+        AppLogger.error('User ID is empty');
+        return null;
+      }
+
       final doc = await _db
           .collection('users')
           .doc(userId)
@@ -18,14 +23,17 @@ class NotificationPreferencesService {
 
       if (!doc.exists) {
         // Create default preferences if they don't exist
+        AppLogger.info('Creating default notification preferences for user: $userId');
         final defaultPrefs = NotificationPreferences.getDefault(userId);
         await _savePreferences(defaultPrefs);
         return defaultPrefs;
       }
 
-      return NotificationPreferences.fromFirestore(doc);
+      final prefs = NotificationPreferences.fromFirestore(doc);
+      AppLogger.info('Loaded notification preferences for user: $userId');
+      return prefs;
     } catch (e) {
-      AppLogger.error('Failed to get notification preferences: $e', e);
+      AppLogger.error('Failed to get notification preferences for user $userId: $e', e);
       return null;
     }
   }

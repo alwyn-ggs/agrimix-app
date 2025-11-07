@@ -532,27 +532,40 @@ class PostCard extends StatelessWidget {
                   Consumer<CommunityProvider>(
                     builder: (context, provider, child) {
                       final currentUser = context.read<AuthProvider>().currentUser;
-                      final isLiked = provider.isPostLiked(post.id, currentUser?.uid ?? '');
+                      final reaction = provider.getUserReaction(post.id, currentUser?.uid ?? '');
                       final latest = provider.posts.firstWhere((p) => p.id == post.id, orElse: () => post);
                       return Row(
                         children: [
                           IconButton(
                             icon: Icon(
-                              isLiked ? Icons.favorite : Icons.favorite_border,
-                              color: isLiked ? Colors.red : NatureColors.mediumGray,
+                              reaction == 1 ? Icons.thumb_up : Icons.thumb_up_outlined,
+                              color: reaction == 1 ? Colors.green : NatureColors.mediumGray,
                             ),
                             onPressed: currentUser == null
                                 ? null
                                 : () {
-                                    if (isLiked) {
-                                      // prevent duplicate like
-                                      return;
-                                    }
-                                    provider.likePost(post.id, currentUser.uid);
+                                    if (reaction == 1) return;
+                                    provider.reactPost(post.id, currentUser.uid, 1);
                                   },
                           ),
                           Text(
-                            '${latest.likes}',
+                            '${latest.thumbsUp}',
+                            style: const TextStyle(color: NatureColors.mediumGray),
+                          ),
+                          IconButton(
+                            icon: Icon(
+                              reaction == -1 ? Icons.thumb_down : Icons.thumb_down_outlined,
+                              color: reaction == -1 ? Colors.red : NatureColors.mediumGray,
+                            ),
+                            onPressed: currentUser == null
+                                ? null
+                                : () {
+                                    if (reaction == -1) return;
+                                    provider.reactPost(post.id, currentUser.uid, -1);
+                                  },
+                          ),
+                          Text(
+                            '${latest.thumbsDown}',
                             style: const TextStyle(color: NatureColors.mediumGray),
                           ),
                         ],

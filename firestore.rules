@@ -114,6 +114,18 @@ service cloud.firestore {
         // Users can delete their own activity
         allow delete: if isSignedIn() && request.auth.uid == userId;
       }
+
+      // User preferences subcollection: users/{userId}/preferences/{preferenceType}
+      match /preferences/{preferenceType} {
+        // Users can read their own preferences
+        allow read: if isSignedIn() && request.auth.uid == userId;
+        
+        // Users can create/update their own preferences
+        allow create, update: if isSignedIn() && request.auth.uid == userId;
+        
+        // Users can delete their own preferences
+        allow delete: if isSignedIn() && request.auth.uid == userId;
+      }
     }
 
     // Announcements: public read; admins manage

@@ -38,33 +38,60 @@ class NotificationPreferences {
 
   /// Create from Firestore document
   factory NotificationPreferences.fromFirestore(DocumentSnapshot doc) {
-    final data = doc.data() as Map<String, dynamic>;
+    final Map<String, dynamic> data = (doc.data() as Map<String, dynamic>?) ?? {};
+    final Timestamp? createdTs = data['createdAt'] is Timestamp ? data['createdAt'] as Timestamp : null;
+    final Timestamp? updatedTs = data['updatedAt'] is Timestamp ? data['updatedAt'] as Timestamp : null;
+
+    // Provide resilient defaults for maps and fields
+    final Map<String, bool> types = {
+      'announcements': true,
+      'fermentation_reminders': true,
+      'community_updates': true,
+      'moderation_alerts': true,
+      'system_updates': true,
+      'marketing': false,
+      ...Map<String, bool>.from(data['notificationTypes'] ?? {}),
+    };
+
+    final Map<String, bool> channels = {
+      'push': true,
+      'in_app': true,
+      'email': false,
+      'sms': false,
+      ...Map<String, bool>.from(data['channels'] ?? {}),
+    };
+
     return NotificationPreferences(
-      userId: doc.id,
-      enabled: data['enabled'] ?? true,
-      timePreferences: NotificationTimePreferences.fromMap(data['timePreferences'] ?? {}),
-      frequencyPreferences: NotificationFrequencyPreferences.fromMap(data['frequencyPreferences'] ?? {}),
-      notificationTypes: Map<String, bool>.from(data['notificationTypes'] ?? {}),
-      channels: Map<String, bool>.from(data['channels'] ?? {}),
-      quietHoursEnabled: data['quietHoursEnabled'] ?? false,
-      quietHoursStart: data['quietHoursStart'] != null 
+      userId: (data['userId'] as String?) ?? doc.reference.parent.parent?.id ?? '',
+      enabled: (data['enabled'] as bool?) ?? true,
+      timePreferences: NotificationTimePreferences.fromMap(
+        (data['timePreferences'] as Map<String, dynamic>?) ?? {},
+      ),
+      frequencyPreferences: NotificationFrequencyPreferences.fromMap(
+        (data['frequencyPreferences'] as Map<String, dynamic>?) ?? {},
+      ),
+      notificationTypes: types,
+      channels: channels,
+      quietHoursEnabled: (data['quietHoursEnabled'] as bool?) ?? false,
+      quietHoursStart: data['quietHoursStart'] is Timestamp
           ? (data['quietHoursStart'] as Timestamp).toDate()
           : null,
-      quietHoursEnd: data['quietHoursEnd'] != null 
+      quietHoursEnd: data['quietHoursEnd'] is Timestamp
           ? (data['quietHoursEnd'] as Timestamp).toDate()
           : null,
-      quietDays: List<String>.from(data['quietDays'] ?? []),
-      digestEnabled: data['digestEnabled'] ?? false,
-      digestFrequency: data['digestFrequency'] ?? 'daily',
-      digestTime: data['digestTime'] ?? '09:00',
-      createdAt: (data['createdAt'] as Timestamp).toDate(),
-      updatedAt: (data['updatedAt'] as Timestamp).toDate(),
+      quietDays: List<String>.from((data['quietDays'] as List<dynamic>?) ?? const []),
+      digestEnabled: (data['digestEnabled'] as bool?) ?? false,
+      digestFrequency: (data['digestFrequency'] as String?) ?? 'daily',
+      digestTime: (data['digestTime'] as String?) ?? '09:00',
+      createdAt: createdTs?.toDate() ?? DateTime.now(),
+      updatedAt: updatedTs?.toDate() ?? DateTime.now(),
     );
   }
 
   /// Convert to Firestore document
   Map<String, dynamic> toFirestore() {
     return {
+      'userId': userId,
       'enabled': enabled,
       'timePreferences': timePreferences.toMap(),
       'frequencyPreferences': frequencyPreferences.toMap(),

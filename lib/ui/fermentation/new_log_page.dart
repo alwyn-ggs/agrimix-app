@@ -5,6 +5,7 @@ import '../../models/recipe.dart';
 import '../../repositories/fermentation_repo.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/notification_service.dart';
+import '../../services/stage_management_service.dart';
 import '../recipe/list_page.dart';
 
 class NewLogPage extends StatefulWidget {
@@ -428,6 +429,14 @@ class _NewLogPageState extends State<NewLogPage> {
       );
       
       await repo.createFermentationLog(log);
+      // Initialize per-stage tracking (photos/notes) so uploads work per day
+      try {
+        await StageManagementService().initializeStages(
+          fermentationLogId: log.id,
+          stages: _stages,
+          userId: uid,
+        );
+      } catch (_) {}
       
       if (_alerts) {
         final notifier = context.read<NotificationService>();

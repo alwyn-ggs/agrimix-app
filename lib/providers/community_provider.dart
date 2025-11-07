@@ -396,6 +396,24 @@ class CommunityProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> reportComment(String commentId, String postId, String commentAuthorId, String reason, String reporterId) async {
+    try {
+      final violation = Violation(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        targetType: ViolationTargetType.comment,
+        targetId: commentId,
+        reason: reason,
+        status: ViolationStatus.open,
+        reporterUid: reporterId,
+        penalizedUserUid: commentAuthorId,
+        createdAt: DateTime.now(),
+      );
+      await _violationsRepo.createViolation(violation);
+    } catch (e) {
+      debugPrint('Error reporting comment: $e');
+    }
+  }
+
   Future<void> loadViolations() async {
     try {
       violations = await _violationsRepo.getAllViolations();
@@ -431,8 +449,60 @@ class CommunityProvider extends ChangeNotifier {
       likedBy: [],
       savedBy: [],
       createdAt: DateTime.now(),
+      thumbsUp: 0,
+      thumbsDown: 0,
+      thumbsUpBy: [],
+      thumbsDownBy: [],
     ));
     return post.savedBy.contains(userId);
+  }
+
+  /// Get the current user's reaction to a post: 1 (up), -1 (down), 0 (none)
+  int getUserReaction(String postId, String userId) {
+    try {
+      final post = posts.firstWhere((p) => p.id == postId);
+      if (post.thumbsUpBy.contains(userId)) return 1;
+      if (post.thumbsDownBy.contains(userId)) return -1;
+      return 0;
+    } catch (e) {
+      return 0;
+    }
+  }
+
+  /// React (thumbs up/down) to a post, enforcing only one reaction per user
+  Future<void> reactPost(String postId, String userId, int reaction) async {
+    try {
+      final index = posts.indexWhere((p) => p.id == postId);
+      if (index == -1) return;
+      var post = posts[index];
+      var upBy = List<String>.from(post.thumbsUpBy);
+      var downBy = List<String>.from(post.thumbsDownBy);
+      if (reaction == 1) {
+        if (!upBy.contains(userId)) {
+          upBy.add(userId);
+          downBy.remove(userId);
+        }
+      } else if (reaction == -1) {
+        if (!downBy.contains(userId)) {
+          downBy.add(userId);
+          upBy.remove(userId);
+        }
+      } else {
+        upBy.remove(userId);
+        downBy.remove(userId);
+      }
+      post = post.copyWith(
+        thumbsUpBy: upBy,
+        thumbsDownBy: downBy,
+        thumbsUp: upBy.length,
+        thumbsDown: downBy.length,
+      );
+      posts[index] = post;
+      notifyListeners();
+      await _postsRepo.reactPost(postId, userId, reaction);
+    } catch (e) {
+      debugPrint('Error reacting to post: $e');
+    }
   }
 
   void clearSearch() {

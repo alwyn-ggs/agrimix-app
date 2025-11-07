@@ -14,6 +14,10 @@ class Post {
   final DateTime createdAt;
   final String? recipeId;
   final String? recipeName;
+  final int thumbsUp;
+  final int thumbsDown;
+  final List<String> thumbsUpBy;
+  final List<String> thumbsDownBy;
 
   Post({
     required this.id,
@@ -29,6 +33,10 @@ class Post {
     required this.createdAt,
     this.recipeId,
     this.recipeName,
+    required this.thumbsUp,
+    required this.thumbsDown,
+    required this.thumbsUpBy,
+    required this.thumbsDownBy,
   });
 
   static const String collectionPath = 'posts';
@@ -50,6 +58,10 @@ class Post {
             : DateTime.now(),
         recipeId: map['recipeId'],
         recipeName: map['recipeName'],
+        thumbsUp: (map['thumbsUp'] ?? map['likes'] ?? 0) as int,
+        thumbsDown: (map['thumbsDown'] ?? 0) as int,
+        thumbsUpBy: _convertToStringList(map['thumbsUpBy'] ?? map['likedBy']),
+        thumbsDownBy: _convertToStringList(map['thumbsDownBy']),
       );
 
   factory Post.fromSnapshot(DocumentSnapshot<Map<String, dynamic>> snap) {
@@ -70,6 +82,10 @@ class Post {
         'createdAt': Timestamp.fromDate(createdAt),
         if (recipeId != null) 'recipeId': recipeId,
         if (recipeName != null) 'recipeName': recipeName,
+        'thumbsUp': thumbsUp,
+        'thumbsDown': thumbsDown,
+        'thumbsUpBy': thumbsUpBy,
+        'thumbsDownBy': thumbsDownBy,
       };
 
   Post copyWith({
@@ -85,6 +101,10 @@ class Post {
     DateTime? createdAt,
     String? recipeId,
     String? recipeName,
+    int? thumbsUp,
+    int? thumbsDown,
+    List<String>? thumbsUpBy,
+    List<String>? thumbsDownBy,
   }) => Post(
         id: id,
         ownerUid: ownerUid ?? this.ownerUid,
@@ -99,6 +119,10 @@ class Post {
         createdAt: createdAt ?? this.createdAt,
         recipeId: recipeId ?? this.recipeId,
         recipeName: recipeName ?? this.recipeName,
+        thumbsUp: thumbsUp ?? this.thumbsUp,
+        thumbsDown: thumbsDown ?? this.thumbsDown,
+        thumbsUpBy: thumbsUpBy ?? this.thumbsUpBy,
+        thumbsDownBy: thumbsDownBy ?? this.thumbsDownBy,
       );
 
   @override
@@ -118,11 +142,15 @@ class Post {
           _listEquals(savedBy, other.savedBy) &&
           createdAt == other.createdAt &&
           recipeId == other.recipeId &&
-          recipeName == other.recipeName;
+          recipeName == other.recipeName &&
+          thumbsUp == other.thumbsUp &&
+          thumbsDown == other.thumbsDown &&
+          _listEquals(thumbsUpBy, other.thumbsUpBy) &&
+          _listEquals(thumbsDownBy, other.thumbsDownBy);
 
   @override
   int get hashCode => Object.hash(
-      id, ownerUid, ownerName, title, body, Object.hashAll(images), Object.hashAll(tags), likes, Object.hashAll(likedBy), Object.hashAll(savedBy), createdAt, recipeId, recipeName);
+      id, ownerUid, ownerName, title, body, Object.hashAll(images), Object.hashAll(tags), likes, Object.hashAll(likedBy), Object.hashAll(savedBy), createdAt, recipeId, recipeName, thumbsUp, thumbsDown, Object.hashAll(thumbsUpBy), Object.hashAll(thumbsDownBy));
 
   static bool _listEquals(List a, List b) {
     if (identical(a, b)) return true;
