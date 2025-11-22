@@ -34,6 +34,66 @@ class StageManagementService {
     }
   }
 
+  /// Ensure a stage completion exists, creating it if it doesn't
+  Future<StageCompletion> ensureStageCompletion({
+    required String fermentationLogId,
+    required int stageIndex,
+    required FermentationStage stage,
+    required String userId,
+  }) async {
+    try {
+      // Validate inputs
+      if (fermentationLogId.isEmpty) {
+        throw Exception('Fermentation log ID cannot be empty');
+      }
+      if (userId.isEmpty) {
+        throw Exception('User ID cannot be empty');
+      }
+      if (stageIndex < 0) {
+        throw Exception('Stage index must be non-negative');
+      }
+
+      final existing = await getStageCompletionByIndex(
+        fermentationLogId: fermentationLogId,
+        stageIndex: stageIndex,
+      );
+      if (existing != null) return existing;
+
+      final stageId = _firestore.collection(StageCompletion.collectionPath).doc().id;
+      final now = DateTime.now();
+
+      final completion = StageCompletion(
+        id: stageId,
+        fermentationLogId: fermentationLogId,
+        stageIndex: stageIndex,
+        plannedDay: stage.day,
+        stageLabel: stage.label,
+        stageAction: stage.action,
+        status: StageCompletionStatus.pending,
+        photos: const [],
+        createdAt: now,
+        updatedAt: now,
+      );
+
+      // Validate before saving
+      final validation = completion.validate();
+      if (!validation.isValid) {
+        throw Exception('Invalid stage completion: ${validation.errors.join(', ')}');
+      }
+
+      await _firestore
+          .collection(StageCompletion.collectionPath)
+          .doc(stageId)
+          .set(completion.toMap());
+
+      AppLogger.info('Created stage completion for fermentation $fermentationLogId, stage $stageIndex');
+      return completion;
+    } catch (e, stackTrace) {
+      AppLogger.error('Error ensuring stage completion: $e', e, stackTrace);
+      rethrow;
+    }
+  }
+
   /// Append photos to a stage completion
   Future<void> addPhotosToStage({
     required String stageId,

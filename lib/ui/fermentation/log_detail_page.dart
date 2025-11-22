@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
+import 'dart:async';
 import '../../repositories/fermentation_repo.dart';
 import '../../repositories/recipes_repo.dart';
 import '../../repositories/users_repo.dart';
 import '../../models/fermentation_log.dart';
 import '../../models/recipe.dart';
 import '../../models/user.dart';
+import '../../models/stage_completion.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/notification_service.dart';
 import '../../services/stage_management_service.dart';
@@ -48,13 +50,40 @@ class _Detail extends StatefulWidget {
 
 class _DetailState extends State<_Detail> {
   late FermentationLog _log;
-  final TextEditingController _notes = TextEditingController();
+  final Map<int, Timer?> _notesDebounceTimers = {};
+  final Map<int, TextEditingController> _stageNotesControllers = {};
+  int _refreshKey = 0; // Key to force FutureBuilder refresh
 
   @override
   void initState() {
     super.initState();
     _log = widget.log;
-    _notes.text = _log.notes ?? '';
+  }
+
+  @override
+  void dispose() {
+    for (final timer in _notesDebounceTimers.values) {
+      timer?.cancel();
+    }
+    _notesDebounceTimers.clear();
+    for (final controller in _stageNotesControllers.values) {
+      controller.dispose();
+    }
+    _stageNotesControllers.clear();
+    super.dispose();
+  }
+
+  TextEditingController _getStageNotesController(int stageIndex, String initialValue) {
+    if (!_stageNotesControllers.containsKey(stageIndex)) {
+      _stageNotesControllers[stageIndex] = TextEditingController(text: initialValue);
+    } else {
+      // Update if value changed externally
+      final controller = _stageNotesControllers[stageIndex]!;
+      if (controller.text != initialValue) {
+        controller.text = initialValue;
+      }
+    }
+    return _stageNotesControllers[stageIndex]!;
   }
 
   @override
@@ -67,7 +96,6 @@ class _DetailState extends State<_Detail> {
         if (updatedLog != null) {
           setState(() {
             _log = updatedLog;
-            _notes.text = _log.notes ?? '';
           });
         }
       },
@@ -258,91 +286,6 @@ class _DetailState extends State<_Detail> {
           ),
           const SizedBox(height: 16),
 
-          // Photos Section
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      const Text('Photos', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
-                      const Spacer(),
-                      TextButton.icon(
-                        onPressed: () => _addPhoto(context),
-                        icon: const Icon(Icons.add_a_photo),
-                        label: const Text('Add Photo'),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  if (_log.photos.isEmpty)
-                    const Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(32),
-                        child: Column(
-                          children: [
-                            Icon(Icons.photo_library_outlined, size: 48, color: Colors.grey),
-                            SizedBox(height: 8),
-                            Text('No photos yet', style: TextStyle(color: Colors.grey)),
-                          ],
-                        ),
-                      ),
-                    )
-                  else
-                    GridView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 3,
-                        crossAxisSpacing: 8,
-                        mainAxisSpacing: 8,
-                      ),
-                      itemCount: _log.photos.length,
-                      itemBuilder: (context, index) {
-                        return _buildPhotoThumbnail(context, index);
-                      },
-                    ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // Notes Section
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Notes', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: _notes,
-                    minLines: 3,
-                    maxLines: 5,
-                    decoration: const InputDecoration(
-                      border: OutlineInputBorder(),
-                      hintText: 'Add notes about your fermentation process...',
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    child: FilledButton.icon(
-                      onPressed: () => _saveNotes(context),
-                      icon: const Icon(Icons.save),
-                      label: const Text('Save Notes'),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-
           // Action Buttons
           Row(
             children: [
@@ -365,6 +308,11 @@ class _DetailState extends State<_Detail> {
     final isCurrent = index == _log.currentStage;
     final scheduled = _log.startAt.add(Duration(days: stage.day));
     final isOverdue = !isCompleted && scheduled.isBefore(DateTime.now());
+    
+    // Calculate current day of fermentation
+    final now = DateTime.now();
+    final daysSinceStart = now.difference(_log.startAt).inDays;
+    final isTodayStage = daysSinceStart == stage.day;
     
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -482,6 +430,117 @@ class _DetailState extends State<_Detail> {
                           ),
                         ),
                       ),
+                      // Show attach options only when current day matches stage day
+                      if (isTodayStage) ...[
+                        const SizedBox(height: 12),
+                        const Divider(),
+                        const SizedBox(height: 8),
+                        FutureBuilder<StageCompletion?>(
+                          key: ValueKey('stage_${index}_$_refreshKey'), // Force refresh on key change
+                          future: StageManagementService().getStageCompletionByIndex(
+                            fermentationLogId: _log.id,
+                            stageIndex: index,
+                          ),
+                          builder: (context, snapshot) {
+                            final completion = snapshot.data;
+                            final photos = completion?.photos ?? const <String>[];
+                            final initialNotes = completion?.notes ?? '';
+                            
+                            return StatefulBuilder(
+                              builder: (context, setLocalState) {
+                                final notesController = _getStageNotesController(index, initialNotes);
+                                
+                                return Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    // Photos section
+                                    Row(
+                                      children: [
+                                        const Icon(Icons.photo_library, size: 18, color: Colors.grey),
+                                        const SizedBox(width: 8),
+                                        const Text(
+                                          'Photos',
+                                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                                        ),
+                                        const Spacer(),
+                                        TextButton.icon(
+                                          onPressed: () async {
+                                            await _addStagePhoto(context, index, stage);
+                                            setLocalState(() {}); // Refresh to show new photo
+                                          },
+                                          icon: const Icon(Icons.add_a_photo, size: 16),
+                                          label: const Text('Add'),
+                                          style: TextButton.styleFrom(
+                                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    if (photos.isNotEmpty) ...[
+                                      const SizedBox(height: 8),
+                                      SizedBox(
+                                        height: 60,
+                                        child: ListView.separated(
+                                          scrollDirection: Axis.horizontal,
+                                          itemCount: photos.length,
+                                          separatorBuilder: (_, __) => const SizedBox(width: 8),
+                                          itemBuilder: (context, i) {
+                                            return GestureDetector(
+                                              onTap: () => _showPhotoDialog(context, photos[i]),
+                                              child: ClipRRect(
+                                                borderRadius: BorderRadius.circular(4),
+                                                child: Image.network(
+                                                  photos[i],
+                                                  width: 60,
+                                                  height: 60,
+                                                  fit: BoxFit.cover,
+                                                  errorBuilder: (context, error, stackTrace) => Container(
+                                                    width: 60,
+                                                    height: 60,
+                                                    color: Colors.grey[200],
+                                                    child: const Icon(Icons.broken_image, size: 24),
+                                                  ),
+                                                ),
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                      ),
+                                    ],
+                                    const SizedBox(height: 12),
+                                    // Notes section
+                                    const Row(
+                                      children: [
+                                        Icon(Icons.note, size: 18, color: Colors.grey),
+                                        SizedBox(width: 8),
+                                        Text(
+                                          'Notes',
+                                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 8),
+                                    TextField(
+                                      controller: notesController,
+                                      minLines: 2,
+                                      maxLines: 3,
+                                      decoration: const InputDecoration(
+                                        border: OutlineInputBorder(),
+                                        hintText: 'Add notes (optional)...',
+                                        contentPadding: EdgeInsets.all(8),
+                                      ),
+                                      onChanged: (value) {
+                                        // Save notes as user types (debounced)
+                                        _saveStageNotesDebounced(context, index, value);
+                                      },
+                                    ),
+                                  ],
+                                );
+                              },
+                            );
+                          },
+                        ),
+                      ],
                     ],
                     ],
                   ),
@@ -517,12 +576,8 @@ class _DetailState extends State<_Detail> {
           minChildSize: 0.5,
           maxChildSize: 0.95,
           builder: (context, scrollController) {
-            final initialPhotos = List<String>.from(completion?.photos ?? const <String>[]);
-            return StatefulBuilder(
-              builder: (context, setModalState) {
-                bool isUploading = false;
-                List<String> photos = initialPhotos;
-                return Padding(
+            final photos = completion?.photos ?? const <String>[];
+            return Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -556,26 +611,18 @@ class _DetailState extends State<_Detail> {
                       TextButton.icon(
                         onPressed: completion == null ? null : () async {
                           final picker = ImagePicker();
-                          final picked = await picker.pickImage(source: ImageSource.camera, imageQuality: 75, maxWidth: 1280);
+                          final picked = await picker.pickImage(source: ImageSource.camera);
                           if (picked != null) {
-                            setModalState(() { isUploading = true; });
-                            try {
-                              final url = await storage.uploadFile(
-                                file: File(picked.path),
-                                userId: uid,
-                                folder: 'fermentation_stage',
-                              );
-                              await service.addPhotosToStage(stageId: completion.id, photoUrls: [url]);
-                              setModalState(() { photos = List<String>.from(photos)..add(url); });
-                              if (mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Photo added.')));
-                              }
-                            } catch (e) {
-                              if (mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Upload failed: $e')));
-                              }
-                            } finally {
-                              setModalState(() { isUploading = false; });
+                            final url = await storage.uploadFile(
+                              file: File(picked.path),
+                              userId: uid,
+                              folder: 'fermentation_stage',
+                            );
+                            await service.addPhotosToStage(stageId: completion.id, photoUrls: [url]);
+                            // Refresh modal by closing and reopening with updated data
+                            if (context.mounted) {
+                              Navigator.pop(context);
+                              _showStageDetails(context, index, stage);
                             }
                           }
                         },
@@ -584,7 +631,6 @@ class _DetailState extends State<_Detail> {
                       ),
                     ],
                   ),
-                  if (isUploading) const LinearProgressIndicator(),
                   const SizedBox(height: 8),
                   if (photos.isEmpty)
                     const Padding(
@@ -645,62 +691,12 @@ class _DetailState extends State<_Detail> {
                 ],
               ),
             );
-              },
-            );
           },
         );
       },
     );
   }
 
-  Widget _buildPhotoThumbnail(BuildContext context, int index) {
-    final photoUrl = _log.photos[index];
-    return GestureDetector(
-      onTap: () => _showPhotoDialog(context, photoUrl),
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Colors.grey[300]!),
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(8),
-          child: Stack(
-            children: [
-              Image.network(
-                photoUrl,
-                width: double.infinity,
-                height: double.infinity,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => Container(
-                  color: Colors.grey[200],
-                  child: const Icon(Icons.broken_image, color: Colors.grey),
-                ),
-              ),
-              Positioned(
-                top: 4,
-                right: 4,
-                child: GestureDetector(
-                  onTap: () => _removePhoto(context, photoUrl),
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: const BoxDecoration(
-                      color: Colors.red,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.close,
-                      color: Colors.white,
-                      size: 16,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 
   Color _getStatusColor(FermentationStatus status) {
     switch (status) {
@@ -717,60 +713,6 @@ class _DetailState extends State<_Detail> {
     return '${dateTime.day}/${dateTime.month}/${dateTime.year} ${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
   }
 
-  Future<void> _addPhoto(BuildContext context) async {
-    try {
-      final picker = ImagePicker();
-      final image = await picker.pickImage(source: ImageSource.camera, imageQuality: 75, maxWidth: 1280);
-      if (image != null) {
-        final repo = context.read<FermentationRepo>();
-        final uid = context.read<AuthProvider>().currentUser?.uid ?? '';
-        await repo.addPhotosToFermentationLog(_log.id, [File(image.path)], uid);
-        
-        // Refresh the log
-        final updatedLog = await repo.getFermentationLog(_log.id);
-        if (updatedLog != null) {
-          setState(() => _log = updatedLog);
-        }
-        
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Photo added successfully!')),
-          );
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error adding photo: $e')),
-        );
-      }
-    }
-  }
-
-  Future<void> _removePhoto(BuildContext context, String photoUrl) async {
-    try {
-      final repo = context.read<FermentationRepo>();
-      await repo.removePhotoFromFermentationLog(_log.id, photoUrl);
-      
-      // Refresh the log
-      final updatedLog = await repo.getFermentationLog(_log.id);
-      if (updatedLog != null) {
-        setState(() => _log = updatedLog);
-      }
-      
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Photo removed successfully!')),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error removing photo: $e')),
-        );
-      }
-    }
-  }
 
   void _showPhotoDialog(BuildContext context, String photoUrl) {
     showDialog(
@@ -788,15 +730,10 @@ class _DetailState extends State<_Detail> {
             children: [
               AppBar(
                 title: const Text('Photo'),
-                actions: [
-                  IconButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      _removePhoto(context, photoUrl);
-                    },
-                    icon: const Icon(Icons.delete),
-                  ),
-                ],
+                leading: IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () => Navigator.pop(context),
+                ),
               ),
               Flexible(
                 child: SingleChildScrollView(
@@ -819,22 +756,6 @@ class _DetailState extends State<_Detail> {
     );
   }
 
-  Future<void> _saveNotes(BuildContext context) async {
-    try {
-      await context.read<FermentationRepo>().updateFermentationNotes(_log.id, _notes.text.trim());
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Notes saved successfully!')),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error saving notes: $e')),
-        );
-      }
-    }
-  }
 
   Future<void> _markStageCompleted(BuildContext context, int stageIndex) async {
     try {
@@ -842,7 +763,7 @@ class _DetailState extends State<_Detail> {
         logId: _log.id,
         completedStageIndex: stageIndex,
       );
-      
+
       // Refresh the log
       final repo = context.read<FermentationRepo>();
       final updatedLog = await repo.getFermentationLog(_log.id);
@@ -861,6 +782,153 @@ class _DetailState extends State<_Detail> {
           SnackBar(content: Text('Error marking stage: $e')),
         );
       }
+    }
+  }
+
+  Future<void> _addStagePhoto(BuildContext context, int stageIndex, FermentationStage stage) async {
+    try {
+      final uid = context.read<AuthProvider>().currentUser?.uid;
+      if (uid == null || uid.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Please sign in to add photos')),
+          );
+        }
+        return;
+      }
+
+      final picker = ImagePicker();
+      final picked = await picker.pickImage(
+        source: ImageSource.camera,
+        imageQuality: 75,
+        maxWidth: 1280,
+      );
+      
+      if (picked == null) return;
+
+      final service = StageManagementService();
+      final storage = context.read<StorageService>();
+
+      // Show loading indicator
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Row(
+              children: [
+                SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+                SizedBox(width: 12),
+                Text('Uploading photo...'),
+              ],
+            ),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+
+      // Ensure stage completion exists
+      final completion = await service.ensureStageCompletion(
+        fermentationLogId: _log.id,
+        stageIndex: stageIndex,
+        stage: stage,
+        userId: uid,
+      );
+
+      // Upload photo
+      final url = await storage.uploadFile(
+        file: File(picked.path),
+        userId: uid,
+        folder: 'fermentation_stage',
+      );
+
+      // Add photo to stage
+      await service.addPhotosToStage(stageId: completion.id, photoUrls: [url]);
+
+      // Refresh UI
+      if (mounted) {
+        setState(() {
+          _refreshKey++; // Force FutureBuilder to refresh
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Photo added successfully!')),
+        );
+      }
+    } catch (e, stackTrace) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error adding photo: ${e.toString()}'),
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+      // Log the error for debugging
+      print('Error adding stage photo: $e');
+      print('Stack trace: $stackTrace');
+    }
+  }
+
+  void _saveStageNotesDebounced(BuildContext context, int stageIndex, String notes) {
+    // Cancel existing timer for this stage
+    _notesDebounceTimers[stageIndex]?.cancel();
+
+    // Create new timer
+    _notesDebounceTimers[stageIndex] = Timer(const Duration(seconds: 2), () async {
+      await _saveStageNotes(context, stageIndex, notes);
+      _notesDebounceTimers.remove(stageIndex);
+    });
+  }
+
+  Future<void> _saveStageNotes(BuildContext context, int stageIndex, String notes) async {
+    try {
+      final uid = context.read<AuthProvider>().currentUser?.uid;
+      if (uid == null || uid.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Please sign in to save notes')),
+          );
+        }
+        return;
+      }
+
+      final service = StageManagementService();
+      final stage = _log.stages[stageIndex];
+
+      // Ensure stage completion exists
+      final completion = await service.ensureStageCompletion(
+        fermentationLogId: _log.id,
+        stageIndex: stageIndex,
+        stage: stage,
+        userId: uid,
+      );
+
+      // Update notes
+      await service.updateStageNotes(
+        stageId: completion.id,
+        notes: notes.trim().isEmpty ? null : notes.trim(),
+      );
+
+      // Refresh UI
+      if (mounted) {
+        setState(() {
+          _refreshKey++; // Force FutureBuilder to refresh
+        });
+      }
+    } catch (e, stackTrace) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error saving notes: ${e.toString()}'),
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+      // Log the error for debugging
+      print('Error saving stage notes: $e');
+      print('Stack trace: $stackTrace');
     }
   }
 

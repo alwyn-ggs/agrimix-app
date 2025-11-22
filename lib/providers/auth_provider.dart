@@ -152,7 +152,25 @@ class AuthProvider extends ChangeNotifier with ErrorHandlerMixin {
 
     try {
       AppLogger.debug('AuthProvider: Starting Google sign-in...');
-      final googleUser = await GoogleSignIn().signIn();
+      
+      // Create GoogleSignIn instance
+      final googleSignIn = GoogleSignIn();
+      
+      // Sign out from any previously cached Google account to allow account selection
+      // This ensures users can choose a different account each time
+      try {
+        final currentGoogleUser = await googleSignIn.signInSilently();
+        if (currentGoogleUser != null) {
+          AppLogger.debug('AuthProvider: Found cached Google account, signing out to allow account selection');
+          await googleSignIn.signOut();
+        }
+      } catch (e) {
+        // Ignore errors from signInSilently - it's okay if there's no cached account
+        AppLogger.debug('AuthProvider: No cached Google account found (this is normal)');
+      }
+      
+      // Now sign in - this will show account picker
+      final googleUser = await googleSignIn.signIn();
       if (googleUser == null) {
         AppLogger.debug('AuthProvider: Google sign-in cancelled by user');
         loading = false;
@@ -166,11 +184,16 @@ class AuthProvider extends ChangeNotifier with ErrorHandlerMixin {
         idToken: googleAuth.idToken,
       );
 
-      await FirebaseAuth.instance.signInWithCredential(credential);
-
-      final uid = auth.currentUser?.uid;
+      final userCredential = await FirebaseAuth.instance.signInWithCredential(credential);
+      
+      // Set current user immediately after sign-in
+      _currentUser = userCredential.user;
+      
+      final uid = _currentUser?.uid;
       if (uid != null) {
         AppLogger.debug('AuthProvider: Google sign-in success, uid: $uid');
+        // Small delay to ensure Firebase Auth state is fully updated
+        await Future.delayed(const Duration(milliseconds: 200));
         // Load or create user document then complete login
         await _loadUserDataDirectly(uid);
         _handleFCMTokenSafely(uid);
@@ -241,18 +264,39 @@ class AuthProvider extends ChangeNotifier with ErrorHandlerMixin {
       // Create user document with timeout
       await usersRepo.createUser(newUser).timeout(const Duration(seconds: 8));
       
-      // Small delay for Firestore consistency
-      await Future.delayed(const Duration(milliseconds: 300));
+      // Retry logic for Firestore consistency - sometimes it takes a moment to propagate
+      AppLogger.debug('AuthProvider: Verifying user creation...');
+      _currentAppUser = null;
       
-      // Verify creation
-      _currentAppUser = await usersRepo.getUser(uid).timeout(const Duration(seconds: 5));
-      
-      if (_currentAppUser != null) {
-        AppLogger.debug('AuthProvider: User created successfully! Role: ${_currentAppUser!.role}');
-        await _completeLoginProcess();
-      } else {
-        throw Exception('User creation verification failed');
+      // Try to get the user document with retries
+      for (int attempt = 1; attempt <= 3; attempt++) {
+        await Future.delayed(Duration(milliseconds: 300 * attempt)); // Increasing delay
+        
+        try {
+          _currentAppUser = await usersRepo.getUser(uid).timeout(const Duration(seconds: 5));
+          if (_currentAppUser != null) {
+            AppLogger.debug('AuthProvider: User created and verified successfully! Role: ${_currentAppUser!.role} (attempt $attempt)');
+            await _completeLoginProcess();
+            return; // Success, exit the function
+          }
+        } catch (e) {
+          AppLogger.debug('AuthProvider: Verification attempt $attempt failed: $e');
+          if (attempt == 3) {
+            // Last attempt failed, but document might still be created
+            // Try one more time with a longer delay
+            await Future.delayed(const Duration(milliseconds: 1000));
+            _currentAppUser = await usersRepo.getUser(uid).timeout(const Duration(seconds: 5));
+            if (_currentAppUser != null) {
+              AppLogger.debug('AuthProvider: User found on final retry!');
+              await _completeLoginProcess();
+              return;
+            }
+          }
+        }
       }
+      
+      // If we get here, verification failed after all retries
+      throw Exception('User creation verification failed after retries');
       
     } catch (e) {
       AppLogger.error('AuthProvider: User creation failed: $e');
@@ -337,6 +381,16 @@ class AuthProvider extends ChangeNotifier with ErrorHandlerMixin {
 
   Future<void> signOut() async {
     AppLogger.debug('AuthProvider: Signing out user');
+    
+    // Sign out from Google Sign-In to clear cached account
+    try {
+      await GoogleSignIn().signOut();
+      AppLogger.debug('AuthProvider: Signed out from Google Sign-In');
+    } catch (e) {
+      AppLogger.debug('AuthProvider: Error signing out from Google Sign-In: $e');
+    }
+    
+    // Sign out from Firebase Auth
     await auth.signOut();
     _currentUser = null;
     _currentAppUser = null;

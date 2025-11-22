@@ -33,7 +33,11 @@ class ErrorHandlerService {
         errorString.contains('user-not-found') ||
         errorString.contains('wrong-password') ||
         errorString.contains('email-already-in-use') ||
-        errorString.contains('email address is already in use')) {
+        errorString.contains('email address is already in use') ||
+        errorString.contains('sign_in_failed') ||
+        errorString.contains('apiexception') ||
+        errorString.contains('developer_error') ||
+        errorString.contains('10:')) {
       return AppErrorType.authentication;
     }
 
@@ -87,6 +91,13 @@ class ErrorHandlerService {
         return 'Please check your internet connection and try again.';
       
       case AppErrorType.authentication:
+        // Google Sign-In specific errors
+        if (errorString.contains('sign_in_failed') ||
+            errorString.contains('apiexception') ||
+            errorString.contains('developer_error') ||
+            errorString.contains('10:')) {
+          return 'Google Sign-In configuration error. Please contact support or check Firebase setup.';
+        }
         if (errorString.contains('invalid-credential') ||
             errorString.contains('wrong-password')) {
           return 'Invalid email or password. Please try again.';
