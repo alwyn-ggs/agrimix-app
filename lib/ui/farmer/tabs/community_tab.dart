@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../community/post_list_page.dart';
 import '../../community/saved_posts_page.dart';
 import '../../../providers/community_provider.dart';
+import '../../../providers/auth_provider.dart';
 import '../../../theme/theme.dart';
 import '../../../l10n/app_localizations.dart';
 
@@ -49,18 +50,25 @@ class _CommunityTabState extends State<CommunityTab> {
         backgroundColor: NatureColors.primaryGreen,
         foregroundColor: NatureColors.pureWhite,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.bookmark_outline),
-            onPressed: () {
-              // Navigate to saved posts page
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const SavedPostsPage(),
-                ),
+          Consumer<CommunityProvider>(
+            builder: (context, provider, child) {
+              final currentUser = context.read<AuthProvider>().currentUser;
+              final hasSaved = currentUser != null && provider.hasSavedPosts(currentUser.uid);
+              
+              return IconButton(
+                icon: Icon(hasSaved ? Icons.bookmark : Icons.bookmark_outline),
+                onPressed: () {
+                  // Navigate to saved posts page
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const SavedPostsPage(),
+                    ),
+                  );
+                },
+                tooltip: t.t('saved_posts'),
               );
             },
-            tooltip: t.t('saved_posts'),
           ),
           // Hide moderation entry point on user side
         ],

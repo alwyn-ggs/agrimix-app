@@ -121,7 +121,7 @@ class _FormulateRecipeFlowState extends State<FormulateRecipeFlow> {
                   decoration: const InputDecoration(
                     labelText: 'Recipe name*',
                     border: OutlineInputBorder(),
-                    hintText: 'e.g., FFJ for Tomatoes - Banana Blend',
+                    hintText: 'e.g., FFJ: Tomatoes grower recipe',
                   ),
                 ),
                 const SizedBox(height: 16),

@@ -142,10 +142,11 @@ class StageCompletion {
   ValidationResult validate() {
     final results = <ValidationResult>[];
 
-    // Validate ID (document ID, not UID - just check it's not empty)
+    // Validate ID
     results.add(ValidationUtils.validateRequiredString(id, 'ID'));
+    results.add(ValidationUtils.validateUid(id));
 
-    // Validate fermentation log ID (should be a valid UID)
+    // Validate fermentation log ID
     results.add(ValidationUtils.validateRequiredString(fermentationLogId, 'Fermentation Log ID'));
     results.add(ValidationUtils.validateUid(fermentationLogId));
 

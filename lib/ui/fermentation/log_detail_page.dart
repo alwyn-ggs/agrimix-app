@@ -2,14 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-import 'dart:async';
 import '../../repositories/fermentation_repo.dart';
 import '../../repositories/recipes_repo.dart';
 import '../../repositories/users_repo.dart';
 import '../../models/fermentation_log.dart';
+import '../../models/stage_completion.dart';
 import '../../models/recipe.dart';
 import '../../models/user.dart';
-import '../../models/stage_completion.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/notification_service.dart';
 import '../../services/stage_management_service.dart';
@@ -50,40 +49,11 @@ class _Detail extends StatefulWidget {
 
 class _DetailState extends State<_Detail> {
   late FermentationLog _log;
-  final Map<int, Timer?> _notesDebounceTimers = {};
-  final Map<int, TextEditingController> _stageNotesControllers = {};
-  int _refreshKey = 0; // Key to force FutureBuilder refresh
 
   @override
   void initState() {
     super.initState();
     _log = widget.log;
-  }
-
-  @override
-  void dispose() {
-    for (final timer in _notesDebounceTimers.values) {
-      timer?.cancel();
-    }
-    _notesDebounceTimers.clear();
-    for (final controller in _stageNotesControllers.values) {
-      controller.dispose();
-    }
-    _stageNotesControllers.clear();
-    super.dispose();
-  }
-
-  TextEditingController _getStageNotesController(int stageIndex, String initialValue) {
-    if (!_stageNotesControllers.containsKey(stageIndex)) {
-      _stageNotesControllers[stageIndex] = TextEditingController(text: initialValue);
-    } else {
-      // Update if value changed externally
-      final controller = _stageNotesControllers[stageIndex]!;
-      if (controller.text != initialValue) {
-        controller.text = initialValue;
-      }
-    }
-    return _stageNotesControllers[stageIndex]!;
   }
 
   @override
@@ -309,10 +279,12 @@ class _DetailState extends State<_Detail> {
     final scheduled = _log.startAt.add(Duration(days: stage.day));
     final isOverdue = !isCompleted && scheduled.isBefore(DateTime.now());
     
-    // Calculate current day of fermentation
+    // Check if today matches the scheduled day (same day, month, year)
     final now = DateTime.now();
-    final daysSinceStart = now.difference(_log.startAt).inDays;
-    final isTodayStage = daysSinceStart == stage.day;
+    final scheduledDate = DateTime(scheduled.year, scheduled.month, scheduled.day);
+    final todayDate = DateTime(now.year, now.month, now.day);
+    final isToday = scheduledDate.isAtSameMomentAs(todayDate) || scheduledDate.isBefore(todayDate);
+    final showUploadOptions = isToday && !scheduled.isAfter(DateTime.now());
     
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -360,22 +332,22 @@ class _DetailState extends State<_Detail> {
               child: InkWell(
                 onTap: () => _showStageDetails(context, index, stage),
                 child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            stage.label,
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              color: isCompleted ? Colors.green[800] : null,
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              stage.label,
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: isCompleted ? Colors.green[800] : null,
+                              ),
                             ),
                           ),
-                        ),
                         if (isOverdue && !isCompleted)
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -430,126 +402,118 @@ class _DetailState extends State<_Detail> {
                           ),
                         ),
                       ),
-                      // Show attach options only when current day matches stage day
-                      if (isTodayStage) ...[
-                        const SizedBox(height: 12),
-                        const Divider(),
-                        const SizedBox(height: 8),
-                        FutureBuilder<StageCompletion?>(
-                          key: ValueKey('stage_${index}_$_refreshKey'), // Force refresh on key change
-                          future: StageManagementService().getStageCompletionByIndex(
-                            fermentationLogId: _log.id,
-                            stageIndex: index,
-                          ),
-                          builder: (context, snapshot) {
-                            final completion = snapshot.data;
-                            final photos = completion?.photos ?? const <String>[];
-                            final initialNotes = completion?.notes ?? '';
-                            
-                            return StatefulBuilder(
-                              builder: (context, setLocalState) {
-                                final notesController = _getStageNotesController(index, initialNotes);
-                                
-                                return Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    // Photos section
-                                    Row(
-                                      children: [
-                                        const Icon(Icons.photo_library, size: 18, color: Colors.grey),
-                                        const SizedBox(width: 8),
-                                        const Text(
-                                          'Photos',
-                                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-                                        ),
-                                        const Spacer(),
-                                        TextButton.icon(
-                                          onPressed: () async {
-                                            await _addStagePhoto(context, index, stage);
-                                            setLocalState(() {}); // Refresh to show new photo
-                                          },
-                                          icon: const Icon(Icons.add_a_photo, size: 16),
-                                          label: const Text('Add'),
-                                          style: TextButton.styleFrom(
-                                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    if (photos.isNotEmpty) ...[
-                                      const SizedBox(height: 8),
-                                      SizedBox(
-                                        height: 60,
-                                        child: ListView.separated(
-                                          scrollDirection: Axis.horizontal,
-                                          itemCount: photos.length,
-                                          separatorBuilder: (_, __) => const SizedBox(width: 8),
-                                          itemBuilder: (context, i) {
-                                            return GestureDetector(
-                                              onTap: () => _showPhotoDialog(context, photos[i]),
-                                              child: ClipRRect(
-                                                borderRadius: BorderRadius.circular(4),
-                                                child: Image.network(
-                                                  photos[i],
-                                                  width: 60,
-                                                  height: 60,
-                                                  fit: BoxFit.cover,
-                                                  errorBuilder: (context, error, stackTrace) => Container(
-                                                    width: 60,
-                                                    height: 60,
-                                                    color: Colors.grey[200],
-                                                    child: const Icon(Icons.broken_image, size: 24),
-                                                  ),
-                                                ),
-                                              ),
-                                            );
-                                          },
-                                        ),
-                                      ),
-                                    ],
-                                    const SizedBox(height: 12),
-                                    // Notes section
-                                    const Row(
-                                      children: [
-                                        Icon(Icons.note, size: 18, color: Colors.grey),
-                                        SizedBox(width: 8),
-                                        Text(
-                                          'Notes',
-                                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 8),
-                                    TextField(
-                                      controller: notesController,
-                                      minLines: 2,
-                                      maxLines: 3,
-                                      decoration: const InputDecoration(
-                                        border: OutlineInputBorder(),
-                                        hintText: 'Add notes (optional)...',
-                                        contentPadding: EdgeInsets.all(8),
-                                      ),
-                                      onChanged: (value) {
-                                        // Save notes as user types (debounced)
-                                        _saveStageNotesDebounced(context, index, value);
-                                      },
-                                    ),
-                                  ],
-                                );
-                              },
-                            );
-                          },
+                    ],
+                    // Show upload options when it's the scheduled day
+                    if (showUploadOptions) ...[
+                      const SizedBox(height: 12),
+                      const Divider(),
+                      const SizedBox(height: 8),
+                      FutureBuilder<StageCompletion?>(
+                        future: StageManagementService().getStageCompletionByIndex(
+                          fermentationLogId: _log.id,
+                          stageIndex: index,
                         ),
-                      ],
+                        builder: (context, snapshot) {
+                          return _buildStageUploadSection(context, index, stage, snapshot.data);
+                        },
+                      ),
                     ],
-                    ],
-                  ),
+                  ],
                 ),
               ),
             ),
           ),
-        ],
+      )],
       ),
+    );
+  }
+
+  Widget _buildStageUploadSection(BuildContext context, int index, FermentationStage stage, StageCompletion? completion) {
+    final notesController = TextEditingController(text: completion?.notes ?? '');
+    final photos = completion?.photos ?? const <String>[];
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Photos section
+        Row(
+          children: [
+            const Text('Photos', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+            const Spacer(),
+            TextButton.icon(
+              onPressed: () => _addPhotoToStage(context, index, stage),
+              icon: const Icon(Icons.add_a_photo, size: 18),
+              label: const Text('Add Photo', style: TextStyle(fontSize: 12)),
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              ),
+            ),
+          ],
+        ),
+        if (photos.isEmpty)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 8),
+            child: Text('No photos yet', style: TextStyle(color: Colors.grey, fontSize: 12)),
+          )
+        else
+          SizedBox(
+            height: 80,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: photos.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 8),
+              itemBuilder: (context, i) {
+                final url = photos[i];
+                return GestureDetector(
+                  onTap: () => _showPhotoDialog(context, url),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.network(
+                      url,
+                      width: 80,
+                      height: 80,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => Container(
+                        width: 80,
+                        height: 80,
+                        color: Colors.grey[200],
+                        child: const Icon(Icons.broken_image, color: Colors.grey),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        const SizedBox(height: 12),
+        // Notes section
+        const Text('Notes', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+        const SizedBox(height: 8),
+        TextField(
+          controller: notesController,
+          minLines: 2,
+          maxLines: 3,
+          decoration: const InputDecoration(
+            border: OutlineInputBorder(),
+            hintText: 'Add notes for this stage...',
+            contentPadding: EdgeInsets.all(12),
+            isDense: true,
+          ),
+          style: const TextStyle(fontSize: 13),
+        ),
+        const SizedBox(height: 8),
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: () => _saveStageNotes(context, index, stage, notesController.text.trim()),
+            icon: const Icon(Icons.save, size: 16),
+            label: const Text('Save Notes', style: TextStyle(fontSize: 12)),
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -730,10 +694,6 @@ class _DetailState extends State<_Detail> {
             children: [
               AppBar(
                 title: const Text('Photo'),
-                leading: IconButton(
-                  icon: const Icon(Icons.close),
-                  onPressed: () => Navigator.pop(context),
-                ),
               ),
               Flexible(
                 child: SingleChildScrollView(
@@ -763,7 +723,7 @@ class _DetailState extends State<_Detail> {
         logId: _log.id,
         completedStageIndex: stageIndex,
       );
-
+      
       // Refresh the log
       final repo = context.read<FermentationRepo>();
       final updatedLog = await repo.getFermentationLog(_log.id);
@@ -785,17 +745,19 @@ class _DetailState extends State<_Detail> {
     }
   }
 
-  Future<void> _addStagePhoto(BuildContext context, int stageIndex, FermentationStage stage) async {
+  Future<void> _addPhotoToStage(BuildContext context, int index, FermentationStage stage) async {
     try {
-      final uid = context.read<AuthProvider>().currentUser?.uid;
-      if (uid == null || uid.isEmpty) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Please sign in to add photos')),
-          );
-        }
-        return;
-      }
+      final service = StageManagementService();
+      final storage = context.read<StorageService>();
+      final uid = context.read<AuthProvider>().currentUser?.uid ?? '';
+
+      // Ensure stage completion exists
+      final completion = await service.ensureStageCompletion(
+        fermentationLogId: _log.id,
+        stageIndex: index,
+        stage: stage,
+        userId: uid,
+      );
 
       final picker = ImagePicker();
       final picked = await picker.pickImage(
@@ -804,131 +766,77 @@ class _DetailState extends State<_Detail> {
         maxWidth: 1280,
       );
       
-      if (picked == null) return;
+      if (picked != null) {
+        // Show loading
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Uploading photo...')),
+          );
+        }
 
-      final service = StageManagementService();
-      final storage = context.read<StorageService>();
-
-      // Show loading indicator
+        final url = await storage.uploadFile(
+          file: File(picked.path),
+          userId: uid,
+          folder: 'fermentation_stage',
+        );
+        
+        await service.addPhotosToStage(stageId: completion.id, photoUrls: [url]);
+        
+        // Refresh the log to update UI
+        final repo = context.read<FermentationRepo>();
+        final updatedLog = await repo.getFermentationLog(_log.id);
+        if (updatedLog != null) {
+          setState(() => _log = updatedLog);
+        }
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Photo added successfully!')),
+          );
+        }
+      }
+    } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Row(
-              children: [
-                SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
-                SizedBox(width: 12),
-                Text('Uploading photo...'),
-              ],
-            ),
-            duration: Duration(seconds: 2),
-          ),
+          SnackBar(content: Text('Error adding photo: $e')),
         );
       }
-
-      // Ensure stage completion exists
-      final completion = await service.ensureStageCompletion(
-        fermentationLogId: _log.id,
-        stageIndex: stageIndex,
-        stage: stage,
-        userId: uid,
-      );
-
-      // Upload photo
-      final url = await storage.uploadFile(
-        file: File(picked.path),
-        userId: uid,
-        folder: 'fermentation_stage',
-      );
-
-      // Add photo to stage
-      await service.addPhotosToStage(stageId: completion.id, photoUrls: [url]);
-
-      // Refresh UI
-      if (mounted) {
-        setState(() {
-          _refreshKey++; // Force FutureBuilder to refresh
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Photo added successfully!')),
-        );
-      }
-    } catch (e, stackTrace) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error adding photo: ${e.toString()}'),
-            duration: const Duration(seconds: 4),
-          ),
-        );
-      }
-      // Log the error for debugging
-      print('Error adding stage photo: $e');
-      print('Stack trace: $stackTrace');
     }
   }
 
-  void _saveStageNotesDebounced(BuildContext context, int stageIndex, String notes) {
-    // Cancel existing timer for this stage
-    _notesDebounceTimers[stageIndex]?.cancel();
-
-    // Create new timer
-    _notesDebounceTimers[stageIndex] = Timer(const Duration(seconds: 2), () async {
-      await _saveStageNotes(context, stageIndex, notes);
-      _notesDebounceTimers.remove(stageIndex);
-    });
-  }
-
-  Future<void> _saveStageNotes(BuildContext context, int stageIndex, String notes) async {
+  Future<void> _saveStageNotes(BuildContext context, int index, FermentationStage stage, String notes) async {
     try {
-      final uid = context.read<AuthProvider>().currentUser?.uid;
-      if (uid == null || uid.isEmpty) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Please sign in to save notes')),
-          );
-        }
-        return;
-      }
-
       final service = StageManagementService();
-      final stage = _log.stages[stageIndex];
+      final uid = context.read<AuthProvider>().currentUser?.uid ?? '';
 
       // Ensure stage completion exists
       final completion = await service.ensureStageCompletion(
         fermentationLogId: _log.id,
-        stageIndex: stageIndex,
+        stageIndex: index,
         stage: stage,
         userId: uid,
       );
 
-      // Update notes
-      await service.updateStageNotes(
-        stageId: completion.id,
-        notes: notes.trim().isEmpty ? null : notes.trim(),
-      );
-
-      // Refresh UI
-      if (mounted) {
-        setState(() {
-          _refreshKey++; // Force FutureBuilder to refresh
-        });
+      await service.updateStageNotes(stageId: completion.id, notes: notes);
+      
+      // Refresh the log to update UI
+      final repo = context.read<FermentationRepo>();
+      final updatedLog = await repo.getFermentationLog(_log.id);
+      if (updatedLog != null) {
+        setState(() => _log = updatedLog);
       }
-    } catch (e, stackTrace) {
+      
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error saving notes: ${e.toString()}'),
-            duration: const Duration(seconds: 4),
-          ),
+          const SnackBar(content: Text('Notes saved successfully!')),
         );
       }
-      // Log the error for debugging
-      print('Error saving stage notes: $e');
-      print('Stack trace: $stackTrace');
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error saving notes: $e')),
+        );
+      }
     }
   }
 

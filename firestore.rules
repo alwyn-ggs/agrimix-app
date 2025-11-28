@@ -27,6 +27,15 @@ service cloud.firestore {
       return value in ['FPJ','FFJ'];
     }
 
+    // Helper function to check if user owns a fermentation log
+    function isFermentationLogOwner(fermentationLogId) {
+      return isSignedIn() && (
+        isAdmin() ||
+        (exists(/databases/$(database)/documents/fermentation_logs/$(fermentationLogId)) &&
+         get(/databases/$(database)/documents/fermentation_logs/$(fermentationLogId)).data.ownerUid == request.auth.uid)
+      );
+    }
+
     // Fallback: require auth for all reads/writes unless explicitly allowed below
     match /{document=**} {
       allow read, write: if false;
@@ -212,6 +221,70 @@ service cloud.firestore {
       // Very permissive delete rule for debugging
       allow delete: if true;
       allow update: if isSignedIn() && (resource.data.ownerUid == request.auth.uid || isAdmin());
+    }
+
+    // Stage completions: owner of the fermentation log can CRUD
+    match /stage_completions/{stageId} {
+      // Read: if user owns the associated fermentation log
+      allow read: if isSignedIn() && (
+        isAdmin() ||
+        (resource.data.fermentationLogId is string &&
+         isFermentationLogOwner(resource.data.fermentationLogId))
+      );
+
+      // Create: if user owns the fermentation log being referenced
+      allow create: if isSignedIn() && (
+        isAdmin() ||
+        (request.resource.data.fermentationLogId is string &&
+         isFermentationLogOwner(request.resource.data.fermentationLogId))
+      );
+
+      // Update: if user owns the associated fermentation log
+      allow update: if isSignedIn() && (
+        isAdmin() ||
+        (resource.data.fermentationLogId is string &&
+         isFermentationLogOwner(resource.data.fermentationLogId) &&
+         request.resource.data.fermentationLogId == resource.data.fermentationLogId)
+      );
+
+      // Delete: if user owns the associated fermentation log
+      allow delete: if isSignedIn() && (
+        isAdmin() ||
+        (resource.data.fermentationLogId is string &&
+         isFermentationLogOwner(resource.data.fermentationLogId))
+      );
+    }
+
+    // Timeline events: owner of the fermentation log can CRUD
+    match /timeline_events/{eventId} {
+      // Read: if user owns the associated fermentation log
+      allow read: if isSignedIn() && (
+        isAdmin() ||
+        (resource.data.fermentationLogId is string &&
+         isFermentationLogOwner(resource.data.fermentationLogId))
+      );
+
+      // Create: if user owns the fermentation log being referenced
+      allow create: if isSignedIn() && (
+        isAdmin() ||
+        (request.resource.data.fermentationLogId is string &&
+         isFermentationLogOwner(request.resource.data.fermentationLogId))
+      );
+
+      // Update: if user owns the associated fermentation log
+      allow update: if isSignedIn() && (
+        isAdmin() ||
+        (resource.data.fermentationLogId is string &&
+         isFermentationLogOwner(resource.data.fermentationLogId) &&
+         request.resource.data.fermentationLogId == resource.data.fermentationLogId)
+      );
+
+      // Delete: if user owns the associated fermentation log
+      allow delete: if isSignedIn() && (
+        isAdmin() ||
+        (resource.data.fermentationLogId is string &&
+         isFermentationLogOwner(resource.data.fermentationLogId))
+      );
     }
 
     // Audit logs: admins only

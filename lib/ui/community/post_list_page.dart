@@ -587,8 +587,22 @@ class PostCard extends StatelessWidget {
                           if (currentUser != null) {
                             if (isSaved) {
                               provider.unsavePost(post.id, currentUser.uid);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Post unsaved'),
+                                  duration: Duration(seconds: 2),
+                                  backgroundColor: NatureColors.mediumGray,
+                                ),
+                              );
                             } else {
                               provider.savePost(post.id, currentUser.uid);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Post saved'),
+                                  duration: Duration(seconds: 2),
+                                  backgroundColor: NatureColors.primaryGreen,
+                                ),
+                              );
                             }
                           }
                         },

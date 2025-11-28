@@ -4,6 +4,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../router.dart';
 import '../../theme/theme.dart';
 
+/// Increment this value whenever onboarding content changes and should be reshown.
+const int onboardingExperienceVersion = 1;
+
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
 
@@ -49,6 +52,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   Future<void> _finish() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('seen_onboarding', true);
+    await prefs.setInt('onboarding_version', onboardingExperienceVersion);
     if (!mounted) return;
     Navigator.of(context).pushReplacementNamed(Routes.login);
   }

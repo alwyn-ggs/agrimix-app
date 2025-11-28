@@ -117,18 +117,17 @@ class CommunityProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> loadSavedPosts() async {
+  Future<void> loadSavedPosts(String userId) async {
     if (isLoadingSavedPosts) return;
     
     isLoadingSavedPosts = true;
     notifyListeners();
     
     try {
-      // This would need the current user ID - you'd get this from AuthProvider
-      // For now, we'll use a placeholder
-      savedPosts = await _postsRepo.getUserSavedPosts('current_user_id');
+      savedPosts = await _postsRepo.getUserSavedPosts(userId);
     } catch (e) {
       debugPrint('Error loading saved posts: $e');
+      savedPosts = [];
     } finally {
       isLoadingSavedPosts = false;
       notifyListeners();
@@ -238,17 +237,25 @@ class CommunityProvider extends ChangeNotifier {
     try {
       // Update local state first for immediate UI feedback
       final index = posts.indexWhere((p) => p.id == postId);
+      Post? savedPost;
       if (index != -1) {
         final newSavedBy = List<String>.from(posts[index].savedBy);
         if (!newSavedBy.contains(userId)) {
           newSavedBy.add(userId);
-          posts[index] = posts[index].copyWith(savedBy: newSavedBy);
+          savedPost = posts[index].copyWith(savedBy: newSavedBy);
+          posts[index] = savedPost;
           notifyListeners();
         }
       }
       
       // Then update in database
       await _postsRepo.savePost(postId, userId);
+      
+      // Update savedPosts list if the post is not already in it
+      if (savedPost != null && !savedPosts.any((p) => p.id == postId)) {
+        savedPosts.insert(0, savedPost);
+        notifyListeners();
+      }
     } catch (e) {
       debugPrint('Error saving post: $e');
       // Revert local changes if database update fails
@@ -259,6 +266,9 @@ class CommunityProvider extends ChangeNotifier {
         posts[index] = posts[index].copyWith(savedBy: newSavedBy);
         notifyListeners();
       }
+      // Remove from savedPosts if it was added
+      savedPosts.removeWhere((p) => p.id == postId);
+      notifyListeners();
     }
   }
 
@@ -266,6 +276,7 @@ class CommunityProvider extends ChangeNotifier {
     try {
       // Update local state first for immediate UI feedback
       final index = posts.indexWhere((p) => p.id == postId);
+      bool wasInSavedPosts = false;
       if (index != -1) {
         final newSavedBy = List<String>.from(posts[index].savedBy);
         if (newSavedBy.contains(userId)) {
@@ -277,6 +288,13 @@ class CommunityProvider extends ChangeNotifier {
       
       // Then update in database
       await _postsRepo.unsavePost(postId, userId);
+      
+      // Remove from savedPosts list
+      wasInSavedPosts = savedPosts.any((p) => p.id == postId);
+      if (wasInSavedPosts) {
+        savedPosts.removeWhere((p) => p.id == postId);
+        notifyListeners();
+      }
     } catch (e) {
       debugPrint('Error unsaving post: $e');
       // Revert local changes if database update fails
@@ -455,6 +473,10 @@ class CommunityProvider extends ChangeNotifier {
       thumbsDownBy: [],
     ));
     return post.savedBy.contains(userId);
+  }
+
+  bool hasSavedPosts(String userId) {
+    return posts.any((post) => post.savedBy.contains(userId));
   }
 
   /// Get the current user's reaction to a post: 1 (up), -1 (down), 0 (none)

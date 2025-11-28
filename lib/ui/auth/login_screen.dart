@@ -19,6 +19,37 @@ class _LoginScreenState extends State<LoginScreen> {
   final _password = TextEditingController();
   bool _obscurePassword = true;
   bool _rememberMe = false;
+  bool _hasNavigated = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Listen for successful login
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final auth = context.read<AuthProvider>();
+      auth.addListener(_handleAuthChange);
+    });
+  }
+
+  @override
+  void dispose() {
+    context.read<AuthProvider>().removeListener(_handleAuthChange);
+    _email.dispose();
+    _password.dispose();
+    super.dispose();
+  }
+
+  void _handleAuthChange() {
+    if (!mounted || _hasNavigated) return;
+
+    final auth = context.read<AuthProvider>();
+    if (!auth.loading && auth.isLoggedIn && auth.currentAppUser != null) {
+      _hasNavigated = true;
+      final role = auth.userRole;
+      final targetRoute = role == 'admin' ? Routes.adminDashboard : Routes.farmerDashboard;
+      Navigator.of(context).pushNamedAndRemoveUntil(targetRoute, (route) => false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {

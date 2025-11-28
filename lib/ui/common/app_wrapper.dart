@@ -1,23 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../providers/auth_provider.dart';
 import '../../theme/theme.dart';
-import 'splash_screen.dart';
-import 'widgets/app_error.dart';
-import 'widgets/error_boundary.dart';
+import '../../router.dart';
+import '../../utils/logger.dart';
 import '../auth/login_screen.dart';
 import '../admin/dashboard.dart' as admin;
 import '../farmer/dashboard.dart' as farmer;
-import 'package:shared_preferences/shared_preferences.dart';
-import '../../router.dart';
-import '../../utils/logger.dart';
+import 'onboarding_screen.dart';
+import 'splash_screen.dart';
+import 'widgets/app_error.dart';
+import 'widgets/error_boundary.dart';
 
 class AppWrapper extends StatelessWidget {
   const AppWrapper({super.key});
 
   Future<bool> _hasSeenOnboarding() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool('seen_onboarding') == true;
+    final hasSeen = prefs.getBool('seen_onboarding') == true;
+    final storedVersion = prefs.getInt('onboarding_version') ?? 0;
+    if (!hasSeen) return false;
+    return storedVersion >= onboardingExperienceVersion;
   }
 
   @override
@@ -51,11 +55,7 @@ class AppWrapper extends StatelessWidget {
                 if (!snapshot.hasData) return const SplashScreen();
                 final seen = snapshot.data == true;
                 if (seen) return const LoginScreen();
-                // Navigate to onboarding and show splash meanwhile
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  Navigator.of(context).pushReplacementNamed(Routes.onboarding);
-                });
-                return const SplashScreen();
+                return const OnboardingScreen();
               },
             );
           }

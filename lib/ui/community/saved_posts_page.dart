@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/community_provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../theme/theme.dart';
 import '../../models/post.dart';
 import 'post_detail_page.dart';
@@ -17,7 +18,10 @@ class _SavedPostsPageState extends State<SavedPostsPage> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<CommunityProvider>().loadSavedPosts();
+      final currentUser = context.read<AuthProvider>().currentUser;
+      if (currentUser != null) {
+        context.read<CommunityProvider>().loadSavedPosts(currentUser.uid);
+      }
     });
   }
 
@@ -39,7 +43,13 @@ class _SavedPostsPageState extends State<SavedPostsPage> {
           }
 
           return RefreshIndicator(
-            onRefresh: () => provider.loadSavedPosts(),
+            onRefresh: () {
+              final currentUser = context.read<AuthProvider>().currentUser;
+              if (currentUser != null) {
+                return provider.loadSavedPosts(currentUser.uid);
+              }
+              return Future.value();
+            },
             child: ListView.builder(
               padding: const EdgeInsets.all(16),
               itemCount: provider.savedPosts.length,
@@ -109,7 +119,10 @@ class _SavedPostsPageState extends State<SavedPostsPage> {
                   CircleAvatar(
                     backgroundColor: NatureColors.primaryGreen,
                     child: Text(
-                      post.ownerUid.isNotEmpty ? post.ownerUid[0].toUpperCase() : 'U',
+                      (post.ownerName?.isNotEmpty == true
+                          ? post.ownerName![0]
+                          : (post.ownerUid.isNotEmpty ? post.ownerUid[0] : 'U'))
+                          .toUpperCase(),
                       style: const TextStyle(
                         color: NatureColors.pureWhite,
                         fontWeight: FontWeight.bold,
@@ -122,7 +135,7 @@ class _SavedPostsPageState extends State<SavedPostsPage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          post.ownerUid,
+                          post.ownerName?.isNotEmpty == true ? post.ownerName! : post.ownerUid,
                           style: const TextStyle(
                             fontWeight: FontWeight.w600,
                             color: NatureColors.darkGray,
