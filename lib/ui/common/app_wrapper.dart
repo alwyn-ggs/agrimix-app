@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../providers/auth_provider.dart';
 import '../../theme/theme.dart';
-import '../../router.dart';
 import '../../utils/logger.dart';
 import '../auth/login_screen.dart';
 import '../admin/dashboard.dart' as admin;
