@@ -20,7 +20,7 @@ class RecipesTab extends StatelessWidget {
     final t = AppLocalizations.of(context);
     
     return Scaffold(
-      backgroundColor: NatureColors.natureBackground,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(t.t('recipes'), style: const TextStyle(color: Colors.white)),
         backgroundColor: NatureColors.primaryGreen,

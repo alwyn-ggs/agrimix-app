@@ -883,7 +883,7 @@ class _IngredientsPageState extends State<IngredientsPage> {
         ] else if (category == 'FPJ') ...[
           _buildNutrientRow("Nitrogen (N)", nutrientProfile['nitrogen']?.toString() ?? '0'),
           _buildNutrientRow("Potassium (K)", nutrientProfile['potassium']?.toString() ?? '0'),
-          _buildNutrientRow("Magnesium (Mg)", nutrientProfile['magnesium']?.toString() ?? '0'),
+          _buildNutrientRow("Phosphorus (P)", nutrientProfile['phosphorus']?.toString() ?? '0'),
         ],
         // Removed Plant Benefits section per request
       ],

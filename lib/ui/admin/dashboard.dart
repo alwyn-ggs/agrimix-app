@@ -25,38 +25,40 @@ class _DashboardState extends State<Dashboard> {
   int _selectedIndex = 0;
   bool _isSidebarExpanded = false;
 
-  final List<AdminMenuItem> _menuItems = [
-    AdminMenuItem(
-      icon: Icons.people_outline,
-      title: 'Users',
-      page: const UsersPage(),
-    ),
-    AdminMenuItem(
-      icon: Icons.restaurant_menu_outlined,
-      title: 'Recipes',
-      page: const RecipesPage(),
-    ),
-    AdminMenuItem(
-      icon: Icons.inventory_outlined,
-      title: 'Ingredients',
-      page: const IngredientsPage(),
-    ),
-    AdminMenuItem(
-      icon: Icons.groups_outlined,
-      title: 'Community',
-      page: const CommunityModerationPage(initialTabIndex: 0),
-    ),
-    AdminMenuItem(
-      icon: Icons.bubble_chart_outlined,
-      title: 'Fermentation',
-      page: const FermentationMonitorPage(),
-    ),
-    AdminMenuItem(
-      icon: Icons.campaign_outlined,
-      title: 'Announcements',
-      page: const AnnouncementsPage(),
-    ),
-  ];
+  List<AdminMenuItem> _getMenuItems(BuildContext context) {
+    return [
+      AdminMenuItem(
+        icon: Icons.people_outline,
+        titleKey: 'users',
+        page: const UsersPage(),
+      ),
+      AdminMenuItem(
+        icon: Icons.restaurant_menu_outlined,
+        titleKey: 'recipes',
+        page: const RecipesPage(),
+      ),
+      AdminMenuItem(
+        icon: Icons.inventory_outlined,
+        titleKey: 'ingredients',
+        page: const IngredientsPage(),
+      ),
+      AdminMenuItem(
+        icon: Icons.groups_outlined,
+        titleKey: 'community',
+        page: const CommunityModerationPage(initialTabIndex: 0),
+      ),
+      AdminMenuItem(
+        icon: Icons.bubble_chart_outlined,
+        titleKey: 'ferment',
+        page: const FermentationMonitorPage(),
+      ),
+      AdminMenuItem(
+        icon: Icons.campaign_outlined,
+        titleKey: 'announcements',
+        page: const AnnouncementsPage(),
+      ),
+    ];
+  }
 
  @override
   Widget build(BuildContext context) {
@@ -69,7 +71,7 @@ class _DashboardState extends State<Dashboard> {
         }
       },
       child: Scaffold(
-      backgroundColor: NatureColors.natureBackground,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Stack(
           children: [
@@ -96,7 +98,7 @@ class _DashboardState extends State<Dashboard> {
                           ],
                         ),
                       ),
-                      child: _menuItems[_selectedIndex].page,
+                      child: _getMenuItems(context)[_selectedIndex].page,
                     ),
                   ),
                 ],
@@ -162,20 +164,20 @@ class _DashboardState extends State<Dashboard> {
           // Logo/Header
           Container(
             padding: const EdgeInsets.all(12), // Reduced from 16 for mobile
-            child: const Row(
+            child: Row(
               children: [
-                Icon(
+                const Icon(
                   Icons.admin_panel_settings,
                   color: NatureColors.pureWhite,
-                  size: 24, // Reduced from 28 for mobile
+                  size: 24,
                 ),
-                SizedBox(width: 8),
+                const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Admin Panel',
-                    style: TextStyle(
+                    AppLocalizations.of(context).t('admin_panel'),
+                    style: const TextStyle(
                       color: NatureColors.pureWhite,
-                      fontSize: 16, // Reduced from 18 for mobile
+                      fontSize: 16,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -188,9 +190,9 @@ class _DashboardState extends State<Dashboard> {
           Expanded(
             child: ListView.builder(
               padding: const EdgeInsets.symmetric(vertical: 8),
-              itemCount: _menuItems.length,
+              itemCount: _getMenuItems(context).length,
               itemBuilder: (context, index) {
-                final item = _menuItems[index];
+                final item = _getMenuItems(context)[index];
                 final isSelected = _selectedIndex == index;
                 
                 return Container(
@@ -237,10 +239,10 @@ class _DashboardState extends State<Dashboard> {
                                   : NatureColors.pureWhite,
                               size: 20, // Reduced from 24 for mobile
                             ),
-                            const SizedBox(width: 12), // Reduced from 16 for mobile
+                            const SizedBox(width: 12),
                             Expanded(
                               child: Text(
-                                item.title,
+                                AppLocalizations.of(context).t(item.titleKey),
                                 style: TextStyle(
                                   color: isSelected 
                                       ? NatureColors.darkGreen 
@@ -302,9 +304,9 @@ class _DashboardState extends State<Dashboard> {
                               fontWeight: FontWeight.w600,
                             ),
                           ),
-                          const Text(
-                            'Administrator',
-                            style: TextStyle(
+                          Text(
+                            AppLocalizations.of(context).t('administrator'),
+                            style: const TextStyle(
                               color: NatureColors.offWhite,
                               fontSize: 12,
                             ),
@@ -356,14 +358,14 @@ class _DashboardState extends State<Dashboard> {
               color: NatureColors.pureWhite,
               size: 24, // Reduced from 28 for mobile
             ),
-            tooltip: _isSidebarExpanded ? 'Collapse Menu' : 'Expand Menu',
+            tooltip: _isSidebarExpanded ? AppLocalizations.of(context).t('collapse_menu') : AppLocalizations.of(context).t('expand_menu'),
             padding: const EdgeInsets.all(8), // Added padding for better touch target
           ),
           const SizedBox(width: 8),
           // Page Title
           Expanded(
             child: Text(
-              _menuItems[_selectedIndex].title,
+              AppLocalizations.of(context).t(_getMenuItems(context)[_selectedIndex].titleKey),
               style: const TextStyle(
                 fontSize: 18, // Reduced from 24 for mobile
                 fontWeight: FontWeight.bold,
@@ -590,18 +592,18 @@ class _DashboardState extends State<Dashboard> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.logout, color: Colors.red),
-            SizedBox(width: 8),
-            Text('Logout'),
+            const Icon(Icons.logout, color: Colors.red),
+            const SizedBox(width: 8),
+            Text(AppLocalizations.of(context).t('logout')),
           ],
         ),
-        content: const Text('Are you sure you want to logout?'),
+        content: Text(AppLocalizations.of(context).t('logout_confirm')),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: Text(AppLocalizations.of(context).t('cancel')),
           ),
           FilledButton(
             onPressed: () {
@@ -609,7 +611,7 @@ class _DashboardState extends State<Dashboard> {
               context.read<AuthProvider>().signOut();
             },
             style: FilledButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Logout'),
+            child: Text(AppLocalizations.of(context).t('logout')),
           ),
         ],
       ),
@@ -619,12 +621,12 @@ class _DashboardState extends State<Dashboard> {
 
 class AdminMenuItem {
   final IconData icon;
-  final String title;
+  final String titleKey;
   final Widget page;
 
   AdminMenuItem({
     required this.icon,
-    required this.title,
+    required this.titleKey,
     required this.page,
   });
 }

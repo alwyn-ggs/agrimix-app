@@ -40,13 +40,36 @@ class AuthProvider extends ChangeNotifier with ErrorHandlerMixin {
 
   Future<void> _initializeWithReadinessCheck() async {
     try {
-      AppLogger.debug('AuthProvider: Starting SIMPLIFIED initialization for fresh install...');
+      AppLogger.debug('AuthProvider: Starting initialization...');
+      
+      // Set loading to true while we check for persisted sessions
+      loading = true;
       
       // Load remember-me preference first
       await _loadRememberPreference();
       
-      // Set up auth state listener with simplified handling
-      AppLogger.debug('AuthProvider: Setting up SIMPLIFIED auth state listener...');
+      // Check if there's a persisted Firebase Auth session
+      final currentFirebaseUser = auth.currentUser;
+      if (currentFirebaseUser != null) {
+        AppLogger.debug('AuthProvider: Found persisted session for user: ${currentFirebaseUser.uid}');
+        _currentUser = currentFirebaseUser;
+        
+        // Load user data immediately for persisted session
+        try {
+          await _loadUserDataDirectly(currentFirebaseUser.uid);
+        } catch (e) {
+          AppLogger.error('AuthProvider: Failed to load persisted user data: $e', e);
+          loading = false;
+          notifyListeners();
+        }
+      } else {
+        AppLogger.debug('AuthProvider: No persisted session found');
+        loading = false;
+        notifyListeners();
+      }
+      
+      // Set up auth state listener for future auth state changes
+      AppLogger.debug('AuthProvider: Setting up auth state listener...');
       auth.authStateChanges().listen(
         (User? user) {
           AppLogger.debug('AuthProvider: Auth state changed - user: ${user?.uid}');
@@ -60,7 +83,7 @@ class AuthProvider extends ChangeNotifier with ErrorHandlerMixin {
             notifyListeners();
           } else {
             // User is signed in - check if we need to load user data
-            if (_currentAppUser == null) {
+            if (_currentAppUser == null || _currentAppUser!.uid != user.uid) {
               AppLogger.debug('AuthProvider: User signed in but no app user data, loading...');
               _loadUserDataDirectly(user.uid).catchError((e) {
                 AppLogger.error('AuthProvider: Failed to load user data in auth state listener: $e', e);
@@ -78,7 +101,7 @@ class AuthProvider extends ChangeNotifier with ErrorHandlerMixin {
         },
       );
       
-      AppLogger.debug('AuthProvider: Simplified initialization completed');
+      AppLogger.debug('AuthProvider: Initialization completed');
       
     } catch (error) {
       AppLogger.error('AuthProvider: Failed to initialize: $error', error);

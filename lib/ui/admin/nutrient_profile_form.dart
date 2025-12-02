@@ -132,7 +132,7 @@ class _NutrientProfileFormState extends State<NutrientProfileForm> {
                 _buildSectionHeader('FPJ Nutrients', Icons.eco),
                 _buildNutrientRow('Nitrogen (N) (g/kg)', _nitrogenController, 'For leaf growth and green color'),
                 _buildNutrientRow('Potassium (K) (g/kg)', _potassiumController, 'For fruit development and disease resistance'),
-                _buildNutrientRow('Magnesium (Mg) (g/kg)', _magnesiumController, 'For chlorophyll production'),
+                _buildNutrientRow('Phosphorus (P) (g/kg)', _phosphorusController, 'For root development and flowering'),
               ],
               
               const SizedBox(height: 8),

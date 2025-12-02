@@ -38,7 +38,7 @@ class _RecipesPageState extends State<RecipesPage> with TickerProviderStateMixin
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: NatureColors.natureBackground,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Column(
         children: [
           // Search and Filter Bar

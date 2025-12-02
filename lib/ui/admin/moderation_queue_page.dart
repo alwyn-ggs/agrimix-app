@@ -30,7 +30,7 @@ class _ModerationQueuePageState extends State<ModerationQueuePage> with TickerPr
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: NatureColors.natureBackground,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text('Moderation Queue'),
         backgroundColor: NatureColors.primaryGreen,

@@ -34,7 +34,7 @@ class _DashboardState extends State<Dashboard> {
         }
       },
       child: Scaffold(
-      backgroundColor: NatureColors.natureBackground,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Column(
           children: [
@@ -248,68 +248,68 @@ class _DashboardState extends State<Dashboard> {
         labelBehavior: NavigationDestinationLabelBehavior.alwaysHide,
         destinations: [
           NavigationDestination(
-            icon: const Tooltip(
-              message: 'Home',
-              child: Icon(Icons.eco_outlined, color: NatureColors.mediumGray),
+            icon: Tooltip(
+              message: AppLocalizations.of(context).t('home'),
+              child: const Icon(Icons.eco_outlined, color: NatureColors.mediumGray),
             ),
-            selectedIcon: const Tooltip(
-              message: 'Home',
-              child: Icon(Icons.eco, color: NatureColors.pureWhite),
+            selectedIcon: Tooltip(
+              message: AppLocalizations.of(context).t('home'),
+              child: const Icon(Icons.eco, color: NatureColors.pureWhite),
             ),
             label: AppLocalizations.of(context).t('home'),
           ),
           NavigationDestination(
-            icon: const Tooltip(
-              message: 'Recipes',
-              child: Icon(Icons.menu_book_outlined, color: NatureColors.mediumGray),
+            icon: Tooltip(
+              message: AppLocalizations.of(context).t('recipes'),
+              child: const Icon(Icons.menu_book_outlined, color: NatureColors.mediumGray),
             ),
-            selectedIcon: const Tooltip(
-              message: 'Recipes',
-              child: Icon(Icons.menu_book, color: NatureColors.pureWhite),
+            selectedIcon: Tooltip(
+              message: AppLocalizations.of(context).t('recipes'),
+              child: const Icon(Icons.menu_book, color: NatureColors.pureWhite),
             ),
             label: AppLocalizations.of(context).t('recipes'),
           ),
           NavigationDestination(
-            icon: const Tooltip(
-              message: 'Ferment',
-              child: Icon(Icons.science_outlined, color: NatureColors.mediumGray),
+            icon: Tooltip(
+              message: AppLocalizations.of(context).t('ferment'),
+              child: const Icon(Icons.science_outlined, color: NatureColors.mediumGray),
             ),
-            selectedIcon: const Tooltip(
-              message: 'Ferment',
-              child: Icon(Icons.science, color: NatureColors.pureWhite),
+            selectedIcon: Tooltip(
+              message: AppLocalizations.of(context).t('ferment'),
+              child: const Icon(Icons.science, color: NatureColors.pureWhite),
             ),
             label: AppLocalizations.of(context).t('ferment'),
           ),
           NavigationDestination(
-            icon: const Tooltip(
-              message: 'Community',
-              child: Icon(Icons.forum_outlined, color: NatureColors.mediumGray),
+            icon: Tooltip(
+              message: AppLocalizations.of(context).t('community'),
+              child: const Icon(Icons.forum_outlined, color: NatureColors.mediumGray),
             ),
-            selectedIcon: const Tooltip(
-              message: 'Community',
-              child: Icon(Icons.forum, color: NatureColors.pureWhite),
+            selectedIcon: Tooltip(
+              message: AppLocalizations.of(context).t('community'),
+              child: const Icon(Icons.forum, color: NatureColors.pureWhite),
             ),
             label: AppLocalizations.of(context).t('community'),
           ),
           NavigationDestination(
-            icon: const Tooltip(
-              message: 'My Recipes',
-              child: Icon(Icons.library_books_outlined, color: NatureColors.mediumGray),
+            icon: Tooltip(
+              message: AppLocalizations.of(context).t('my_recipes'),
+              child: const Icon(Icons.library_books_outlined, color: NatureColors.mediumGray),
             ),
-            selectedIcon: const Tooltip(
-              message: 'My Recipes',
-              child: Icon(Icons.library_books, color: NatureColors.pureWhite),
+            selectedIcon: Tooltip(
+              message: AppLocalizations.of(context).t('my_recipes'),
+              child: const Icon(Icons.library_books, color: NatureColors.pureWhite),
             ),
             label: AppLocalizations.of(context).t('my_recipes'),
           ),
           NavigationDestination(
-            icon: const Tooltip(
-              message: 'Profile',
-              child: Icon(Icons.person_outline, color: NatureColors.mediumGray),
+            icon: Tooltip(
+              message: AppLocalizations.of(context).t('profile'),
+              child: const Icon(Icons.person_outline, color: NatureColors.mediumGray),
             ),
-            selectedIcon: const Tooltip(
-              message: 'Profile',
-              child: Icon(Icons.person, color: NatureColors.pureWhite),
+            selectedIcon: Tooltip(
+              message: AppLocalizations.of(context).t('profile'),
+              child: const Icon(Icons.person, color: NatureColors.pureWhite),
             ),
             label: AppLocalizations.of(context).t('profile'),
           ),

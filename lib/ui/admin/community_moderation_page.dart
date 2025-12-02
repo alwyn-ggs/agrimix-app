@@ -55,7 +55,7 @@ class _CommunityModerationPageState extends State<CommunityModerationPage> with 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: NatureColors.natureBackground,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: NatureColors.primaryGreen,
         foregroundColor: NatureColors.pureWhite,
