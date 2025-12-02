@@ -72,19 +72,19 @@ class AboutPage extends StatelessWidget {
             const _DeveloperCard(
               name: 'Alwyn Nabor',
               role: 'Full Stack Developer',
-              // imagePath: 'assets/images/developers/alwyn.jpg',
+              imagePath: 'assets/images/developers/alwyn.jpg',
             ),
             const SizedBox(height: 12),
             const _DeveloperCard(
               name: 'Randy Aguenza',
               role: 'Backend Developer, Researcher',
-              // imagePath: 'assets/images/developers/randy.jpg',
+              imagePath: 'assets/images/developers/randy.jpg',
             ),
             const SizedBox(height: 12),
             const _DeveloperCard(
               name: 'Leomar Ceazar Caringal',
               role: 'Tester, Documentation, Researcher',
-              // imagePath: 'assets/images/developers/leomar.jpg',
+              imagePath: 'assets/images/developers/leomar.jpg',
             ),
             const SizedBox(height: 24),
 

@@ -41,6 +41,25 @@ class NatureColors {
   static const Color warningOrange = Color(0xFFFF9800);
   static const Color errorRed = Color(0xFFD32F2F);
   static const Color infoBlue = Color(0xFF2196F3);
+  
+  // Dark Theme Colors
+  static const Color darkBackground = Color(0xFF121212); // Deep dark background
+  static const Color darkSurface = Color(0xFF1E1E1E); // Surface color
+  static const Color darkCard = Color(0xFF2C2C2C); // Card background
+  static const Color darkElevated = Color(0xFF333333); // Elevated surfaces
+  static const Color darkBorder = Color(0xFF404040); // Borders
+  static const Color darkDivider = Color(0xFF505050); // Dividers
+  
+  // Dark Theme Text Colors
+  static const Color darkTextPrimary = Color(0xFFE8E8E8); // Primary text
+  static const Color darkTextSecondary = Color(0xFFB0B0B0); // Secondary text
+  static const Color darkTextDisabled = Color(0xFF707070); // Disabled text
+  static const Color darkTextHint = Color(0xFF808080); // Hint text
+  
+  // Dark Theme Green Accents
+  static const Color darkGreenBright = Color(0xFF66BB6A); // Bright green for dark mode
+  static const Color darkGreenLight = Color(0xFF81C784); // Light green accent
+  static const Color darkGreenAccent = Color(0xFF4CAF50); // Accent green
 }
 
 // Mobile-optimized responsive breakpoints
@@ -236,69 +255,83 @@ ThemeData buildDarkTheme() {
     brightness: Brightness.dark,
     useMaterial3: true,
     colorScheme: const ColorScheme.dark(
-      primary: NatureColors.lightGreen,
-      secondary: NatureColors.accentGreen,
-      surface: Color(0xFF2A2A2A), // Lighter surface for better readability
+      primary: NatureColors.darkGreenBright,
+      secondary: NatureColors.darkGreenLight,
+      surface: NatureColors.darkSurface,
       error: NatureColors.errorRed,
       onPrimary: NatureColors.pureBlack,
       onSecondary: NatureColors.pureBlack,
-      onSurface: Color(0xFFE8E8E8), // Brighter text for better contrast
+      onSurface: NatureColors.darkTextPrimary,
       onError: NatureColors.pureWhite,
       brightness: Brightness.dark,
+      surfaceContainerHighest: NatureColors.darkCard,
+      outline: NatureColors.darkBorder,
     ),
-    scaffoldBackgroundColor: const Color(0xFF1A1A1A), // Slightly lighter background
-    appBarTheme: const AppBarTheme(
+    scaffoldBackgroundColor: NatureColors.darkBackground,
+    appBarTheme: AppBarTheme(
       backgroundColor: NatureColors.darkGreen,
       foregroundColor: NatureColors.pureWhite,
       elevation: 0,
       centerTitle: true,
-      titleTextStyle: TextStyle(
+      shadowColor: NatureColors.darkGreenBright.withAlpha((0.2 * 255).round()),
+      titleTextStyle: const TextStyle(
         color: NatureColors.pureWhite,
         fontSize: 18,
         fontWeight: FontWeight.w600,
       ),
+      iconTheme: const IconThemeData(
+        color: NatureColors.pureWhite,
+        size: 24,
+      ),
     ),
     cardTheme: CardThemeData(
-      color: const Color(0xFF3A3A3A), // Much lighter cards for better readability
-      elevation: 2,
-      shadowColor: NatureColors.lightGreen.withAlpha((0.1 * 255).round()),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      color: NatureColors.darkCard,
+      elevation: 3,
+      shadowColor: NatureColors.darkGreenBright.withAlpha((0.15 * 255).round()),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(
+          color: NatureColors.darkBorder.withAlpha((0.5 * 255).round()),
+          width: 1,
+        ),
+      ),
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
-        backgroundColor: NatureColors.lightGreen,
+        backgroundColor: NatureColors.darkGreenBright,
         foregroundColor: NatureColors.pureBlack,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        elevation: 1,
-        shadowColor: NatureColors.lightGreen.withAlpha((0.3 * 255).round()),
+        elevation: 2,
+        shadowColor: NatureColors.darkGreenBright.withAlpha((0.4 * 255).round()),
         minimumSize: const Size(120, 44),
       ),
     ),
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
-        backgroundColor: NatureColors.lightGreen,
+        backgroundColor: NatureColors.darkGreenBright,
         foregroundColor: NatureColors.pureBlack,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        elevation: 1,
-        shadowColor: NatureColors.lightGreen.withAlpha((0.3 * 255).round()),
+        elevation: 2,
+        shadowColor: NatureColors.darkGreenBright.withAlpha((0.4 * 255).round()),
         minimumSize: const Size(120, 44),
       ),
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
-        foregroundColor: NatureColors.lightGreen,
-        side: const BorderSide(color: NatureColors.lightGreen, width: 1.5),
+        foregroundColor: NatureColors.darkGreenBright,
+        side: const BorderSide(color: NatureColors.darkGreenBright, width: 1.5),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         minimumSize: const Size(120, 44),
+        backgroundColor: Colors.transparent,
       ),
     ),
     textButtonTheme: TextButtonThemeData(
       style: TextButton.styleFrom(
-        foregroundColor: NatureColors.lightGreen,
+        foregroundColor: NatureColors.darkGreenBright,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         minimumSize: const Size(44, 44),
@@ -307,15 +340,15 @@ ThemeData buildDarkTheme() {
     inputDecorationTheme: InputDecorationTheme(
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
-        borderSide: const BorderSide(color: Color(0xFF555555)), // Lighter border
+        borderSide: const BorderSide(color: NatureColors.darkDivider),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
-        borderSide: const BorderSide(color: Color(0xFF555555)),
+        borderSide: const BorderSide(color: NatureColors.darkDivider),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
-        borderSide: const BorderSide(color: NatureColors.lightGreen, width: 2),
+        borderSide: const BorderSide(color: NatureColors.darkGreenBright, width: 2),
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
@@ -326,47 +359,99 @@ ThemeData buildDarkTheme() {
         borderSide: const BorderSide(color: NatureColors.errorRed, width: 2),
       ),
       filled: true,
-      fillColor: const Color(0xFF3A3A3A), // Lighter input background
-      labelStyle: const TextStyle(color: Color(0xFFE8E8E8), fontSize: 14),
-      hintStyle: const TextStyle(color: Color(0xFF999999), fontSize: 14),
+      fillColor: NatureColors.darkCard,
+      labelStyle: const TextStyle(color: NatureColors.darkTextSecondary, fontSize: 14),
+      hintStyle: const TextStyle(color: NatureColors.darkTextHint, fontSize: 14),
       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+      prefixIconColor: NatureColors.darkTextSecondary,
+      suffixIconColor: NatureColors.darkTextSecondary,
     ),
-    navigationBarTheme: const NavigationBarThemeData(
-      backgroundColor: Color(0xFF2A2A2A), // Lighter navigation bar
-      indicatorColor: NatureColors.lightGreen,
-      labelTextStyle: WidgetStatePropertyAll(
-        TextStyle(color: Color(0xFFE8E8E8), fontWeight: FontWeight.w500, fontSize: 12),
+    navigationBarTheme: NavigationBarThemeData(
+      backgroundColor: NatureColors.darkSurface,
+      indicatorColor: NatureColors.darkGreenBright.withAlpha((0.3 * 255).round()),
+      elevation: 8,
+      shadowColor: Colors.black.withAlpha((0.3 * 255).round()),
+      labelTextStyle: const WidgetStatePropertyAll(
+        TextStyle(color: NatureColors.darkTextPrimary, fontWeight: FontWeight.w500, fontSize: 12),
       ),
-      iconTheme: WidgetStatePropertyAll(
-        IconThemeData(color: Color(0xFF999999), size: 24),
+      iconTheme: const WidgetStatePropertyAll(
+        IconThemeData(color: NatureColors.darkTextSecondary, size: 24),
       ),
       height: 60,
     ),
+    dividerTheme: const DividerThemeData(
+      color: NatureColors.darkDivider,
+      thickness: 1,
+      space: 1,
+    ),
+    listTileTheme: ListTileThemeData(
+      textColor: NatureColors.darkTextPrimary,
+      iconColor: NatureColors.darkTextSecondary,
+      tileColor: Colors.transparent,
+      selectedTileColor: NatureColors.darkGreenBright.withAlpha((0.15 * 255).round()),
+      selectedColor: NatureColors.darkGreenBright,
+    ),
+    iconTheme: const IconThemeData(
+      color: NatureColors.darkTextSecondary,
+      size: 24,
+    ),
+    switchTheme: SwitchThemeData(
+      thumbColor: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) {
+          return NatureColors.darkGreenBright;
+        }
+        return NatureColors.darkTextDisabled;
+      }),
+      trackColor: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) {
+          return NatureColors.darkGreenBright.withAlpha((0.5 * 255).round());
+        }
+        return NatureColors.darkBorder;
+      }),
+    ),
+    checkboxTheme: CheckboxThemeData(
+      fillColor: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) {
+          return NatureColors.darkGreenBright;
+        }
+        return Colors.transparent;
+      }),
+      checkColor: const WidgetStatePropertyAll(NatureColors.pureBlack),
+      side: const BorderSide(color: NatureColors.darkBorder, width: 2),
+    ),
+    radioTheme: RadioThemeData(
+      fillColor: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) {
+          return NatureColors.darkGreenBright;
+        }
+        return NatureColors.darkBorder;
+      }),
+    ),
     textTheme: const TextTheme(
       // Display styles - brighter text
-      displayLarge: TextStyle(color: Color(0xFFE8E8E8), fontWeight: FontWeight.bold, fontSize: 28),
-      displayMedium: TextStyle(color: Color(0xFFE8E8E8), fontWeight: FontWeight.bold, fontSize: 24),
-      displaySmall: TextStyle(color: Color(0xFFE8E8E8), fontWeight: FontWeight.bold, fontSize: 20),
+      displayLarge: TextStyle(color: NatureColors.darkTextPrimary, fontWeight: FontWeight.bold, fontSize: 28),
+      displayMedium: TextStyle(color: NatureColors.darkTextPrimary, fontWeight: FontWeight.bold, fontSize: 24),
+      displaySmall: TextStyle(color: NatureColors.darkTextPrimary, fontWeight: FontWeight.bold, fontSize: 20),
       
       // Headline styles
-      headlineLarge: TextStyle(color: Color(0xFFE8E8E8), fontWeight: FontWeight.bold, fontSize: 22),
-      headlineMedium: TextStyle(color: Color(0xFFE8E8E8), fontWeight: FontWeight.bold, fontSize: 18),
-      headlineSmall: TextStyle(color: Color(0xFFE8E8E8), fontWeight: FontWeight.bold, fontSize: 16),
+      headlineLarge: TextStyle(color: NatureColors.darkTextPrimary, fontWeight: FontWeight.bold, fontSize: 22),
+      headlineMedium: TextStyle(color: NatureColors.darkTextPrimary, fontWeight: FontWeight.bold, fontSize: 18),
+      headlineSmall: TextStyle(color: NatureColors.darkTextPrimary, fontWeight: FontWeight.bold, fontSize: 16),
       
       // Title styles
-      titleLarge: TextStyle(color: Color(0xFFE8E8E8), fontWeight: FontWeight.w600, fontSize: 18),
-      titleMedium: TextStyle(color: Color(0xFFE8E8E8), fontWeight: FontWeight.w600, fontSize: 16),
-      titleSmall: TextStyle(color: Color(0xFFE8E8E8), fontWeight: FontWeight.w600, fontSize: 14),
+      titleLarge: TextStyle(color: NatureColors.darkTextPrimary, fontWeight: FontWeight.w600, fontSize: 18),
+      titleMedium: TextStyle(color: NatureColors.darkTextPrimary, fontWeight: FontWeight.w600, fontSize: 16),
+      titleSmall: TextStyle(color: NatureColors.darkTextPrimary, fontWeight: FontWeight.w600, fontSize: 14),
       
       // Body styles - better contrast
-      bodyLarge: TextStyle(color: Color(0xFFE8E8E8), fontSize: 16, height: 1.5),
-      bodyMedium: TextStyle(color: Color(0xFFE8E8E8), fontSize: 14, height: 1.4),
-      bodySmall: TextStyle(color: Color(0xFF999999), fontSize: 12, height: 1.3),
+      bodyLarge: TextStyle(color: NatureColors.darkTextPrimary, fontSize: 16, height: 1.5),
+      bodyMedium: TextStyle(color: NatureColors.darkTextPrimary, fontSize: 14, height: 1.4),
+      bodySmall: TextStyle(color: NatureColors.darkTextSecondary, fontSize: 12, height: 1.3),
       
       // Label styles
-      labelLarge: TextStyle(color: Color(0xFFE8E8E8), fontWeight: FontWeight.w500, fontSize: 14),
-      labelMedium: TextStyle(color: Color(0xFFE8E8E8), fontWeight: FontWeight.w500, fontSize: 12),
-      labelSmall: TextStyle(color: Color(0xFF999999), fontWeight: FontWeight.w500, fontSize: 10),
+      labelLarge: TextStyle(color: NatureColors.darkTextPrimary, fontWeight: FontWeight.w500, fontSize: 14),
+      labelMedium: TextStyle(color: NatureColors.darkTextPrimary, fontWeight: FontWeight.w500, fontSize: 12),
+      labelSmall: TextStyle(color: NatureColors.darkTextSecondary, fontWeight: FontWeight.w500, fontSize: 10),
     ),
     visualDensity: VisualDensity.compact,
   );

@@ -50,6 +50,7 @@ flutter:
     - assets/onboarding/logs.png
     - assets/onboarding/recipes.png
     - assets/onboarding/alerts.png
+    - assets/images/developers/
 
 flutter_icons:
   android: true
