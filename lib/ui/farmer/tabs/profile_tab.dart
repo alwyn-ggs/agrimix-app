@@ -6,6 +6,7 @@ import '../../../providers/auth_provider.dart';
 import '../../../services/messaging_service.dart';
 import '../../../services/storage_service.dart';
 import '../../../theme/theme.dart';
+import '../../common/notification_preferences_page.dart';
 
 class ProfileTab extends StatefulWidget {
   const ProfileTab({super.key});
@@ -335,11 +336,110 @@ class _ProfileTabState extends State<ProfileTab> {
             ),
           ),
           const SizedBox(height: 16),
+          Card(
+            color: Colors.white,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Settings',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.black87),
+                  ),
+                  const SizedBox(height: 8),
+                  const Divider(),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.notifications_outlined, color: Colors.black87),
+                    title: const Text('Notifications'),
+                    subtitle: const Text('Manage notification preferences'),
+                    trailing: const Icon(Icons.chevron_right, color: Colors.black54),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const NotificationPreferencesPage(),
+                        ),
+                      );
+                    },
+                  ),
+                  const Divider(height: 1),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.palette_outlined, color: Colors.black87),
+                    title: const Text('Theme'),
+                    subtitle: const Text('Customize app appearance'),
+                    trailing: const Icon(Icons.chevron_right, color: Colors.black54),
+                    onTap: () => Navigator.pushNamed(context, '/settings/theme'),
+                  ),
+                  const Divider(height: 1),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.language_outlined, color: Colors.black87),
+                    title: const Text('Language'),
+                    subtitle: const Text('Change app language'),
+                    trailing: const Icon(Icons.chevron_right, color: Colors.black54),
+                    onTap: () => Navigator.pushNamed(context, '/settings/language'),
+                  ),
+                  const Divider(height: 1),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.help_outline, color: Colors.black87),
+                    title: const Text('Help & Support'),
+                    subtitle: const Text('FAQs and contact support'),
+                    trailing: const Icon(Icons.chevron_right, color: Colors.black54),
+                    onTap: () => Navigator.pushNamed(context, '/help'),
+                  ),
+                  const Divider(height: 1),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.article_outlined, color: Colors.black87),
+                    title: const Text('Terms of Service'),
+                    trailing: const Icon(Icons.chevron_right, color: Colors.black54),
+                    onTap: () => Navigator.pushNamed(context, '/terms'),
+                  ),
+                  const Divider(height: 1),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.privacy_tip_outlined, color: Colors.black87),
+                    title: const Text('Privacy Policy'),
+                    trailing: const Icon(Icons.chevron_right, color: Colors.black54),
+                    onTap: () => Navigator.pushNamed(context, '/privacy'),
+                  ),
+                  const Divider(height: 1),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.info_outline, color: Colors.black87),
+                    title: const Text('About'),
+                    trailing: const Icon(Icons.chevron_right, color: Colors.black54),
+                    onTap: () => Navigator.pushNamed(context, '/about'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
           Center(
-            child: TextButton.icon(
-              onPressed: () => auth.signOut(),
-              icon: const Icon(Icons.logout, color: Colors.red),
-              label: const Text('Logout', style: TextStyle(color: Colors.red)),
+            child: OutlinedButton.icon(
+              onPressed: () => _showLogoutDialog(context),
+              icon: const Icon(Icons.logout, size: 20),
+              label: const Text(
+                'Logout',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.red,
+                side: const BorderSide(color: Colors.red, width: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
             ),
           ),
           ],
@@ -487,5 +587,35 @@ class _ProfileTabState extends State<ProfileTab> {
         setState(() { _removingPhoto = false; });
       }
     }
+  }
+
+  void _showLogoutDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.logout, color: Colors.red),
+            SizedBox(width: 8),
+            Text('Logout'),
+          ],
+        ),
+        content: const Text('Are you sure you want to logout?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.pop(context);
+              context.read<AuthProvider>().signOut();
+            },
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Logout'),
+          ),
+        ],
+      ),
+    );
   }
 }

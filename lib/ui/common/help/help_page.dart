@@ -82,7 +82,7 @@ class HelpPage extends StatelessWidget {
             runSpacing: 8,
             children: [
               OutlinedButton.icon(
-                onPressed: () => _open(context, 'mailto:admin@agrimix.app?subject=AgriMix%20Support'),
+                onPressed: () => _open(context, 'mailto:agrimix6@gmail.com?subject=AgriMix%20Support'),
                 icon: const Icon(Icons.email_outlined),
                 label: const Text('Email Support'),
               ),

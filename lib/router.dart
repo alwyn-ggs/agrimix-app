@@ -19,6 +19,7 @@ import 'ui/fermentation/log_detail_page.dart';
 import 'ui/common/onboarding_screen.dart';
 import 'ui/common/legal/terms_page.dart';
 import 'ui/common/legal/privacy_page.dart';
+import 'ui/common/legal/about_page.dart';
 import 'ui/common/help/help_page.dart';
 import 'ui/common/settings/theme_settings_page.dart';
 import 'ui/common/settings/language_settings_page.dart';
@@ -46,6 +47,7 @@ class Routes {
   static const ingredientManagement = '/ingredient-management';
   static const terms = '/terms';
   static const privacy = '/privacy';
+  static const about = '/about';
   static const help = '/help';
   static const themeSettings = '/settings/theme';
   static const languageSettings = '/settings/language';
@@ -153,6 +155,8 @@ class AppRouter {
         return MaterialPageRoute(builder: (_) => const TermsPage());
       case Routes.privacy:
         return MaterialPageRoute(builder: (_) => const PrivacyPage());
+      case Routes.about:
+        return MaterialPageRoute(builder: (_) => const AboutPage());
       case Routes.help:
         return MaterialPageRoute(builder: (_) => const HelpPage());
       case Routes.themeSettings:

@@ -4,7 +4,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../theme/theme.dart';
 import '../../providers/auth_provider.dart';
 import '../common/notifications_page.dart';
-import '../common/notification_preferences_page.dart';
 import '../../l10n/app_localizations.dart';
 import 'tabs/home_tab.dart';
 import 'tabs/recipes_tab.dart';
@@ -198,81 +197,27 @@ class _DashboardState extends State<Dashboard> {
                 },
               ),
               const SizedBox(width: 8),
-              // Profile Menu
-              PopupMenuButton<String>(
-                onSelected: (value) {
-                  switch (value) {
-                    case 'profile':
-                      setState(() => _index = 5); // Go to Profile tab
-                      break;
-                    case 'settings':
-                      _showSettingsDialog(context);
-                      break;
-                    case 'logout':
-                      _showLogoutDialog(context);
-                      break;
-                  }
-                },
-                itemBuilder: (context) => [
-                  const PopupMenuItem(
-                    value: 'profile',
-                    child: Row(
-                      children: [
-                        Icon(Icons.person_outline),
-                        SizedBox(width: 8),
-                        Text('Profile'),
-                      ],
-                    ),
-                  ),
-                  const PopupMenuItem(
-                    value: 'settings',
-                    child: Row(
-                      children: [
-                        Icon(Icons.settings_outlined),
-                        SizedBox(width: 8),
-                        Text('Settings'),
-                      ],
-                    ),
-                  ),
-                  const PopupMenuDivider(),
-                  const PopupMenuItem(
-                    value: 'logout',
-                    child: Row(
-                      children: [
-                        Icon(Icons.logout, color: Colors.red),
-                        SizedBox(width: 8),
-                        Text('Logout', style: TextStyle(color: Colors.red)),
-                      ],
-                    ),
-                  ),
-                ],
+              // Profile Avatar - tap to go to profile
+              GestureDetector(
+                onTap: () => setState(() => _index = 5), // Go to Profile tab
                 child: Container(
                   margin: const EdgeInsets.only(right: 16),
-                  child: Row(
-                    children: [
-                      Consumer<AuthProvider>(
-                        builder: (context, authProvider, child) {
-                          final user = authProvider.currentAppUser;
-                          return CircleAvatar(
-                            backgroundColor: NatureColors.lightGreen,
-                            child: Text(
-                              user?.name.isNotEmpty == true 
-                                  ? user!.name[0].toUpperCase() 
-                                  : 'F',
-                              style: const TextStyle(
-                                color: NatureColors.pureWhite,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                      const SizedBox(width: 8),
-                      const Icon(
-                        Icons.keyboard_arrow_down,
-                        color: NatureColors.pureWhite,
-                      ),
-                    ],
+                  child: Consumer<AuthProvider>(
+                    builder: (context, authProvider, child) {
+                      final user = authProvider.currentAppUser;
+                      return CircleAvatar(
+                        backgroundColor: NatureColors.lightGreen,
+                        child: Text(
+                          user?.name.isNotEmpty == true 
+                              ? user!.name[0].toUpperCase() 
+                              : 'F',
+                          style: const TextStyle(
+                            color: NatureColors.pureWhite,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      );
+                    },
                   ),
                 ),
               ),
@@ -373,117 +318,5 @@ class _DashboardState extends State<Dashboard> {
     );
   }
 
-  void _showSettingsDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Row(
-          children: [
-            const Icon(Icons.settings, color: NatureColors.primaryGreen),
-            const SizedBox(width: 8),
-            Text(AppLocalizations.of(context).t('settings')),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.notifications_outlined),
-              title: Text(AppLocalizations.of(context).t('notifications')),
-              subtitle: Text(AppLocalizations.of(context).t('notifications_sub')),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const NotificationPreferencesPage(),
-                  ),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.palette_outlined),
-              title: Text(AppLocalizations.of(context).t('theme')),
-              subtitle: Text(AppLocalizations.of(context).t('theme_sub')),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.pushNamed(context, '/settings/theme');
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.language_outlined),
-              title: Text(AppLocalizations.of(context).t('language')),
-              subtitle: Text(AppLocalizations.of(context).t('language_sub')),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.pushNamed(context, '/settings/language');
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.help_outline),
-              title: Text(AppLocalizations.of(context).t('help_support')),
-              subtitle: Text(AppLocalizations.of(context).t('help_support_sub')),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.pushNamed(context, '/help');
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.article_outlined),
-              title: Text(AppLocalizations.of(context).t('terms_of_service')),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.pushNamed(context, '/terms');
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.privacy_tip_outlined),
-              title: Text(AppLocalizations.of(context).t('privacy_policy')),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.pushNamed(context, '/privacy');
-              },
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(AppLocalizations.of(context).t('close')),
-          ),
-        ],
-      ),
-    );
-  }
 
-  void _showLogoutDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Row(
-          children: [
-            Icon(Icons.logout, color: Colors.red),
-            SizedBox(width: 8),
-            Text('Logout'),
-          ],
-        ),
-        content: const Text('Are you sure you want to logout?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () {
-              Navigator.pop(context);
-              context.read<AuthProvider>().signOut();
-            },
-            style: FilledButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Logout'),
-          ),
-        ],
-      ),
-    );
-  }
 }

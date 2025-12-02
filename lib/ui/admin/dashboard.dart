@@ -10,7 +10,9 @@ import 'community_moderation_page.dart';
 import 'fermentation_monitor_page.dart';
 import 'announcements_page.dart';
 import '../common/notifications_page.dart';
+import 'admin_notification_settings_page.dart';
 import '../../l10n/app_localizations.dart';
+
 
 class Dashboard extends StatefulWidget {
   const Dashboard({super.key});
@@ -531,7 +533,7 @@ class _DashboardState extends State<Dashboard> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => const NotificationsPage(),
+                    builder: (_) => const AdminNotificationSettingsPage(),
                   ),
                 );
               },

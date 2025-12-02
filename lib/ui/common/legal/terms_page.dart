@@ -88,7 +88,7 @@ class TermsPage extends StatelessWidget {
             const SizedBox(height: 16),
             Text('12. Contact Us', style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
             const SizedBox(height: 8),
-            const Text('Questions? Email admin@agrimix.app'),
+            const Text('Questions? Email agrimix6@gmail.com'),
           ],
         ),
       ),
