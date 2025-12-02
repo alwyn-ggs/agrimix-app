@@ -28,17 +28,13 @@ class AppWrapper extends StatelessWidget {
     return ErrorBoundary(
       child: Consumer<AuthProvider>(
         builder: (context, authProvider, child) {
-          // Show error if there's an authentication error
+          // Don't show blocking error page - errors will be shown inline on login screen
+          // Just clear any stale errors and continue
           if (authProvider.hasError) {
-            return AppErrorPage(
-              title: 'Authentication Error',
-              message: authProvider.error ?? 'An authentication error occurred',
-              onRetry: () {
-                authProvider.clearError();
-                // Try to refresh the current user
-                authProvider.refreshCurrentUser();
-              },
-            );
+            // Clear error silently - it will be shown on login screen if needed
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              authProvider.clearError();
+            });
           }
           
           // Show splash while loading

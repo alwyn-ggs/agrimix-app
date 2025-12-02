@@ -4,6 +4,28 @@ import '../utils/exceptions.dart';
 class AuthService {
   final _auth = FirebaseAuth.instance;
 
+  AuthService() {
+    // Enable persistence for Firebase Auth
+    // This ensures users stay logged in across app restarts
+    _setPersistence();
+  }
+
+  /// Set Firebase Auth persistence to LOCAL
+  /// This keeps users logged in even when app is closed or removed from recent apps
+  Future<void> _setPersistence() async {
+    try {
+      // On mobile platforms (Android/iOS), Firebase Auth automatically persists sessions
+      // by default using native secure storage. We just need to ensure it's enabled.
+      // The persistence is already set to LOCAL by default on mobile.
+      // This method is here for documentation and future web support.
+      await _auth.setPersistence(Persistence.LOCAL);
+    } catch (e) {
+      // Persistence setting might fail on some platforms, but it's not critical
+      // as mobile platforms have it enabled by default
+      print('Note: Could not set persistence (this is normal on some platforms): $e');
+    }
+  }
+
   Stream<User?> authStateChanges() => _auth.authStateChanges();
 
   User? get currentUser => _auth.currentUser;

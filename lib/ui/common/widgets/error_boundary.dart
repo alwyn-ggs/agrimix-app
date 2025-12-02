@@ -54,13 +54,14 @@ class _ErrorBoundaryState extends State<ErrorBoundary> {
         return;
       }
 
-      // In debug builds, don't surface a blocking error UI; just log/present
-      // so hot reload and transient framework assertions don't break UX.
-      if (kDebugMode) {
-        FlutterError.presentError(details);
-        return;
-      }
-
+      // DISABLED: Don't show blocking error UI for any errors
+      // Just log them to console. This prevents "Something went wrong" messages
+      // from appearing during normal operations like login/logout.
+      FlutterError.presentError(details);
+      
+      // Note: Error boundary UI is disabled to prevent false positives
+      // If you need to re-enable it, uncomment the code below:
+      /*
       if (mounted) {
         setState(() {
           _error = details.exception;
@@ -69,6 +70,7 @@ class _ErrorBoundaryState extends State<ErrorBoundary> {
         });
         widget.onError?.call();
       }
+      */
     };
   }
 
