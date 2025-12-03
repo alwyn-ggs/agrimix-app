@@ -42,9 +42,6 @@ class AuthProvider extends ChangeNotifier with ErrorHandlerMixin {
     try {
       AppLogger.debug('AuthProvider: Starting initialization...');
       
-      // Set loading to true while we check for persisted sessions
-      loading = true;
-      
       // Load remember-me preference first
       await _loadRememberPreference();
       
@@ -52,11 +49,17 @@ class AuthProvider extends ChangeNotifier with ErrorHandlerMixin {
       final currentFirebaseUser = auth.currentUser;
       if (currentFirebaseUser != null) {
         AppLogger.debug('AuthProvider: Found persisted session for user: ${currentFirebaseUser.uid}');
+        
+        // Set loading to true while we load user data
+        loading = true;
+        notifyListeners();
+        
         _currentUser = currentFirebaseUser;
         
         // Load user data immediately for persisted session
         try {
           await _loadUserDataDirectly(currentFirebaseUser.uid);
+          // _loadUserDataDirectly will set loading = false and notify listeners
         } catch (e) {
           AppLogger.error('AuthProvider: Failed to load persisted user data: $e', e);
           loading = false;
