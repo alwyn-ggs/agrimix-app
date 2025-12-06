@@ -20,7 +20,6 @@ class AuthProvider extends ChangeNotifier with ErrorHandlerMixin {
   bool loading = false;
   User? _currentUser;
   AppUser? _currentAppUser;
-  bool _rememberMe = false;
 
   AuthProvider(this.auth, this.usersRepo, this.messaging, [this.notificationService]) {
     _init();
@@ -30,7 +29,6 @@ class AuthProvider extends ChangeNotifier with ErrorHandlerMixin {
   AppUser? get currentAppUser => _currentAppUser;
   bool get isLoggedIn => _currentUser != null;
   String? get userRole => _currentAppUser?.role;
-  bool get rememberMe => _rememberMe;
 
   void _init() {
     AppLogger.debug('AuthProvider: Initializing...');
@@ -41,9 +39,6 @@ class AuthProvider extends ChangeNotifier with ErrorHandlerMixin {
   Future<void> _initializeWithReadinessCheck() async {
     try {
       AppLogger.debug('AuthProvider: Starting initialization...');
-      
-      // Load remember-me preference first
-      await _loadRememberPreference();
       
       // Check if there's a persisted Firebase Auth session
       final currentFirebaseUser = auth.currentUser;
@@ -118,7 +113,7 @@ class AuthProvider extends ChangeNotifier with ErrorHandlerMixin {
 
   Stream<User?> get currentUserStream => auth.authStateChanges();
 
-  Future<void> signIn(String email, String password, {bool rememberMe = false}) async {
+  Future<void> signIn(String email, String password) async {
     // Prevent multiple simultaneous login attempts
     if (loading) {
       AppLogger.debug('AuthProvider: Login already in progress, ignoring duplicate request');
@@ -130,16 +125,7 @@ class AuthProvider extends ChangeNotifier with ErrorHandlerMixin {
     notifyListeners();
     
     try {
-      // Save remember-me preference immediately for this session
-      _rememberMe = rememberMe;
       AppLogger.debug('AuthProvider: Starting DIRECT sign in for fresh install...');
-      
-      try {
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setBool('remember_me', rememberMe);
-      } catch (e) {
-        AppLogger.debug('AuthProvider: Error saving remember_me preference: $e');
-      }
 
       // DIRECT Firebase Auth sign in - no delays, no complex checks
       AppLogger.debug('AuthProvider: Attempting Firebase Auth sign in...');
@@ -421,14 +407,6 @@ class AuthProvider extends ChangeNotifier with ErrorHandlerMixin {
     await auth.signOut();
     _currentUser = null;
     _currentAppUser = null;
-    _rememberMe = false;
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool('remember_me', false);
-      AppLogger.debug('AuthProvider: Cleared remember_me preference');
-    } catch (e) {
-      AppLogger.debug('AuthProvider: Error clearing remember_me preference: $e');
-    }
     notifyListeners();
   }
 
@@ -493,16 +471,7 @@ class AuthProvider extends ChangeNotifier with ErrorHandlerMixin {
     }
   }
 
-  Future<void> _loadRememberPreference() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      _rememberMe = prefs.getBool('remember_me') ?? false;
-      AppLogger.debug('AuthProvider: Loaded remember_me preference: $_rememberMe');
-    } catch (e) {
-      AppLogger.debug('AuthProvider: Error loading remember_me preference: $e');
-      _rememberMe = false;
-    }
-  }
+
 
   /// Handle FCM token operations safely without blocking authentication
   void _handleFCMTokenSafely(String uid) {

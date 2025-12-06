@@ -12,8 +12,15 @@ import '../../../utils/logger.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../services/feedback_service.dart';
 
-class RecipesTab extends StatelessWidget {
+class RecipesTab extends StatefulWidget {
   const RecipesTab({super.key});
+
+  @override
+  State<RecipesTab> createState() => _RecipesTabState();
+}
+
+class _RecipesTabState extends State<RecipesTab> {
+  String _searchQuery = '';
 
   @override
   Widget build(BuildContext context) {
@@ -93,7 +100,11 @@ class RecipesTab extends StatelessWidget {
                   ),
                 ),
               ),
-              onChanged: (_) => (context as Element).markNeedsBuild(),
+              onChanged: (value) {
+                setState(() {
+                  _searchQuery = value;
+                });
+              },
             ),
           ),
           
@@ -165,7 +176,7 @@ class RecipesTab extends StatelessWidget {
                     ],
                   ),
                 ),
-                const _StandardRecipesList(),
+                _StandardRecipesList(searchQuery: _searchQuery),
                 
                 const SizedBox(height: 24),
                 
@@ -234,7 +245,7 @@ class RecipesTab extends StatelessWidget {
                 // Public user-shared recipes (non-standard)
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 8),
-                  child: _PublicRecipesList(),
+                  child: _PublicRecipesList(searchQuery: _searchQuery),
                 ),
               ],
             ),
@@ -411,7 +422,9 @@ class RecipesTab extends StatelessWidget {
 }
 
 class _StandardRecipesList extends StatelessWidget {
-  const _StandardRecipesList();
+  final String searchQuery;
+  
+  const _StandardRecipesList({required this.searchQuery});
 
   @override
   Widget build(BuildContext context) {
@@ -431,6 +444,7 @@ class _StandardRecipesList extends StatelessWidget {
         }
         final recipes = (snapshot.data ?? const <Recipe>[]) 
             .where((r) => r.isStandard)
+            .where((r) => _matchesSearchQuery(r))
             .toList();
         if (recipes.isEmpty) {
           return const Padding(
@@ -490,9 +504,32 @@ class _StandardRecipesList extends StatelessWidget {
       FeedbackService().showSnack('Failed to use recipe: $e');
     }
   }
+
+  bool _matchesSearchQuery(Recipe recipe) {
+    if (searchQuery.trim().isEmpty) return true;
+    
+    final query = searchQuery.toLowerCase();
+    
+    // Search in recipe name
+    if (recipe.name.toLowerCase().contains(query)) return true;
+    
+    // Search in crop target
+    if (recipe.cropTarget.toLowerCase().contains(query)) return true;
+    
+    // Search in ingredient names
+    for (final ingredient in recipe.ingredients) {
+      if (ingredient.name.toLowerCase().contains(query)) return true;
+    }
+    
+    return false;
+  }
 }
 
 class _PublicRecipesList extends StatelessWidget {
+  final String searchQuery;
+  
+  const _PublicRecipesList({required this.searchQuery});
+
   @override
   Widget build(BuildContext context) {
     final repo = context.read<RecipesRepo>();
@@ -515,7 +552,7 @@ class _PublicRecipesList extends StatelessWidget {
         final allRecipes = snap.data ?? const <Recipe>[];
         final recipes = allRecipes.where((r) => 
           r.visibility == RecipeVisibility.public && !r.isStandard
-        ).toList();
+        ).where((r) => _matchesSearchQuery(r)).toList();
         
         if (snap.hasError) {
           AppLogger.error('Error in recipe stream: ${snap.error}');
@@ -555,6 +592,25 @@ class _PublicRecipesList extends StatelessWidget {
         );
       },
     );
+  }
+
+  bool _matchesSearchQuery(Recipe recipe) {
+    if (searchQuery.trim().isEmpty) return true;
+    
+    final query = searchQuery.toLowerCase();
+    
+    // Search in recipe name
+    if (recipe.name.toLowerCase().contains(query)) return true;
+    
+    // Search in crop target
+    if (recipe.cropTarget.toLowerCase().contains(query)) return true;
+    
+    // Search in ingredient names
+    for (final ingredient in recipe.ingredients) {
+      if (ingredient.name.toLowerCase().contains(query)) return true;
+    }
+    
+    return false;
   }
 }
 

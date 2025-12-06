@@ -18,7 +18,6 @@ class _LoginScreenState extends State<LoginScreen> {
   final _email = TextEditingController();
   final _password = TextEditingController();
   bool _obscurePassword = true;
-  bool _rememberMe = false;
   bool _hasNavigated = false;
 
   @override
@@ -236,26 +235,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             obscureText: _obscurePassword,
                             validator: Validators.notEmpty,
                           ),
-                          const SizedBox(height: 12),
-
-                          // Remember me
-                          Row(
-                            children: [
-                              Checkbox(
-                                value: _rememberMe,
-                                onChanged: (v) => setState(() => _rememberMe = v ?? false),
-                                side: const BorderSide(color: Colors.black, width: 2),
-                                fillColor: const WidgetStatePropertyAll(Colors.transparent),
-                                checkColor: Colors.black,
-                                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                              ),
-                              const Text(
-                                'Remember me',
-                                style: TextStyle(color: NatureColors.textDark),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
+                          const SizedBox(height: 24),
                           
                           // Login Button
                           FilledButton(
@@ -268,7 +248,6 @@ class _LoginScreenState extends State<LoginScreen> {
                                       .signIn(
                                         _email.text.trim(),
                                         _password.text.trim(),
-                                        rememberMe: _rememberMe,
                                       );
                                     // Navigation will be handled by the router based on user role
                                   },
